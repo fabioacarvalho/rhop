@@ -147,29 +147,29 @@ Cada requisito recebe um ID único para rastreio entre design, tasks e validaç�
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| APR-01 | P1: Fila de Aprovações Pendentes | Design | Pending |
-| APR-02 | P1: Fila de Aprovações Pendentes | Design | Pending |
-| APR-03 | P1: Fila de Aprovações Pendentes | Design | Pending |
-| APR-04 | P1: Fila de Aprovações Pendentes | Design | Pending |
-| APR-05 | P1: Fila de Aprovações Pendentes (visibilidade) | Design | Pending |
-| APR-06 | P1: Autorização de decisão (backend) | Design | Pending |
-| APR-07 | P1: Autorização de decisão (backend, gestor do solicitante) | Design | Pending |
-| APR-08 | P1: Autorização de decisão (etapa/idempotência) | Design | Pending |
-| APR-09 | P1: Avanço/encerramento (registro de `Aprovacao`) | Design | Pending |
-| APR-10 | P1: Avanço/encerramento (aprovar → avança/finaliza) | Design | Pending |
-| APR-11 | P1: Avanço/encerramento (rejeitar → encerra) | Design | Pending |
-| APR-12 | P1: Avanço/encerramento (`Log AUDITORIA`) → `auditoria-logs` | Design | Pending |
-| APR-13 | P1: Geração de `resumo_ia` (OpenAI server-side) | Design | Pending |
-| APR-14 | P1: Fallback resiliente de IA | Design | Pending |
-| APR-15 | P1: `Log ERRO` na falha de IA → `auditoria-logs` | Design | Pending |
-| APR-16 | P2: Histórico de decisões da solicitação | - | Pending |
-| APR-17 | P3: Estado vazio da fila | - | Pending |
+| APR-01 | P1: Fila de Aprovações Pendentes | T5, T9 | Verified |
+| APR-02 | P1: Fila de Aprovações Pendentes | T9 | Verified |
+| APR-03 | P1: Fila de Aprovações Pendentes | T2, T6, T7, T9 | Verified |
+| APR-04 | P1: Fila de Aprovações Pendentes | T2, T6, T7, T9 | Verified |
+| APR-05 | P1: Fila de Aprovações Pendentes (visibilidade) | T5, T9 | Verified |
+| APR-06 | P1: Autorização de decisão (backend) | T6, T7 | Verified |
+| APR-07 | P1: Autorização de decisão (backend, gestor do solicitante) | T6 | Verified |
+| APR-08 | P1: Autorização de decisão (etapa/idempotência) | T6 | Verified |
+| APR-09 | P1: Avanço/encerramento (registro de `Aprovacao`) | T1, T6 | Verified |
+| APR-10 | P1: Avanço/encerramento (aprovar → avança/finaliza) | T3, T6 | Verified |
+| APR-11 | P1: Avanço/encerramento (rejeitar → encerra) | T6 | Verified |
+| APR-12 | P1: Avanço/encerramento (`Log AUDITORIA`) → `auditoria-logs` | T6 | Verified |
+| APR-13 | P1: Geração de `resumo_ia` (OpenAI server-side) | T4, T5, T6 | Verified |
+| APR-14 | P1: Fallback resiliente de IA | T4, T5, T6, T9 | Verified |
+| APR-15 | P1: `Log ERRO` na falha de IA → `auditoria-logs` | T4 | Verified |
+| APR-16 | P2: Histórico de decisões da solicitação | T10 | Verified |
+| APR-17 | P3: Estado vazio da fila | T9 | Verified |
 
 **ID format:** `APR-[NUMBER]`
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 17 total, 0 mapeados para tasks, 17 não-mapeados ⚠️ (mapeamento ocorre na fase Tasks)
+**Coverage:** 17 total, 17 mapeados e verificados via tasks T1–T10
 
 ---
 

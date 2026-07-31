@@ -2,7 +2,7 @@
 
 **Design**: `.specs/features/aprovacoes/design.md`
 **Context**: `.specs/features/aprovacoes/context.md`
-**Status**: Ready
+**Status**: Complete (T1–T10)
 
 ---
 
