@@ -1,7 +1,7 @@
 import { prisma } from '../prisma';
-import { logService } from './logService';
+import { registrar } from './logService';
 import { resendService } from './resendService';
-import { TipoNotificacao } from '../generated/prisma';
+import { TipoNotificacao } from '../generated/prisma/client';
 
 export type NotificacaoInput = {
   usuario_id: string; // Destinatário
@@ -14,7 +14,7 @@ export type NotificacaoInput = {
 export const notificacaoService = {
   async notificarEvento(input: NotificacaoInput): Promise<void> {
     if (!input.usuario_id) {
-      await logService.registrar({
+      await registrar({
         tipo: 'ERRO',
         entidade: 'Notificacao',
         entidade_id: input.solicitacao_id,
@@ -68,7 +68,7 @@ export const notificacaoService = {
 
       // 3. Valida se usuário possui e-mail
       if (!notificacao.usuario.email) {
-        await logService.registrar({
+        await registrar({
           tipo: 'ERRO',
           entidade: 'User',
           entidade_id: input.usuario_id,
@@ -101,7 +101,7 @@ export const notificacaoService = {
 
     } catch (e: any) {
       // Falha ao criar a notificação in-app (banco fora, etc.)
-      await logService.registrar({
+      await registrar({
         tipo: 'ERRO',
         entidade: 'Notificacao',
         entidade_id: input.solicitacao_id,
