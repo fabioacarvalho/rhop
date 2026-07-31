@@ -53,3 +53,33 @@ model Log {
   @@index([criado_em])
   @@map("logs")
 }
+
+model TipoFluxo {
+  id                String        @id @default(cuid())
+  nome              String        @unique
+  campos_formulario Json
+  etapas            Json // Role[] serializado, ex: ["GESTOR", "RH_ADMIN"]
+  criado_em         DateTime      @default(now())
+  atualizado_em     DateTime      @updatedAt
+  solicitacoes      Solicitacao[]
+
+  @@map("tipos_fluxo")
+}
+
+enum StatusSolicitacao {
+  PENDENTE
+  APROVADA
+  REJEITADA
+}
+
+model Solicitacao {
+  id            String            @id @default(cuid())
+  tipo_fluxo_id String
+  tipoFluxo     TipoFluxo         @relation(fields: [tipo_fluxo_id], references: [id])
+  status        StatusSolicitacao @default(PENDENTE)
+  criado_em     DateTime          @default(now())
+
+  @@index([tipo_fluxo_id])
+  @@index([status])
+  @@map("solicitacoes")
+}
