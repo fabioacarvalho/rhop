@@ -57,23 +57,23 @@ interface UsuarioSeed {
 const USUARIOS: UsuarioSeed[] = [
   {
     nome: "RH Admin",
-    email: "rh.admin@rhop.test",
+    email: "rh.admin@01tec.com.br",
     senha_temporaria: SENHA_TESTE,
     role: Role.RH_ADMIN,
   },
   {
     nome: "Gestor de Equipe",
-    email: "gestor@rhop.test",
+    email: "gestor@01tec.com.br",
     senha_temporaria: SENHA_TESTE,
     role: Role.GESTOR,
-    gestor_email: "rh.admin@rhop.test",
+    gestor_email: "rh.admin@01tec.com.br",
   },
   {
     nome: "Solicitante Teste",
-    email: "solicitante@rhop.test",
+    email: "solicitante@01tec.com.br",
     senha_temporaria: SENHA_TESTE,
     role: Role.SOLICITANTE,
-    gestor_email: "gestor@rhop.test",
+    gestor_email: "gestor@01tec.com.br",
   },
 ];
 

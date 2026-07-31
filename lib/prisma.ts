@@ -11,6 +11,11 @@ const globalForPrisma = globalThis as unknown as {
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
+  // Em dev, a rede deste ambiente intercepta TLS com um certificado
+  // self-signed (proxy corporativo/antivírus) — o driver `pg` rejeita a
+  // cadeia por padrão. Em produção (Vercel) essa interceptação não existe,
+  // então mantemos a validação padrão de certificado.
+  ssl: process.env.NODE_ENV === "production" ? undefined : { rejectUnauthorized: false },
 });
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
