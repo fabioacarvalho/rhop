@@ -26,9 +26,10 @@ model User {
   role      Role
   gestor_id String? @db.Uuid
 
-  gestor User?  @relation("Hierarquia", fields: [gestor_id], references: [id])
-  equipe User[] @relation("Hierarquia")
-  logs   Log[]
+  gestor       User?         @relation("Hierarquia", fields: [gestor_id], references: [id])
+  equipe       User[]        @relation("Hierarquia")
+  logs         Log[]
+  notificacoes Notificacao[] @relation("NotificacoesUsuario")
 }
 
 enum LogTipo {
@@ -78,8 +79,34 @@ model Solicitacao {
   tipoFluxo     TipoFluxo         @relation(fields: [tipo_fluxo_id], references: [id])
   status        StatusSolicitacao @default(PENDENTE)
   criado_em     DateTime          @default(now())
+  notificacoes  Notificacao[]
 
   @@index([tipo_fluxo_id])
   @@index([status])
   @@map("solicitacoes")
+}
+
+enum TipoNotificacao {
+  CRIACAO
+  AVANCO_ETAPA
+  APROVACAO_FINAL
+  REJEICAO
+  COBRANCA_SLA
+}
+
+model Notificacao {
+  id              String          @id @default(uuid()) @db.Uuid
+  usuario_id      String          @db.Uuid
+  solicitacao_id  String          @db.Uuid
+  tipo            TipoNotificacao
+  mensagem        String
+  lida            Boolean         @default(false)
+  link            String
+  criado_em       DateTime        @default(now())
+
+  usuario         User            @relation("NotificacoesUsuario", fields: [usuario_id], references: [id])
+  solicitacao     Solicitacao     @relation(fields: [solicitacao_id], references: [id])
+
+  @@index([usuario_id, lida])
+  @@map("notificacoes")
 }
