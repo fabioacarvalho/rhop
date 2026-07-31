@@ -56,6 +56,7 @@ Toda lógica de negócio nova entra em um service. Toda API route delega pro ser
 ## Regras
 
 - Não adicione "Co-Authored-By:" nos seus commits, commit sempre com o meu usuario.
+- Co-authored-by: Cursor;
 - Use:
 
 ```
