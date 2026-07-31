@@ -1,7 +1,7 @@
 # Configuração de Fluxos Tasks
 
 **Design**: `.specs/features/configuracao-fluxos/design.md`
-**Status**: Draft
+**Status**: Done — T1→T2→T3→T4→T5→T6→T7 executados, commitados e testados (36→52 testes Vitest cumulativos no repo; T4/T5/T7 validados de ponta a ponta contra Supabase real com os 3 papéis seedados, incluindo criar→listar→editar→404→bloqueio por papel).
 
 ---
 
