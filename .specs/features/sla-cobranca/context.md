@@ -2,7 +2,7 @@
 
 **Gathered:** 2026-07-30
 **Spec:** `.specs/features/sla-cobranca/spec.md`
-**Status:** Ready for design
+**Status:** Design + Tasks drafted — awaiting approval before Execute
 
 ---
 
