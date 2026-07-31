@@ -12,3 +12,20 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  SOLICITANTE
+  GESTOR
+  RH_ADMIN
+}
+
+model User {
+  id        String  @id @db.Uuid // mesmo id do usuário no Supabase Auth (auth.users.id)
+  nome      String
+  email     String  @unique
+  role      Role
+  gestor_id String? @db.Uuid
+
+  gestor User?  @relation("Hierarquia", fields: [gestor_id], references: [id])
+  equipe User[] @relation("Hierarquia")
+}
