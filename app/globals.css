@@ -1,13 +1,27 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --paper: #F3F6FC;
+  --paper-raised: #FFFFFF;
+  --ink: #16233D;
+  --ink-soft: #5B6B87;
+  --azul-900: #142A52;
+  --azul-800: #1B356A;
+  --azul-700: #1F3F7A;
+  --azul-500: #3567B0;
+  --azul-200: #C7D6F0;
+  --azul-100: #E4ECFA;
+  --amarelo-700: #B87F15;
+  --amarelo-600: #DDA02A;
+  --amarelo-400: #F0BE55;
+  --amarelo-100: #FBEFD3;
+  --linha: #DCE3F0;
+  --verde: #2F8F62;
+  --verde-bg: #E4F3EC;
+  --vermelho: #C24B3B;
+  --vermelho-bg: #FBE9E6;
+  --laranja: #CC5B23;
+  --laranja-bg: #FBEADE;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(20, 42, 82, 0.06), 0 8px 24px -12px rgba(20, 42, 82, 0.18);
 }
 
 html {
@@ -24,9 +38,9 @@ body {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--font-inter), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -40,10 +54,4 @@ body {
 a {
   color: inherit;
   text-decoration: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
 }
