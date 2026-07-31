@@ -28,4 +28,28 @@ model User {
 
   gestor User?  @relation("Hierarquia", fields: [gestor_id], references: [id])
   equipe User[] @relation("Hierarquia")
+  logs   Log[]
+}
+
+enum LogTipo {
+  AUDITORIA
+  ERRO
+}
+
+model Log {
+  id          String   @id @default(cuid())
+  tipo        LogTipo
+  entidade    String // nome da entidade de origem, ex: "Solicitacao", "TipoFluxo" — string livre, sem FK (polimorfico)
+  entidade_id String // id do registro de origem — string livre, sem FK (entidades distintas têm PKs distintas)
+  acao        String // ex: "CRIACAO", "APROVACAO", "REJEICAO", "FALHA_IA"
+  usuario_id  String?  @db.Uuid
+  usuario     User?    @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
+  detalhes    Json?
+  criado_em   DateTime @default(now())
+
+  @@index([tipo])
+  @@index([entidade])
+  @@index([usuario_id])
+  @@index([criado_em])
+  @@map("logs")
 }
