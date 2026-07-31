@@ -147,32 +147,32 @@ Cada requisito recebe um ID único para rastreamento em design, tasks e validaç
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| AUTH-01 | P1: Login por e-mail/senha | Design | Pending |
-| AUTH-02 | P1: Login por e-mail/senha (credenciais inválidas / mensagem genérica) | Design | Pending |
-| AUTH-03 | P1: Login por e-mail/senha (validação de formulário e erro de Supabase) | Design | Pending |
-| AUTH-04 | P1: Modelo de usuário, papéis e resolução de identidade (campos do `User`) | Design | Pending |
-| AUTH-05 | P1: Modelo de usuário, papéis e resolução de identidade (`role` restrito ao enum) | Design | Pending |
-| AUTH-06 | P1: Modelo de usuário, papéis e resolução de identidade (resolução da identidade a partir da sessão) | Design | Pending |
-| AUTH-07 | P1: Modelo de usuário, papéis e resolução de identidade (sessão sem `User` → nega + `Log` ERRO) | Design | Pending |
-| AUTH-08 | P1: Modelo de usuário, papéis e resolução de identidade (unicidade de e-mail) | Design | Pending |
-| AUTH-09 | P1: Sessão e proteção de rotas (redirect de não autenticado) | Design | Pending |
-| AUTH-10 | P1: Sessão e proteção de rotas (persistência de sessão) | Design | Pending |
-| AUTH-11 | P1: Sessão e proteção de rotas (expiração → redirect) | Design | Pending |
-| AUTH-12 | P1: Sessão e proteção de rotas (API route protegida → 401) | Design | Pending |
-| AUTH-13 | P2: Logout (encerrar sessão e redirect) | - | Pending |
-| AUTH-14 | P2: Logout (bloqueio pós-logout) | - | Pending |
-| AUTH-15 | P2: Integridade `gestor_id` (referência a `User` existente) | - | Pending |
-| AUTH-16 | P2: Integridade `gestor_id` (topo com `gestor_id` nulo) | - | Pending |
-| AUTH-17 | P2: Integridade `gestor_id` (sem auto-referência) | - | Pending |
-| AUTH-18 | P2: Integridade `gestor_id` (expor `gestor_id` como equipe — consumido por outras features) | - | Pending |
-| AUTH-19 | P3: Exibição da identidade (nome do usuário logado) | - | Pending |
-| AUTH-20 | P3: Exibição da identidade (papel legível) | - | Pending |
+| AUTH-01 | P1: Login por e-mail/senha | Tasks | In Tasks |
+| AUTH-02 | P1: Login por e-mail/senha (credenciais inválidas / mensagem genérica) | Tasks | In Tasks |
+| AUTH-03 | P1: Login por e-mail/senha (validação de formulário e erro de Supabase) | Tasks | In Tasks |
+| AUTH-04 | P1: Modelo de usuário, papéis e resolução de identidade (campos do `User`) | Tasks | In Tasks |
+| AUTH-05 | P1: Modelo de usuário, papéis e resolução de identidade (`role` restrito ao enum) | Tasks | In Tasks |
+| AUTH-06 | P1: Modelo de usuário, papéis e resolução de identidade (resolução da identidade a partir da sessão) | Tasks | In Tasks |
+| AUTH-07 | P1: Modelo de usuário, papéis e resolução de identidade (sessão sem `User` → nega + `Log` ERRO) | Tasks | In Tasks |
+| AUTH-08 | P1: Modelo de usuário, papéis e resolução de identidade (unicidade de e-mail) | Tasks | In Tasks |
+| AUTH-09 | P1: Sessão e proteção de rotas (redirect de não autenticado) | Tasks | In Tasks |
+| AUTH-10 | P1: Sessão e proteção de rotas (persistência de sessão) | Tasks | In Tasks |
+| AUTH-11 | P1: Sessão e proteção de rotas (expiração → redirect) | Tasks | In Tasks |
+| AUTH-12 | P1: Sessão e proteção de rotas (API route protegida → 401) | Tasks | In Tasks |
+| AUTH-13 | P2: Logout (encerrar sessão e redirect) | Tasks | In Tasks |
+| AUTH-14 | P2: Logout (bloqueio pós-logout) | Tasks | In Tasks |
+| AUTH-15 | P2: Integridade `gestor_id` (referência a `User` existente) | Tasks | In Tasks |
+| AUTH-16 | P2: Integridade `gestor_id` (topo com `gestor_id` nulo) | Tasks | In Tasks |
+| AUTH-17 | P2: Integridade `gestor_id` (sem auto-referência) | Tasks | In Tasks |
+| AUTH-18 | P2: Integridade `gestor_id` (expor `gestor_id` como equipe — consumido por outras features) | Tasks | In Tasks |
+| AUTH-19 | P3: Exibição da identidade (nome do usuário logado) | Tasks | In Tasks |
+| AUTH-20 | P3: Exibição da identidade (papel legível) | Tasks | In Tasks |
 
 **ID format:** `[CATEGORY]-[NUMBER]` (ex.: `AUTH-01`)
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 20 total, 0 mapeados para tasks, 20 não mapeados ⚠️ (a mapear na fase Tasks)
+**Coverage:** 20 total, 20 mapeados para tasks, 0 não mapeados ✅ (ver `tasks.md`)
 
 ---
 
@@ -192,6 +192,6 @@ Como saberemos que a feature está bem-sucedida:
 
 1. ✅ **RESOLVIDO** (ver `context.md`) — **Provisionamento de usuários:** cadastro usa o e-mail corporativo do funcionário como identificador de setup via seed/admin backend.
 2. ✅ **RESOLVIDO** (ver `context.md`) — **Vínculo Supabase Auth ↔ `User` (Prisma):** mesmo `id` entre as duas contas; e-mail usado como facilitador de correlação/acesso.
-3. **Recuperação de senha:** "esqueci minha senha" não é mencionado no design doc. Incluir no MVP (Supabase Auth oferece pronto) ou deixar fora?
-4. **Quem é o "topo da hierarquia":** confirmar se apenas `RH_ADMIN` legitimamente possui `gestor_id` nulo, ou se `GESTOR`/`SOLICITANTE` também podem em algum caso — isso afeta a rigidez da regra AUTH-16 e a mensagem de erro de "colaborador sem gestor" tratada em `solicitacoes`.
-5. **Primeira tela pós-login:** o destino após autenticar (ex.: "Minhas Solicitações" vs. Dashboard) depende do papel? Definir a rota inicial por papel ou uma landing única.
+3. ✅ **RESOLVIDO** (ver `context.md`) — **Recuperação de senha:** fora de escopo do MVP.
+4. ✅ **RESOLVIDO** (ver `context.md`) — **Topo da hierarquia:** só `RH_ADMIN` pode ter `gestor_id` nulo; `GESTOR`/`SOLICITANTE` sempre exigem `gestor_id`.
+5. ✅ **RESOLVIDO** (ver `context.md`) — **Primeira tela pós-login:** landing única em `/`, sem roteamento condicional por papel.

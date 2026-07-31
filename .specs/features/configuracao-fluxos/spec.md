@@ -139,7 +139,7 @@ Zonas cinzentas relevantes para o usuário decidir — não assumidas nesta spec
 
 1. ✅ **RESOLVIDO** (ver `context.md`) — **Contrato de `campos_formulario`**: tipos de campo semânticos (texto → texto, número → número, data → data, etc.). Lista exata de tipos/atributos de validação fica para o Design.
 2. ✅ **RESOLVIDO** (ver `context.md`) — **Edição de um `TipoFluxo` com solicitações em andamento**: edição bloqueada quando houver ao menos uma `Solicitacao` pendente vinculada ao tipo.
-3. **Unicidade do `nome`**: dois tipos de fluxo podem ter o mesmo nome? O design doc não especifica. Proposta padrão: exigir nome único, mas requer confirmação.
-4. **`campos_formulario` vazio**: é válido um tipo de fluxo sem nenhum campo (ex: uma aprovação simples só com etapas)? Proposta padrão: exigir ao menos um campo — requer confirmação.
+3. ✅ **DECIDIDO NO DESIGN** (ver `design.md`) — **Unicidade do `nome`**: `nome` é único (`@unique`).
+4. ✅ **DECIDIDO NO DESIGN** (ver `design.md`) — **`campos_formulario` vazio**: rejeitado — exige ao menos um campo.
 5. **Exclusão/desativação de `TipoFluxo`**: o design doc menciona apenas "criar/editar". Não há como aposentar um tipo que não deve mais ser usado (ex: escondê-lo de Nova Solicitação sem apagar histórico). **Decisão necessária**: incluir um flag de ativo/inativo agora ou deixar para pós-MVP.
 6. **Configuração de SLA por fluxo/etapa**: `prazo_sla` é campo de `Solicitacao`, e `TipoFluxo` (design doc §4) não tem campo de SLA — então a duração do SLA (ex: 48h) hoje não é configurável aqui. Confirmar se ela deve ser um valor global (dono da feature [[sla-cobranca]]) ou passar a ser configurável por `TipoFluxo` (o que ampliaria o schema desta feature).

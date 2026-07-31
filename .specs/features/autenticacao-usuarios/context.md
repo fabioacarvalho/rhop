@@ -28,6 +28,18 @@ Login via Supabase Auth (e-mail/senha) + modelo `User` (id, nome, email, role, g
 
 - Detalhe exato do mecanismo de seed (script vs. endpoint administrativo) fica a critério do Design.
 
+### Recuperação de senha (Questão em Aberto #3)
+
+- **Fora de escopo do MVP.** Não implementar "esqueci minha senha" nesta feature. Fica como débito para pós-MVP.
+
+### Topo da hierarquia / `gestor_id` nulo (Questão em Aberto #4)
+
+- **Regra rígida**: `gestor_id` nulo só é válido para `role = RH_ADMIN`. `GESTOR` e `SOLICITANTE` sempre exigem `gestor_id` preenchido. Isso trava AUTH-16 e a validação de integridade da hierarquia.
+
+### Rota pós-login (Questão em Aberto #5)
+
+- **Landing única**: todo usuário autenticado cai na mesma rota raiz (`/`) após login, independente do `role`. Sem lógica de roteamento condicional por papel nesta feature.
+
 ---
 
 ## Specific References
@@ -38,4 +50,4 @@ Nenhuma referência visual específica — decisão é de modelo de dados/identi
 
 ## Deferred Ideas
 
-None — discussão ficou dentro do escopo da feature.
+- Recuperação de senha ("esqueci minha senha") — fora do MVP desta feature, considerar em iteração futura (Supabase Auth já oferece o mecanismo pronto).
