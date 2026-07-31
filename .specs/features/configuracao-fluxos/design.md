@@ -6,16 +6,19 @@
 
 ---
 
-## 0. Nota de escopo: bootstrap de fundação compartilhada
+## 0. Nota de reconciliação (atualizado pós-implementação de `autenticacao-usuarios` e `auditoria-logs`)
 
-O repositório ainda não tem código (`prisma/`, `app/`, `lib/` não existem). Nenhuma outra feature tem `design.md` ainda. `configuracao-fluxos` depende de duas peças que, no design doc, pertencem a outras features:
+Esta seção descrevia originalmente um plano de bootstrap (repositório greenfield, nenhuma feature com `design.md` ainda) onde `configuracao-fluxos` criaria `Role`, um helper de auth e um `logService` mínimos como fundação para as demais. **Isso já não é o estado real do repositório** — `autenticacao-usuarios` e `auditoria-logs` foram implementadas por completo desde então, com contratos reais (não stubs):
 
-| Peça necessária | Dona conceitual | Situação |
+| Peça que este design ainda cita pelo nome antigo | Nome/local real já implementado | Situação |
 | --- | --- | --- |
-| Enum `Role` (`SOLICITANTE`, `GESTOR`, `RH_ADMIN`) e resolução do usuário autenticado (`getUsuarioAutenticado`) | `autenticacao-usuarios` | Ainda não implementada |
-| `logService.registrarLog(...)` (contrato AUD-01) | `auditoria-logs` | Ainda não implementada |
+| Enum `Role` | `enum Role` em `prisma/schema.prisma` (`autenticacao-usuarios`) | ✅ Já existe — **reusar**, não recriar |
+| `getUsuarioAutenticado` / `requireRole` | `authService.getSessionUser()` / `authService.requireUser(roles?)` em `lib/services/authService.ts` | ✅ Já existe — **reusar**. Lança `ErroNaoAutenticado`/`ErroNaoAutorizado` (não retorna void) |
+| `logService.registrarLog(evento)` | `logService.registrar(evento)` em `lib/services/logService.ts` | ✅ Já existe — **reusar**. Mesma assinatura de campos (`tipo`, `entidade`, `entidade_id`, `acao`, `usuario_id?`, `detalhes?`), nome do método é `registrar` |
 
-**Decisão (confirmada pelo usuário)**: esta feature cria essas duas peças como fundação mínima (schema `Role`, helper de auth, `logService` básico) seguindo exatamente o contrato já descrito nos specs de `autenticacao-usuarios` e `auditoria-logs`, para não travar em uma dependência circular de "quem desenha primeiro". Quando essas features forem desenhadas/implementadas, devem **reaproveitar** (não recriar) esse enum/helper/service — apenas estendê-los (ex: `autenticacao-usuarios` adiciona o model `User` completo usando o mesmo enum `Role`).
+**O que esta feature ainda precisa criar como fundação mínima real**: só o model `Solicitacao` (ver seção Components) — necessário para a checagem de "solicitação pendente vinculada" ao editar um `TipoFluxo` (CONF-07), e que a feature `solicitacoes` ainda não desenhou. Segue o mesmo padrão já usado por `auditoria-logs` (modelo mínimo real, não stub) — quando `solicitacoes` for desenhada, deve **estender** este model, não recriá-lo.
+
+Todas as referências abaixo a `getUsuarioAutenticado`, `requireRole` e `registrarLog` devem ser lidas como `authService.getSessionUser`/`requireUser` e `logService.registrar`, respectivamente — não corrigido em cada ocorrência do texto/diagramas abaixo para não invalidar o histórico do documento, mas a fase de Tasks usa os nomes reais.
 
 ---
 
@@ -81,8 +84,8 @@ Nenhum — greenfield, nenhuma linha de código no repositório ainda. Todo comp
 | --- | --- |
 | `solicitacoes` | Lê `TipoFluxo` (nome, `campos_formulario`, `etapas`) via `tipoFluxoService.listar`/`buscarPorId` para popular "Nova Solicitação". Não escreve. |
 | `aprovacoes` | Lê `TipoFluxo.etapas` para saber a próxima etapa/papel. Não escreve. |
-| `auditoria-logs` | Consome `logService.registrarLog` (contrato AUD-01) — implementado aqui como fundação mínima, ver seção 0. |
-| `autenticacao-usuarios` | Fornece (ou, por ora, recebe desta feature) `Role` enum + `getUsuarioAutenticado`. |
+| `auditoria-logs` | Já implementada — esta feature só chama `logService.registrar` (contrato AUD-01), ver seção 0. |
+| `autenticacao-usuarios` | Já implementada — fornece `Role` enum + `authService.requireUser`, ver seção 0. |
 
 ---
 
@@ -102,36 +105,57 @@ enum Role {
 }
 
 model TipoFluxo {
-  id                String   @id @default(cuid())
-  nome              String   @unique
+  id                String        @id @default(cuid())
+  nome              String        @unique
   campos_formulario Json
-  etapas            Json     // Role[] serializado, ex: ["GESTOR", "RH_ADMIN"]
-  criado_em         DateTime @default(now())
-  atualizado_em     DateTime @updatedAt
+  etapas            Json          // Role[] serializado, ex: ["GESTOR", "RH_ADMIN"]
+  criado_em         DateTime      @default(now())
+  atualizado_em     DateTime      @updatedAt
+  solicitacoes      Solicitacao[]
 
   @@map("tipos_fluxo")
 }
 ```
 
-> `Solicitacao` (para a checagem de "pendente vinculada") e `Log` (para `logService`) ainda não existem no schema. Ver seção "Tech Decisions" — esta feature cria versões mínimas desses models no mesmo `schema.prisma`, restritas aos campos que `configuracao-fluxos` precisa tocar; a feature dona (`solicitacoes`, `auditoria-logs`) deve estender o mesmo model, não recriar.
+> `Log` já existe (model completo, `auditoria-logs`) — nada a criar aqui, só chamar `logService.registrar`. `Solicitacao` ainda não existe (feature `solicitacoes` ainda não desenhada) — esta feature cria uma versão mínima real, restrita aos campos que a checagem de "pendente vinculada" (CONF-07) precisa:
+>
+> ```prisma
+> enum StatusSolicitacao {
+>   PENDENTE
+>   APROVADA
+>   REJEITADA
+> }
+>
+> model Solicitacao {
+>   id            String            @id @default(cuid())
+>   tipo_fluxo_id String
+>   tipoFluxo     TipoFluxo         @relation(fields: [tipo_fluxo_id], references: [id])
+>   status        StatusSolicitacao @default(PENDENTE)
+>   criado_em     DateTime          @default(now())
+>
+>   @@index([tipo_fluxo_id])
+>   @@index([status])
+>   @@map("solicitacoes")
+> }
+> ```
+>
+> Quando `solicitacoes` for desenhada, deve **estender** este model (adicionar `usuario_id`, `dados`, `prazo_sla`, `etapa_atual`, etc.) — não recriá-lo. `TipoFluxo` ganha a relação inversa `solicitacoes Solicitacao[]` (exigência do Prisma para relações bidirecionais).
 
-### `lib/auth/getUsuarioAutenticado.ts` (fundação mínima)
+### `lib/services/authService.ts` (já implementada — reusar, ver seção 0)
 
-- **Purpose**: resolver `{ id, role, gestor_id }` a partir da sessão Supabase; lançar/retornar não-autenticado se ausente.
-- **Location**: `lib/auth/getUsuarioAutenticado.ts`
-- **Interfaces**:
-  - `getUsuarioAutenticado(req): Promise<UsuarioAutenticado | null>`
-  - `requireRole(usuario: UsuarioAutenticado | null, roles: Role[]): void` — lança `ErroNaoAutorizado` se `usuario` for nulo ou `role` não estiver em `roles`.
-- **Dependencies**: Supabase Auth (sessão).
-- **Reuses**: nada (fundação criada aqui, ver seção 0).
+- **Purpose**: resolver `{ id, nome, email, role, gestor_id }` a partir da sessão Supabase; exigir papel.
+- **Location**: `lib/services/authService.ts` (já existe)
+- **Interfaces reais**:
+  - `getSessionUser(): Promise<AuthenticatedUser | null>`
+  - `requireUser(roles?: Role[]): Promise<AuthenticatedUser>` — lança `ErroNaoAutenticado` (sem sessão/`User`) ou `ErroNaoAutorizado` (papel fora da lista).
+- **Reuses**: nada a criar — esta feature só chama `requireUser(['RH_ADMIN'])` nas rotas/páginas.
 
-### `lib/services/logService.ts` (fundação mínima)
+### `lib/services/logService.ts` (já implementada — reusar, ver seção 0)
 
 - **Purpose**: ponto único de gravação de `Log`, conforme contrato AUD-01.
-- **Location**: `lib/services/logService.ts`
-- **Interfaces**:
-  - `registrarLog(evento: { tipo: 'AUDITORIA' | 'ERRO'; entidade: string; entidade_id: string; acao: string; usuario_id?: string | null; detalhes?: unknown }): Promise<void>` — nunca lança exceção (contém falha internamente, AUD-03).
-- **Reuses**: nada (fundação criada aqui, ver seção 0).
+- **Location**: `lib/services/logService.ts` (já existe)
+- **Interface real**: `registrar(evento: { tipo: 'AUDITORIA' | 'ERRO'; entidade: string; entidade_id: string; acao: string; usuario_id?: string | null; detalhes?: unknown }): Promise<void>` — nunca lança exceção (contém falha internamente, AUD-03).
+- **Reuses**: nada a criar — `tipoFluxoService` só chama `registrar(...)`.
 
 ### `lib/validations/tipoFluxo.ts`
 
@@ -152,17 +176,17 @@ model TipoFluxo {
   - `criar(dados: TipoFluxoInput, usuarioId: string): Promise<TipoFluxoDetalhe>` — persiste e grava `Log AUDITORIA` (CONF-02 a CONF-05, CONF-09).
   - `editar(id: string, dados: TipoFluxoInput, usuarioId: string): Promise<TipoFluxoDetalhe>` — verifica `Solicitacao` pendente vinculada antes de atualizar; lança `ErroEdicaoBloqueada` se houver; grava `Log AUDITORIA` no sucesso (CONF-07).
 - **Dependencies**: Prisma (`TipoFluxo`, `Solicitacao` — leitura mínima), `logService`.
-- **Reuses**: `logService.registrarLog`.
+- **Reuses**: `logService.registrar`.
 
 ### API Routes
 
 - **`app/api/tipos-fluxo/route.ts`**
-  - `GET` → `requireRole(usuario, ['RH_ADMIN'])` → `tipoFluxoService.listar()` (CONF-01, CONF-06).
-  - `POST` → `requireRole` → valida `tipoFluxoInputSchema` → `tipoFluxoService.criar()` (CONF-01 a CONF-05, CONF-08, CONF-09).
+  - `GET` → `authService.requireUser(['RH_ADMIN'])` → `tipoFluxoService.listar()` (CONF-01, CONF-06).
+  - `POST` → `authService.requireUser(['RH_ADMIN'])` → valida `tipoFluxoInputSchema` → `tipoFluxoService.criar()` (CONF-01 a CONF-05, CONF-08, CONF-09).
 - **`app/api/tipos-fluxo/[id]/route.ts`**
-  - `GET` → `requireRole` → `tipoFluxoService.buscarPorId(id)` (CONF-06).
-  - `PUT` → `requireRole` → valida `tipoFluxoInputSchema` → `tipoFluxoService.editar(id, ...)` (CONF-01, CONF-07, CONF-08, CONF-09).
-- **Reuses**: `getUsuarioAutenticado`, `requireRole`, `tipoFluxoInputSchema`, `tipoFluxoService`.
+  - `GET` → `authService.requireUser(['RH_ADMIN'])` → `tipoFluxoService.buscarPorId(id)` (CONF-06).
+  - `PUT` → `authService.requireUser(['RH_ADMIN'])` → valida `tipoFluxoInputSchema` → `tipoFluxoService.editar(id, ...)` (CONF-01, CONF-07, CONF-08, CONF-09).
+- **Reuses**: `authService.requireUser`, `tipoFluxoInputSchema`, `tipoFluxoService`.
 
 ### UI — `app/(dashboard)/configuracao-fluxos/`
 
@@ -215,7 +239,7 @@ interface TipoFluxoInput {
 | Error Scenario | Handling | User Impact |
 | --- | --- | --- |
 | Usuário não autenticado | Route retorna 401 antes de chamar o service | Redirecionado/erro genérico de sessão |
-| Usuário autenticado mas não `RH_ADMIN` | `requireRole` lança `ErroNaoAutorizado` → route retorna 403 | Mensagem "acesso restrito ao RH" |
+| Usuário autenticado mas não `RH_ADMIN` | `authService.requireUser` lança `ErroNaoAutorizado` → route retorna 403 | Mensagem "acesso restrito ao RH" |
 | `nome` vazio/só espaços, `etapas` vazio, papel inválido, `campos_formulario` vazio/malformado | Zod rejeita antes do service → 400 com detalhe do campo | Mensagem de validação por campo, nada é persistido |
 | `nome` duplicado | Constraint `@unique` do Prisma → catch no service → 409 | "Já existe um tipo de fluxo com esse nome" |
 | Edição de `TipoFluxo` com `Solicitacao` pendente vinculada | Service verifica antes do update, lança `ErroEdicaoBloqueada` → route retorna 409 | "Não é possível editar: existem N solicitação(ões) pendente(s) usando este tipo de fluxo" |
@@ -228,7 +252,7 @@ interface TipoFluxoInput {
 
 | Decision | Choice | Rationale |
 | --- | --- | --- |
-| Fundação compartilhada (`Role`, auth, `logService`) | Criada por esta feature, seguindo os contratos já escritos em `autenticacao-usuarios`/`auditoria-logs` | Sem isso `configuracao-fluxos` não tem como bloquear no backend nem auditar (regras invioláveis do `CLAUDE.md`); ver seção 0 — confirmado pelo usuário |
+| Fundação compartilhada (`Role`, `authService`, `logService`) | **Já implementada** por `autenticacao-usuarios`/`auditoria-logs` — esta feature só reusa (`requireUser`, `registrar`); só o model `Solicitacao` (mínimo) é criado aqui | Ver seção 0 (nota de reconciliação) — plano original previa criar essa fundação aqui, mas as features donas já entregaram antes desta |
 | Unicidade de `nome` (Questão em Aberto #3 do spec) | `nome` é único (`@unique`) | Confirmado pelo usuário; evita ambiguidade em "Nova Solicitação" ao listar tipos por nome |
 | `campos_formulario` vazio (Questão em Aberto #4 do spec) | Rejeitado — mínimo 1 campo | Confirmado pelo usuário; um fluxo sem nenhum dado a coletar é caso extremo não pedido |
 | Tipos semânticos de campo | `texto`, `numero`, `data`, `selecao` | Conjunto citado no `context.md`; `selecao` cobre o caso de opções fixas sem expandir para tipos não pedidos |
@@ -243,7 +267,7 @@ interface TipoFluxoInput {
 
 | Requirement ID | Coberto por |
 | --- | --- |
-| CONF-01 | `requireRole` em ambas as rotas |
+| CONF-01 | `authService.requireUser(['RH_ADMIN'])` em ambas as rotas |
 | CONF-02 | `tipoFluxoInputSchema` (`nome` não vazio) + `tipoFluxoService.criar` |
 | CONF-03 | `TipoFluxo.campos_formulario` (Json) + `campoFormularioSchema` |
 | CONF-04 | `TipoFluxo.etapas` (Json, ordem preservada) + enum `['GESTOR','RH_ADMIN']` no schema Zod |
@@ -251,4 +275,4 @@ interface TipoFluxoInput {
 | CONF-06 | `GET /api/tipos-fluxo` e `GET /api/tipos-fluxo/[id]` |
 | CONF-07 | `tipoFluxoService.editar` (bloqueio por pendência) |
 | CONF-08 | `tipoFluxoInputSchema` (Zod) nas rotas `POST`/`PUT` |
-| CONF-09 | `logService.registrarLog` chamado em `criar` e `editar` |
+| CONF-09 | `logService.registrar` chamado em `criar` e `editar` |
