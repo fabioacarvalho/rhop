@@ -1,7 +1,7 @@
 # Auditoria e Logs Tasks
 
 **Design**: `.specs/features/auditoria-logs/design.md`
-**Status**: Draft
+**Status**: Done — T1→T2→T3→T4→T6→T5 executados e commitados (ver histórico git). Pré-requisitos cross-feature (`autenticacao-usuarios` T1-T4,T6,T9) também executados nesta sessão para desbloquear esta feature.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Design**: `.specs/features/autenticacao-usuarios/design.md`
 **Spec**: `.specs/features/autenticacao-usuarios/spec.md`
-**Status**: Draft
+**Status**: In Progress — T1, T2, T3, T4, T6, T9 executados e commitados (feitos fora de ordem, como pré-requisito real de `auditoria-logs`, que dependia de schema/User/authService). T5, T7, T8, T10-T14 ainda pendentes; T9 só validado por inspeção/mocks — sem projeto Supabase real configurado nesta sessão, o caminho de login real ainda não foi testado.
 
 ---
 
