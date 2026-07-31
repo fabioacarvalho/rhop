@@ -18,8 +18,8 @@ export default function LoginPage() {
         <aside className={styles.visual} aria-hidden="true">
           <div>
             <div className={styles.brandmark}>
-              <div className={styles.seal}>FR</div>
-              <div className={styles.brandWord}>FluxoRH</div>
+              <div className={styles.seal}>OP</div>
+              <div className={styles.brandWord}>OP Conecta</div>
             </div>
           </div>
           <p className={styles.quote}>
@@ -34,7 +34,7 @@ export default function LoginPage() {
 
         <div className={styles.formWrap}>
           <div className={styles.eyebrow}>Acessar conta</div>
-          <h1 className={styles.title}>Entrar no FluxoRH</h1>
+          <h1 className={styles.title}>Entrar no OP Conecta</h1>
           <LoginForm />
           <p className={styles.foot}>
             Acesso restrito a colaboradores cadastrados pelo RH.

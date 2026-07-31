@@ -19,7 +19,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FluxoRH",
+  title: "OP Conecta",
   description: "Plataforma de fluxos de aprovação de RH",
 };
 
