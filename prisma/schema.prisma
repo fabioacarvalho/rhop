@@ -30,6 +30,8 @@ model User {
   equipe       User[]        @relation("Hierarquia")
   logs         Log[]
   notificacoes Notificacao[] @relation("NotificacoesUsuario")
+  solicitacoes Solicitacao[]
+  aprovacoes   Aprovacao[]
 }
 
 enum LogTipo {
@@ -73,16 +75,28 @@ enum StatusSolicitacao {
   REJEITADA
 }
 
+enum DecisaoAprovacao {
+  APROVADA
+  REJEITADA
+}
+
 model Solicitacao {
-  id            String            @id @default(cuid())
-  tipo_fluxo_id String
-  tipoFluxo     TipoFluxo         @relation(fields: [tipo_fluxo_id], references: [id])
-  status        StatusSolicitacao @default(PENDENTE)
-  criado_em     DateTime          @default(now())
-  notificacoes  Notificacao[]
+  id             String            @id @default(cuid())
+  tipo_fluxo_id  String
+  tipoFluxo      TipoFluxo         @relation(fields: [tipo_fluxo_id], references: [id])
+  solicitante_id String            @db.Uuid
+  solicitante    User              @relation(fields: [solicitante_id], references: [id])
+  dados          Json
+  status         StatusSolicitacao @default(PENDENTE)
+  etapa_atual    Role
+  prazo_sla      DateTime
+  criado_em      DateTime          @default(now())
+  aprovacoes     Aprovacao[]
 
   @@index([tipo_fluxo_id])
   @@index([status])
+  @@index([solicitante_id])
+  @@index([etapa_atual])
   @@map("solicitacoes")
 }
 
@@ -109,4 +123,20 @@ model Notificacao {
 
   @@index([usuario_id, lida])
   @@map("notificacoes")
+model Aprovacao {
+  id             String            @id @default(cuid())
+  solicitacao_id String
+  solicitacao    Solicitacao       @relation(fields: [solicitacao_id], references: [id])
+  etapa          Int
+  aprovador_role Role
+  aprovador_id   String?           @db.Uuid
+  aprovador      User?             @relation(fields: [aprovador_id], references: [id])
+  decisao        DecisaoAprovacao?
+  comentario     String?
+  resumo_ia      String?
+  decidido_em    DateTime?
+
+  @@unique([solicitacao_id, etapa])
+  @@index([solicitacao_id])
+  @@map("aprovacoes")
 }

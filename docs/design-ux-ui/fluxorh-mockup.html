@@ -1,0 +1,1318 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FluxoRH — Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F3F6FC;
+    --paper-raised:#FFFFFF;
+    --ink:#16233D;
+    --ink-soft:#5B6B87;
+    --azul-900:#142A52;
+    --azul-800:#1B356A;
+    --azul-700:#1F3F7A;
+    --azul-500:#3567B0;
+    --azul-200:#C7D6F0;
+    --azul-100:#E4ECFA;
+    --amarelo-700:#B87F15;
+    --amarelo-600:#DDA02A;
+    --amarelo-400:#F0BE55;
+    --amarelo-100:#FBEFD3;
+    --linha:#DCE3F0;
+    --verde:#2F8F62;
+    --verde-bg:#E4F3EC;
+    --vermelho:#C24B3B;
+    --vermelho-bg:#FBE9E6;
+    --laranja:#CC5B23;
+    --laranja-bg:#FBEADE;
+    --radius:10px;
+    --shadow: 0 1px 2px rgba(20,42,82,0.06), 0 8px 24px -12px rgba(20,42,82,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin:0;
+    color:var(--azul-900);
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--azul-500);
+    font-weight:600;
+  }
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  .hidden{display:none !important;}
+
+  /* ---------- ruled-paper texture ---------- */
+  .ruled{
+    background-image: repeating-linear-gradient(
+      0deg, transparent, transparent 27px, rgba(31,63,122,0.055) 28px
+    );
+  }
+
+  /* ---------- LOGIN ---------- */
+  .login-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(1200px 500px at 15% -10%, var(--azul-100), transparent),
+      radial-gradient(900px 500px at 110% 110%, var(--amarelo-100), transparent),
+      var(--paper);
+    padding:24px;
+  }
+  .login-card{
+    width:100%;
+    max-width:960px;
+    background:var(--paper-raised);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    display:grid;
+    grid-template-columns: 1.1fr 1fr;
+    overflow:hidden;
+    border:1px solid var(--linha);
+  }
+  .login-visual{
+    background: linear-gradient(160deg, var(--azul-900), var(--azul-700) 65%, var(--azul-500));
+    color:#fff;
+    padding:48px 40px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    position:relative;
+    overflow:hidden;
+  }
+  .login-visual::after{
+    content:"";
+    position:absolute; inset:0;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(255,255,255,0.05) 28px);
+    pointer-events:none;
+  }
+  .brandmark{display:flex; align-items:center; gap:12px;}
+  .seal{
+    width:46px;height:46px;border-radius:50%;
+    border:2px solid var(--amarelo-400);
+    outline:1.5px dashed rgba(255,255,255,0.55);
+    outline-offset:3px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif; font-weight:700; font-size:15px; color:var(--amarelo-400);
+    flex-shrink:0;
+  }
+  .brand-word{font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:#fff;}
+  .login-quote{
+    font-family:'Fraunces',serif;
+    font-size:28px;
+    line-height:1.35;
+    font-weight:500;
+    max-width:380px;
+    position:relative;
+  }
+  .login-quote span{color:var(--amarelo-400);}
+  .login-meta{font-size:12px;color:var(--azul-200);font-family:'IBM Plex Mono',monospace;letter-spacing:0.04em;position:relative;}
+  .login-form-wrap{padding:56px 48px;display:flex;flex-direction:column;justify-content:center;}
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;letter-spacing:0.01em;}
+  .field input, .field select, .field textarea{
+    width:100%;
+    border:1.5px solid var(--linha);
+    border-radius:8px;
+    padding:11px 13px;
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+    background:#fff;
+    color:var(--ink);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{
+    outline:none;border-color:var(--azul-500); box-shadow:0 0 0 3px var(--azul-100);
+  }
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border:none;border-radius:8px;
+    padding:11px 20px;
+    font-size:14px;font-weight:600;
+    transition:transform .05s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--amarelo-600); color:var(--azul-900);}
+  .btn-primary:hover{background:var(--amarelo-400);}
+  .btn-secondary{background:var(--azul-100);color:var(--azul-800);}
+  .btn-secondary:hover{background:var(--azul-200);}
+  .btn-ghost{background:transparent;color:var(--azul-700);border:1.5px solid var(--linha);}
+  .btn-ghost:hover{border-color:var(--azul-500);}
+  .btn-block{width:100%;}
+  .btn-danger-ghost{background:transparent;color:var(--vermelho); border:1.5px solid var(--vermelho-bg);}
+  .login-foot{margin-top:14px;font-size:12.5px;color:var(--ink-soft);text-align:center;}
+  .role-picker{display:flex;gap:8px;margin-top:6px;margin-bottom:22px;flex-wrap:wrap;}
+  .role-chip{
+    border:1.5px solid var(--linha);
+    background:#fff;
+    padding:7px 12px;
+    border-radius:999px;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+  }
+  .role-chip.active{border-color:var(--azul-700); background:var(--azul-700); color:#fff;}
+
+  /* ---------- APP SHELL ---------- */
+  .app-shell{display:flex; min-height:100vh;}
+  .sidebar{
+    width:250px; flex-shrink:0;
+    background:var(--azul-900);
+    color:#fff;
+    padding:22px 14px;
+    display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  .sidebar-brand{display:flex;align-items:center;gap:10px;padding:4px 10px 22px 10px;}
+  .sidebar-brand .seal{width:34px;height:34px;font-size:11px;}
+  .sidebar-brand .brand-word{font-size:16px;}
+  .nav-group-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px; letter-spacing:0.12em; text-transform:uppercase;
+    color:rgba(255,255,255,0.4);
+    padding:14px 12px 6px;
+  }
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px;
+    border-radius:8px;
+    border-left:3px solid transparent;
+    color:rgba(255,255,255,0.72);
+    font-size:13.5px; font-weight:500;
+    margin-bottom:2px;
+  }
+  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55;flex-shrink:0;}
+  .nav-item:hover{background:rgba(255,255,255,0.06); color:#fff;}
+  .nav-item.active{
+    background:var(--azul-700);
+    color:#fff;
+    border-left-color:var(--amarelo-600);
+    font-weight:600;
+  }
+  .sidebar-footer{margin-top:auto; padding-top:16px; border-top:1px solid rgba(255,255,255,0.12);}
+  .viewing-as{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);padding:0 10px 8px;}
+  .role-toggle{display:flex; flex-direction:column; gap:4px; padding:0 4px;}
+  .role-toggle button{
+    text-align:left;
+    background:transparent;border:none;color:rgba(255,255,255,0.65);
+    font-size:12.5px; font-weight:500; padding:8px 8px; border-radius:6px;
+  }
+  .role-toggle button:hover{background:rgba(255,255,255,0.07);color:#fff;}
+  .role-toggle button.active{background:rgba(255,255,255,0.12);color:var(--amarelo-400);font-weight:700;}
+  .logout-link{display:flex;align-items:center;gap:8px;padding:10px 8px 2px;font-size:12px;color:rgba(255,255,255,0.45);}
+  .logout-link:hover{color:#fff;}
+
+  .main{flex:1; min-width:0; display:flex; flex-direction:column;}
+  .topbar{
+    background:#fff; border-bottom:1px solid var(--linha);
+    padding:20px 32px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:5;
+  }
+  .topbar .eyebrow{margin-bottom:4px;display:block;}
+  .user-chip{display:flex; align-items:center; gap:10px;}
+  .avatar{
+    width:34px;height:34px;border-radius:50%;
+    background:var(--azul-100); color:var(--azul-700);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700; font-size:13px; font-family:'Fraunces',serif;
+  }
+  .user-chip .name{font-size:13px;font-weight:600;}
+  .user-chip .role{font-size:11px;color:var(--ink-soft);}
+
+  .screen-container{padding:28px 32px 60px; max-width:1180px;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  .card{
+    background:var(--paper-raised);
+    border:1px solid var(--linha);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
+  .card-pad{padding:22px 24px;}
+
+  /* buttons row */
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .stack-8{display:flex;flex-direction:column;gap:8px;}
+  .stack-16{display:flex;flex-direction:column;gap:16px;}
+
+  /* ---- carimbo / stamp status ---- */
+  .stamp-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase;
+    padding:5px 10px 5px 9px;
+    border-radius:5px;
+    border:1.5px dashed currentColor;
+    transform:rotate(-1.4deg);
+    white-space:nowrap;
+  }
+  .stamp-badge::before{content:"●"; font-size:7px;}
+  .stamp-badge.pendente{color:var(--azul-700); background:var(--azul-100);}
+  .stamp-badge.aprovado{color:var(--verde); background:var(--verde-bg);}
+  .stamp-badge.rejeitado{color:var(--vermelho); background:var(--vermelho-bg);}
+  .stamp-badge.atrasado{color:var(--laranja); background:var(--laranja-bg);}
+
+  .stamp-seal{
+    width:120px;height:120px;border-radius:50%;
+    border:2.5px solid var(--azul-700);
+    outline:1.5px dashed var(--amarelo-600);
+    outline-offset:5px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    transform:rotate(-8deg);
+    color:var(--azul-700);
+    font-family:'IBM Plex Mono',monospace;
+    text-align:center;
+    flex-shrink:0;
+  }
+  .stamp-seal .n{font-family:'Fraunces',serif;font-size:30px;font-weight:700;line-height:1;color:var(--azul-900);}
+  .stamp-seal .l{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px;}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{
+    text-align:left; font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);
+    font-weight:600; padding:0 14px 10px; border-bottom:1.5px solid var(--linha);
+  }
+  tbody td{padding:14px 14px; border-bottom:1px solid var(--linha); vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--azul-100);}
+  .proto{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--azul-700); font-weight:600;}
+  .cell-sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+
+  /* stat tiles */
+  .stats-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  .stat-tile{background:var(--paper-raised); border:1px solid var(--linha); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow);}
+  .stat-tile .num{font-family:'Fraunces',serif; font-size:34px; font-weight:600; color:var(--azul-900); line-height:1;}
+  .stat-tile .label{font-size:12px; color:var(--ink-soft); margin-top:8px; font-weight:500;}
+  .stat-tile.accent{border-top:3px solid var(--amarelo-600);}
+
+  /* AI callout */
+  .callout-ia{
+    background:var(--amarelo-100);
+    border:1px solid var(--amarelo-400);
+    border-left:3px solid var(--amarelo-600);
+    border-radius:8px;
+    padding:14px 16px;
+    font-size:13px;
+    line-height:1.55;
+    color:var(--azul-900);
+    position:relative;
+  }
+  .callout-ia .tag{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--amarelo-700); font-weight:700; margin-bottom:6px;
+  }
+
+  .approval-card{padding:20px 22px; border:1px solid var(--linha); border-radius:var(--radius); background:#fff; box-shadow:var(--shadow);}
+  .approval-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px;}
+  .approval-perf{
+    border-top:1px dashed var(--linha); margin:16px 0; position:relative;
+  }
+  .chip-tipo{
+    font-size:11px; font-weight:700; color:var(--azul-700); background:var(--azul-100);
+    padding:3px 9px; border-radius:5px; letter-spacing:0.02em;
+  }
+
+  .flow-type-card{border:1.5px solid var(--linha); border-radius:10px; padding:18px; cursor:pointer; transition:border-color .1s;}
+  .flow-type-card:hover{border-color:var(--azul-500);}
+  .flow-type-card.selected{border-color:var(--azul-700); background:var(--azul-100);}
+  .flow-type-card .ic{width:38px;height:38px;border-radius:8px;background:var(--azul-800);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;margin-bottom:12px;}
+
+  .steps-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .step-pill{font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:999px; background:var(--azul-100); color:var(--azul-800);}
+  .step-arrow{color:var(--ink-soft); font-size:13px;}
+
+  .bar-chart{display:flex; align-items:flex-end; gap:22px; height:180px; padding:10px 8px 0;}
+  .bar-col{display:flex; flex-direction:column; align-items:center; gap:8px; flex:1;}
+  .bar{width:100%; max-width:56px; border-radius:6px 6px 3px 3px; background:linear-gradient(180deg, var(--azul-500), var(--azul-800));}
+  .bar.gold{background:linear-gradient(180deg, var(--amarelo-400), var(--amarelo-700));}
+  .bar-label{font-size:11px; color:var(--ink-soft); text-align:center;}
+  .bar-value{font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:var(--azul-900);}
+
+  .filter-bar{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .filter-bar select, .filter-bar input{
+    border:1.5px solid var(--linha); border-radius:7px; padding:8px 11px; font-size:13px; background:#fff; color:var(--ink);
+  }
+  .tab-toggle{display:flex; gap:4px; background:var(--azul-100); padding:4px; border-radius:8px; width:fit-content;}
+  .tab-toggle button{border:none; background:transparent; padding:7px 14px; border-radius:6px; font-size:12.5px; font-weight:600; color:var(--azul-700);}
+  .tab-toggle button.active{background:#fff; box-shadow:var(--shadow); color:var(--azul-900);}
+
+  .log-tipo{font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700; letter-spacing:0.06em; padding:3px 8px; border-radius:4px;}
+  .log-tipo.auditoria{background:var(--azul-100); color:var(--azul-700);}
+  .log-tipo.erro{background:var(--vermelho-bg); color:var(--vermelho);}
+
+  .divider-label{display:flex;align-items:center;gap:12px;margin:6px 0 4px;}
+  .divider-label::before,.divider-label::after{content:"";flex:1;height:1px;background:var(--linha);}
+  .divider-label span{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);letter-spacing:0.08em;text-transform:uppercase;}
+
+  .empty-state{text-align:center; padding:48px 20px; color:var(--ink-soft);}
+  .empty-state .seal{margin:0 auto 16px;}
+
+  /* ---------- menu lateral expansível ---------- */
+  .nav-group{margin-bottom:2px;}
+  .nav-group-label{
+    display:flex; align-items:center; justify-content:space-between;
+    cursor:pointer; user-select:none;
+  }
+  .nav-group-label:hover{color:rgba(255,255,255,0.65);}
+  .nav-group-label .chevron{
+    font-size:9px; transition:transform .15s ease; color:rgba(255,255,255,0.35);
+  }
+  .nav-group.collapsed .chevron{transform:rotate(-90deg);}
+  .nav-group.collapsed .nav-group-items{display:none;}
+
+  .nav-add-btn{
+    background:transparent; border:1.5px dashed rgba(255,255,255,0.22);
+    color:rgba(255,255,255,0.55); width:100%; text-align:left; font-weight:600;
+  }
+  .nav-add-btn:hover{border-color:var(--amarelo-600); color:var(--amarelo-400); background:rgba(255,255,255,0.04);}
+  .add-page-form{display:flex; gap:6px; padding:8px 2px 4px;}
+  .add-page-form input{
+    flex:1; min-width:0; border:1.5px solid rgba(255,255,255,0.18); background:rgba(255,255,255,0.06);
+    border-radius:6px; padding:7px 9px; font-size:12.5px; color:#fff; font-family:'Inter',sans-serif;
+  }
+  .add-page-form input::placeholder{color:rgba(255,255,255,0.4);}
+  .add-page-form input:focus{outline:none; border-color:var(--amarelo-600);}
+  .btn-sm{padding:7px 12px; font-size:12px;}
+  .nav-item .nav-remove{
+    margin-left:auto; opacity:0; font-size:14px; padding:0 4px; border-radius:4px; color:rgba(255,255,255,0.6);
+  }
+  .nav-item:hover .nav-remove{opacity:1;}
+  .nav-item .nav-remove:hover{color:#fff; background:rgba(255,255,255,0.12);}
+
+  /* ---------- pipeline (kanban) ---------- */
+  .kanban{display:flex; gap:16px; overflow-x:auto; padding-bottom:10px; align-items:flex-start;}
+  .kanban-col{flex:0 0 258px; display:flex; flex-direction:column; gap:10px;}
+  .kanban-col-head{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--ink-soft); font-weight:600; padding:0 2px 10px; border-bottom:2px solid var(--linha);
+  }
+  .kanban-count{
+    background:var(--azul-100); color:var(--azul-700); font-weight:700;
+    min-width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px;
+  }
+  .kanban-count.good{background:var(--verde-bg); color:var(--verde);}
+  .kanban-count.bad{background:var(--vermelho-bg); color:var(--vermelho);}
+  .kanban-card{
+    background:#fff; border:1px solid var(--linha); border-radius:9px; padding:14px;
+    box-shadow:var(--shadow); border-left:3px solid var(--azul-500);
+  }
+  .kanban-card .stamp-badge{transform:none; font-size:9.5px; padding:3px 8px 3px 7px;}
+  .kanban-card.late{border-left-color:var(--laranja);}
+  .kanban-card.done{border-left-color:var(--verde); opacity:0.88;}
+  .kanban-card.rejected{border-left-color:var(--vermelho); opacity:0.88;}
+  .kanban-more{
+    font-family:'Inter',sans-serif; font-size:11.5px; color:var(--azul-500); font-weight:600;
+    text-align:center; padding:8px 4px; cursor:pointer;
+    background:transparent; border:1.5px dashed var(--linha); border-radius:8px; width:100%;
+  }
+  .kanban-more:hover{color:var(--azul-700); border-color:var(--azul-500);}
+  .kanban-more-list{display:flex; flex-direction:column; gap:10px;}
+
+  /* ---------- ajuda / modal ---------- */
+  .help-fab{
+    position:fixed; right:26px; bottom:26px; width:52px; height:52px; border-radius:50%;
+    background:var(--azul-800); color:#fff; border:2px solid var(--amarelo-600);
+    font-family:'Fraunces',serif; font-size:20px; font-weight:700;
+    box-shadow:var(--shadow); z-index:50;
+  }
+  .help-fab:hover{background:var(--azul-700);}
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(20,42,82,0.45);
+    display:flex; align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .modal-card{
+    background:#fff; border-radius:14px; max-width:480px; width:100%;
+    box-shadow:var(--shadow); border:1px solid var(--linha); overflow:hidden;
+  }
+  .modal-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 20px; border-bottom:1px solid var(--linha); background:var(--azul-900); color:#fff;
+  }
+  .modal-close{background:transparent; border:none; color:rgba(255,255,255,0.7); font-size:22px; line-height:1; padding:2px 4px;}
+  .modal-close:hover{color:#fff;}
+  .modal-body{padding:22px;}
+
+  @media (max-width: 860px){
+    .login-card{grid-template-columns:1fr;}
+    .login-visual{display:none;}
+    .sidebar{position:fixed; left:0; top:0; z-index:20; transform:translateX(-100%); transition:transform .2s;}
+    .sidebar.open{transform:translateX(0);}
+    .stats-grid{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="screen-login" class="login-screen">
+  <div class="login-card">
+    <div class="login-visual">
+      <div>
+        <div class="brandmark">
+          <div class="seal">FR</div>
+          <div class="brand-word">FluxoRH</div>
+        </div>
+      </div>
+      <div class="login-quote">
+        Cada solicitação chega ao aprovador com o <span>resumo pronto</span>. Decisão em segundos, não em dias.
+      </div>
+      <div class="login-meta">OBRA PRIMA · PLATAFORMA DE FLUXOS DE APROVAÇÃO DE RH</div>
+    </div>
+    <div class="login-form-wrap">
+      <div class="eyebrow" style="margin-bottom:8px;">Acessar conta</div>
+      <h1 style="font-size:26px;margin-bottom:22px;">Entrar no FluxoRH</h1>
+      <form onsubmit="return false;">
+        <div class="field">
+          <label>E-mail corporativo</label>
+          <input type="email" placeholder="voce@empresa.com" value="marina.costa@empresa.com">
+        </div>
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" placeholder="••••••••" value="••••••••">
+        </div>
+        <div class="row-between" style="margin-bottom:20px;">
+          <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);font-weight:500;">
+            <input type="checkbox" style="width:auto;" checked> Manter conectado
+          </label>
+          <a href="#" style="font-size:12.5px;color:var(--azul-500);font-weight:600;">Esqueci a senha</a>
+        </div>
+        <button type="button" class="btn btn-primary btn-block" onclick="enterApp()">Entrar</button>
+      </form>
+      <div class="login-foot">Acesso restrito a colaboradores cadastrados pelo RH.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app-shell" class="app-shell hidden">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="seal">FR</div>
+      <div class="brand-word">FluxoRH</div>
+    </div>
+
+    <nav style="flex:1; min-height:0; overflow-y:auto;">
+      <div class="nav-group" data-group="meu-trabalho">
+        <div class="nav-group-label" data-toggle-group><span>Meu trabalho</span><span class="chevron">▾</span></div>
+        <div class="nav-group-items">
+          <div class="nav-item" data-nav="minhas" data-roles="SOLICITANTE,GESTOR,RH_ADMIN"><span class="dot"></span> Minhas Solicitações</div>
+          <div class="nav-item" data-nav="nova" data-roles="SOLICITANTE,GESTOR,RH_ADMIN"><span class="dot"></span> Nova Solicitação</div>
+          <div class="nav-item" data-nav="aprovacoes" data-roles="GESTOR,RH_ADMIN"><span class="dot"></span> Aprovações Pendentes</div>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="visao-geral">
+        <div class="nav-group-label" data-toggle-group><span>Visão geral</span><span class="chevron">▾</span></div>
+        <div class="nav-group-items">
+          <div class="nav-item" data-nav="dashboard" data-roles="GESTOR,RH_ADMIN"><span class="dot"></span> Dashboard</div>
+          <div class="nav-item" data-nav="pipeline" data-roles="RH_ADMIN"><span class="dot"></span> Pipeline de Aprovações</div>
+          <div class="nav-item" data-nav="insights" data-roles="GESTOR,RH_ADMIN"><span class="dot"></span> Painel de Insights</div>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="administracao">
+        <div class="nav-group-label" data-toggle-group><span>Administração</span><span class="chevron">▾</span></div>
+        <div class="nav-group-items">
+          <div class="nav-item" data-nav="fluxos" data-roles="RH_ADMIN"><span class="dot"></span> Configuração de Fluxos</div>
+          <div class="nav-item" data-nav="auditoria" data-roles="RH_ADMIN"><span class="dot"></span> Auditoria &amp; Logs</div>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="paginas">
+        <div class="nav-group-label" data-toggle-group><span>Páginas</span><span class="chevron">▾</span></div>
+        <div class="nav-group-items" id="custom-pages-list">
+          <div id="add-page-row">
+            <button type="button" class="nav-item nav-add-btn" id="add-page-btn">+ Adicionar página</button>
+            <div class="add-page-form hidden" id="add-page-form">
+              <input type="text" id="add-page-input" placeholder="Nome da página" maxlength="40">
+              <button type="button" class="btn btn-primary btn-sm" id="add-page-confirm">Criar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="viewing-as">Visualizar como</div>
+      <div class="role-toggle">
+        <button data-role="SOLICITANTE">Solicitante — Rafael Lima</button>
+        <button data-role="GESTOR">Gestor — Marina Costa</button>
+        <button data-role="RH_ADMIN">RH_Admin — Beatriz Nunes</button>
+      </div>
+      <div class="logout-link" onclick="exitApp()" style="cursor:pointer;">← Sair</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <span class="eyebrow" id="topbar-eyebrow">ÁREA</span>
+        <h2 id="topbar-title" style="font-size:20px;">Minhas Solicitações</h2>
+      </div>
+      <div class="user-chip">
+        <div>
+          <div class="name" id="chip-name" style="text-align:right;">Marina Costa</div>
+          <div class="role" id="chip-role" style="text-align:right;">Gestora · Marketing</div>
+        </div>
+        <div class="avatar" id="chip-avatar">MC</div>
+      </div>
+    </div>
+
+    <div class="screen-container">
+
+      <!-- ===== MINHAS SOLICITAÇÕES ===== -->
+      <section id="screen-minhas" class="screen">
+        <div class="row-between" style="margin-bottom:20px;">
+          <div>
+            <h1 style="font-size:22px;">Minhas Solicitações</h1>
+            <p style="color:var(--ink-soft);font-size:13.5px;margin-top:4px;">Tudo que você abriu, do pedido até a decisão final.</p>
+          </div>
+          <button class="btn btn-primary" onclick="goTo('nova')">+ Nova Solicitação</button>
+        </div>
+
+        <div class="card">
+          <table>
+            <thead>
+              <tr><th>Protocolo</th><th>Tipo</th><th>Etapa atual</th><th>Status</th><th>SLA</th><th>Aberta em</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="proto">REQ-2026-0417</span><div class="cell-sub">Reembolso · R$ 340,00</div></td>
+                <td><span class="chip-tipo">Reembolso</span></td>
+                <td>Gestor <span class="cell-sub">(Marina Costa)</span></td>
+                <td><span class="stamp-badge pendente">Pendente</span></td>
+                <td style="color:var(--laranja);font-weight:600;">18h restantes</td>
+                <td class="mono" style="font-size:12px;color:var(--ink-soft);">30/07/2026</td>
+              </tr>
+              <tr>
+                <td><span class="proto">REQ-2026-0398</span><div class="cell-sub">Reembolso · R$ 128,50</div></td>
+                <td><span class="chip-tipo">Reembolso</span></td>
+                <td>Encerrado</td>
+                <td><span class="stamp-badge rejeitado">Rejeitado</span></td>
+                <td class="cell-sub">—</td>
+                <td class="mono" style="font-size:12px;color:var(--ink-soft);">18/07/2026</td>
+              </tr>
+              <tr>
+                <td><span class="proto">REQ-2026-0361</span><div class="cell-sub">Férias · 10 dias</div></td>
+                <td><span class="chip-tipo">Férias</span></td>
+                <td>Encerrado</td>
+                <td><span class="stamp-badge aprovado">Aprovado</span></td>
+                <td class="cell-sub">—</td>
+                <td class="mono" style="font-size:12px;color:var(--ink-soft);">02/07/2026</td>
+              </tr>
+              <tr>
+                <td><span class="proto">REQ-2026-0290</span><div class="cell-sub">Reembolso · R$ 89,90</div></td>
+                <td><span class="chip-tipo">Reembolso</span></td>
+                <td>Encerrado</td>
+                <td><span class="stamp-badge aprovado">Aprovado</span></td>
+                <td class="cell-sub">—</td>
+                <td class="mono" style="font-size:12px;color:var(--ink-soft);">14/06/2026</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== NOVA SOLICITAÇÃO ===== -->
+      <section id="screen-nova" class="screen">
+        <h1 style="font-size:22px;margin-bottom:4px;">Nova Solicitação</h1>
+        <p style="color:var(--ink-soft);font-size:13.5px;margin-bottom:22px;">Escolha o tipo de fluxo. Os campos abaixo mudam de acordo com a escolha.</p>
+
+        <div class="stack-16">
+          <div>
+            <div class="eyebrow" style="margin-bottom:10px;">1. Tipo de fluxo</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+              <div class="flow-type-card"><div class="ic">V</div><strong style="font-size:14px;">Vaga</strong><p style="font-size:12px;color:var(--ink-soft);margin:6px 0 0;">Abertura de posição</p></div>
+              <div class="flow-type-card"><div class="ic">F</div><strong style="font-size:14px;">Férias</strong><p style="font-size:12px;color:var(--ink-soft);margin:6px 0 0;">Solicitação de descanso</p></div>
+              <div class="flow-type-card selected"><div class="ic" style="background:var(--amarelo-600);color:var(--azul-900);">R</div><strong style="font-size:14px;">Reembolso</strong><p style="font-size:12px;color:var(--ink-soft);margin:6px 0 0;">Despesas a ressarcir</p></div>
+            </div>
+          </div>
+
+          <div class="card card-pad ruled">
+            <div class="eyebrow" style="margin-bottom:14px;">2. Detalhes — Reembolso</div>
+            <form onsubmit="return false;" class="stack-16">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="field" style="margin-bottom:0;">
+                  <label>Valor (R$)</label>
+                  <input type="text" placeholder="0,00" value="340,00">
+                </div>
+                <div class="field" style="margin-bottom:0;">
+                  <label>Data da despesa</label>
+                  <input type="text" value="28/07/2026">
+                </div>
+              </div>
+              <div class="field" style="margin-bottom:0;">
+                <label>Descrição</label>
+                <textarea rows="3" placeholder="Do que se trata essa despesa?">Transporte (Uber) em visita a cliente — São Paulo, reunião de fechamento.</textarea>
+              </div>
+              <div class="field" style="margin-bottom:0;">
+                <label>Link do recibo / nota fiscal</label>
+                <input type="text" placeholder="https://..." value="https://drive.empresa.com/recibo-0417">
+              </div>
+              <div class="row-between">
+                <span class="steps-row">
+                  <span class="eyebrow" style="margin-right:4px;">Etapas:</span>
+                  <span class="step-pill">Gestor</span><span class="step-arrow">→</span><span class="step-pill">RH_Admin</span>
+                </span>
+                <div style="display:flex;gap:10px;">
+                  <button type="button" class="btn btn-ghost">Salvar rascunho</button>
+                  <button type="button" class="btn btn-primary" onclick="goTo('minhas')">Enviar solicitação</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== APROVAÇÕES PENDENTES ===== -->
+      <section id="screen-aprovacoes" class="screen">
+        <div class="row-between" style="margin-bottom:20px;">
+          <div>
+            <h1 style="font-size:22px;">Aprovações Pendentes</h1>
+            <p style="color:var(--ink-soft);font-size:13.5px;margin-top:4px;">3 solicitações aguardando sua decisão.</p>
+          </div>
+          <div class="tab-toggle">
+            <button class="active">Sua equipe</button>
+            <button>Todas (RH)</button>
+          </div>
+        </div>
+
+        <div class="stack-16">
+          <div class="approval-card">
+            <div class="approval-head">
+              <div>
+                <span class="chip-tipo">Reembolso</span>
+                <h3 style="font-size:16px;margin-top:8px;">Rafael Lima <span style="font-weight:400;color:var(--ink-soft);font-size:13px;">· Analista de Marketing</span></h3>
+                <div class="proto" style="margin-top:2px;">REQ-2026-0417</div>
+              </div>
+              <span class="stamp-badge atrasado">SLA: 18h restantes</span>
+            </div>
+            <div class="callout-ia">
+              <div class="tag">✦ Resumo por IA</div>
+              Reembolso de R$ 340,00 referente a transporte em visita a cliente em São Paulo. Recibo anexado via link, dentro da política de até R$ 500 sem aprovação adicional do RH. Solicitante sem pendências anteriores.
+            </div>
+            <div class="approval-perf"></div>
+            <div class="row-between">
+              <a href="#" style="font-size:12.5px;color:var(--azul-500);font-weight:600;">Ver dados completos da solicitação →</a>
+              <div style="display:flex;gap:10px;">
+                <button class="btn btn-danger-ghost">Rejeitar</button>
+                <button class="btn btn-primary">Aprovar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="approval-card">
+            <div class="approval-head">
+              <div>
+                <span class="chip-tipo">Vaga</span>
+                <h3 style="font-size:16px;margin-top:8px;">Marina Costa <span style="font-weight:400;color:var(--ink-soft);font-size:13px;">· Gerente de Marketing</span></h3>
+                <div class="proto" style="margin-top:2px;">REQ-2026-0405</div>
+              </div>
+              <span class="stamp-badge atrasado">Atrasada há 6h</span>
+            </div>
+            <div class="callout-ia">
+              <div class="tag">✦ Resumo por IA</div>
+              Abertura de vaga para Analista de Dados Pleno, área de Marketing. Segunda vaga aberta pela área em 90 dias — headcount aprovado no orçamento do trimestre está em 80% de uso.
+            </div>
+            <div class="approval-perf"></div>
+            <div class="row-between">
+              <a href="#" style="font-size:12.5px;color:var(--azul-500);font-weight:600;">Ver dados completos da solicitação →</a>
+              <div style="display:flex;gap:10px;">
+                <button class="btn btn-danger-ghost">Rejeitar</button>
+                <button class="btn btn-primary">Aprovar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="approval-card">
+            <div class="approval-head">
+              <div>
+                <span class="chip-tipo">Férias</span>
+                <h3 style="font-size:16px;margin-top:8px;">Camila Duarte <span style="font-weight:400;color:var(--ink-soft);font-size:13px;">· Designer de Produto</span></h3>
+                <div class="proto" style="margin-top:2px;">REQ-2026-0421</div>
+              </div>
+              <span class="stamp-badge pendente">Pendente</span>
+            </div>
+            <div class="callout-ia">
+              <div class="tag">✦ Resumo por IA</div>
+              Solicitação de 15 dias de férias a partir de 10/08/2026. Não há conflito com outras férias já aprovadas na equipe nesse período.
+            </div>
+            <div class="approval-perf"></div>
+            <div class="row-between">
+              <a href="#" style="font-size:12.5px;color:var(--azul-500);font-weight:600;">Ver dados completos da solicitação →</a>
+              <div style="display:flex;gap:10px;">
+                <button class="btn btn-danger-ghost">Rejeitar</button>
+                <button class="btn btn-primary">Aprovar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== DASHBOARD ===== -->
+      <section id="screen-dashboard" class="screen">
+        <div class="row-between" style="margin-bottom:20px;">
+          <div>
+            <h1 style="font-size:22px;">Dashboard de Visão Geral</h1>
+            <p style="color:var(--ink-soft);font-size:13.5px;margin-top:4px;">Equipe de Marketing · últimos 30 dias</p>
+          </div>
+          <div class="filter-bar">
+            <select><option>Todos os tipos</option><option>Vaga</option><option>Férias</option><option>Reembolso</option></select>
+            <select><option>Últimos 30 dias</option><option>Últimos 90 dias</option></select>
+          </div>
+        </div>
+
+        <div class="stats-grid" style="margin-bottom:24px;">
+          <div class="stat-tile"><div class="num">7</div><div class="label">Pendentes</div></div>
+          <div class="stat-tile accent"><div class="num" style="color:var(--laranja);">2</div><div class="label">Atrasadas</div></div>
+          <div class="stat-tile"><div class="num" style="color:var(--verde);">24</div><div class="label">Aprovadas</div></div>
+          <div class="stat-tile"><div class="num" style="color:var(--vermelho);">3</div><div class="label">Rejeitadas</div></div>
+        </div>
+
+        <div class="card">
+          <table>
+            <thead><tr><th>Protocolo</th><th>Solicitante</th><th>Tipo</th><th>Status</th><th>Etapa</th></tr></thead>
+            <tbody>
+              <tr><td class="proto">REQ-2026-0417</td><td>Rafael Lima</td><td><span class="chip-tipo">Reembolso</span></td><td><span class="stamp-badge pendente">Pendente</span></td><td>Gestor</td></tr>
+              <tr><td class="proto">REQ-2026-0405</td><td>Marina Costa</td><td><span class="chip-tipo">Vaga</span></td><td><span class="stamp-badge atrasado">Atrasado</span></td><td>RH_Admin</td></tr>
+              <tr><td class="proto">REQ-2026-0421</td><td>Camila Duarte</td><td><span class="chip-tipo">Férias</span></td><td><span class="stamp-badge pendente">Pendente</span></td><td>Gestor</td></tr>
+              <tr><td class="proto">REQ-2026-0412</td><td>Camila Duarte</td><td><span class="chip-tipo">Férias</span></td><td><span class="stamp-badge aprovado">Aprovado</span></td><td>Encerrado</td></tr>
+              <tr><td class="proto">REQ-2026-0398</td><td>João Prado</td><td><span class="chip-tipo">Reembolso</span></td><td><span class="stamp-badge rejeitado">Rejeitado</span></td><td>Encerrado</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== PIPELINE DE APROVAÇÕES ===== -->
+      <section id="screen-pipeline" class="screen">
+        <div class="row-between" style="margin-bottom:20px;">
+          <div>
+            <h1 style="font-size:22px;">Pipeline de Aprovações</h1>
+            <p style="color:var(--ink-soft);font-size:13.5px;margin-top:4px;">Em que pé está cada solicitação, etapa por etapa — visão do RH.</p>
+          </div>
+          <div class="filter-bar">
+            <select><option>Todos os tipos</option><option>Vaga</option><option>Férias</option><option>Reembolso</option></select>
+            <select><option>Toda a empresa</option><option>Por área</option></select>
+          </div>
+        </div>
+
+        <div class="kanban">
+          <div class="kanban-col">
+            <div class="kanban-col-head"><span>Aguardando Gestor</span><span class="kanban-count">1</span></div>
+            <div class="kanban-card">
+              <div class="row-between" style="margin-bottom:8px;">
+                <span class="chip-tipo">Férias</span>
+                <span class="stamp-badge pendente">Pendente</span>
+              </div>
+              <strong style="font-size:13.5px;">Camila Duarte</strong>
+              <div class="proto" style="margin:4px 0 8px;">REQ-2026-0421</div>
+              <div class="cell-sub">Aberta há 2 dias · aguardando Marina Costa</div>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-head"><span>Aguardando RH_Admin</span><span class="kanban-count">2</span></div>
+            <div class="kanban-card">
+              <div class="row-between" style="margin-bottom:8px;">
+                <span class="chip-tipo">Reembolso</span>
+                <span class="stamp-badge pendente">Pendente</span>
+              </div>
+              <strong style="font-size:13.5px;">Rafael Lima</strong>
+              <div class="proto" style="margin:4px 0 8px;">REQ-2026-0417</div>
+              <div class="cell-sub">Aprovado pelo gestor · SLA: 18h restantes</div>
+            </div>
+            <div class="kanban-card late">
+              <div class="row-between" style="margin-bottom:8px;">
+                <span class="chip-tipo">Vaga</span>
+                <span class="stamp-badge atrasado">Atrasado</span>
+              </div>
+              <strong style="font-size:13.5px;">Marina Costa</strong>
+              <div class="proto" style="margin:4px 0 8px;">REQ-2026-0405</div>
+              <div class="cell-sub">Estourou o SLA há 6h · cobrança reenviada</div>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-head"><span>Aprovado</span><span class="kanban-count good">6</span></div>
+            <div class="kanban-card done">
+              <div class="row-between" style="margin-bottom:8px;">
+                <span class="chip-tipo">Férias</span>
+                <span class="stamp-badge aprovado">Aprovado</span>
+              </div>
+              <strong style="font-size:13.5px;">Camila Duarte</strong>
+              <div class="proto" style="margin:4px 0 8px;">REQ-2026-0412</div>
+              <div class="cell-sub">Concluído em 29/07</div>
+            </div>
+            <div class="kanban-card done">
+              <div class="row-between" style="margin-bottom:8px;">
+                <span class="chip-tipo">Reembolso</span>
+                <span class="stamp-badge aprovado">Aprovado</span>
+              </div>
+              <strong style="font-size:13.5px;">João Prado</strong>
+              <div class="proto" style="margin:4px 0 8px;">REQ-2026-0290</div>
+              <div class="cell-sub">Concluído em 14/06</div>
+            </div>
+            <div class="kanban-more-list hidden" id="aprovado-more-list">
+              <div class="kanban-card done">
+                <div class="row-between" style="margin-bottom:8px;">
+                  <span class="chip-tipo">Reembolso</span>
+                  <span class="stamp-badge aprovado">Aprovado</span>
+                </div>
+                <strong style="font-size:13.5px;">Ana Ferreira</strong>
+                <div class="proto" style="margin:4px 0 8px;">REQ-2026-0355</div>
+                <div class="cell-sub">Concluído em 20/06</div>
+              </div>
+              <div class="kanban-card done">
+                <div class="row-between" style="margin-bottom:8px;">
+                  <span class="chip-tipo">Férias</span>
+                  <span class="stamp-badge aprovado">Aprovado</span>
+                </div>
+                <strong style="font-size:13.5px;">Pedro Alves</strong>
+                <div class="proto" style="margin:4px 0 8px;">REQ-2026-0340</div>
+                <div class="cell-sub">Concluído em 15/06</div>
+              </div>
+              <div class="kanban-card done">
+                <div class="row-between" style="margin-bottom:8px;">
+                  <span class="chip-tipo">Vaga</span>
+                  <span class="stamp-badge aprovado">Aprovado</span>
+                </div>
+                <strong style="font-size:13.5px;">Marina Costa</strong>
+                <div class="proto" style="margin:4px 0 8px;">REQ-2026-0318</div>
+                <div class="cell-sub">Concluído em 02/06</div>
+              </div>
+              <div class="kanban-card done">
+                <div class="row-between" style="margin-bottom:8px;">
+                  <span class="chip-tipo">Reembolso</span>
+                  <span class="stamp-badge aprovado">Aprovado</span>
+                </div>
+                <strong style="font-size:13.5px;">Camila Duarte</strong>
+                <div class="proto" style="margin:4px 0 8px;">REQ-2026-0301</div>
+                <div class="cell-sub">Concluído em 28/05</div>
+              </div>
+            </div>
+            <button type="button" class="kanban-more" data-toggle-more="aprovado-more-list">+ 4 outras já concluídas</button>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-head"><span>Rejeitado</span><span class="kanban-count bad">3</span></div>
+            <div class="kanban-card rejected">
+              <div class="row-between" style="margin-bottom:8px;">
+                <span class="chip-tipo">Reembolso</span>
+                <span class="stamp-badge rejeitado">Rejeitado</span>
+              </div>
+              <strong style="font-size:13.5px;">João Prado</strong>
+              <div class="proto" style="margin:4px 0 8px;">REQ-2026-0398</div>
+              <div class="cell-sub">Recibo fora da política de reembolso</div>
+            </div>
+            <div class="kanban-more-list hidden" id="rejeitado-more-list">
+              <div class="kanban-card rejected">
+                <div class="row-between" style="margin-bottom:8px;">
+                  <span class="chip-tipo">Vaga</span>
+                  <span class="stamp-badge rejeitado">Rejeitado</span>
+                </div>
+                <strong style="font-size:13.5px;">Marina Costa</strong>
+                <div class="proto" style="margin:4px 0 8px;">REQ-2026-0287</div>
+                <div class="cell-sub">Departamento cancelou a posição</div>
+              </div>
+              <div class="kanban-card rejected">
+                <div class="row-between" style="margin-bottom:8px;">
+                  <span class="chip-tipo">Férias</span>
+                  <span class="stamp-badge rejeitado">Rejeitado</span>
+                </div>
+                <strong style="font-size:13.5px;">Rafael Lima</strong>
+                <div class="proto" style="margin:4px 0 8px;">REQ-2026-0265</div>
+                <div class="cell-sub">Conflito de agenda não resolvido com a equipe</div>
+              </div>
+            </div>
+            <button type="button" class="kanban-more" data-toggle-more="rejeitado-more-list">+ 2 outras rejeitadas</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== INSIGHTS ===== -->
+      <section id="screen-insights" class="screen">
+        <div class="row-between" style="margin-bottom:20px;">
+          <div>
+            <h1 style="font-size:22px;">Painel de Insights</h1>
+            <p style="color:var(--ink-soft);font-size:13.5px;margin-top:4px;">Padrões agregados gerados por IA a partir dos dados da empresa.</p>
+          </div>
+          <div class="filter-bar">
+            <select><option>Vaga</option><option>Férias</option><option>Reembolso</option></select>
+            <select><option>Últimos 90 dias</option><option>Últimos 30 dias</option></select>
+          </div>
+        </div>
+
+        <div class="stack-16">
+          <div class="card card-pad">
+            <div class="eyebrow" style="margin-bottom:14px;">Vagas abertas por área</div>
+            <div class="bar-chart">
+              <div class="bar-col"><div class="bar-value">42%</div><div class="bar" style="height:150px;"></div><div class="bar-label">Engenharia</div></div>
+              <div class="bar-col"><div class="bar-value">24%</div><div class="bar" style="height:86px;"></div><div class="bar-label">Vendas</div></div>
+              <div class="bar-col"><div class="bar-value">18%</div><div class="bar" style="height:65px;"></div><div class="bar-label">Marketing</div></div>
+              <div class="bar-col"><div class="bar-value">16%</div><div class="bar" style="height:58px;"></div><div class="bar-label">Operações</div></div>
+            </div>
+          </div>
+
+          <div class="callout-ia">
+            <div class="tag">✦ Leitura da IA sobre os números acima</div>
+            Quase metade das vagas abertas nos últimos 90 dias está concentrada em Engenharia, e o tempo médio até a primeira aprovação nessa área é 35% maior do que em Vendas — um possível gargalo de gestores disponíveis para aprovar.
+          </div>
+
+          <div class="card card-pad">
+            <div class="eyebrow" style="margin-bottom:6px;">Tempo médio de aprovação por tipo de fluxo</div>
+            <table>
+              <thead><tr><th>Tipo</th><th>Tempo médio</th><th>Dentro do SLA</th></tr></thead>
+              <tbody>
+                <tr><td><span class="chip-tipo">Vaga</span></td><td class="mono">3,2 dias</td><td style="color:var(--laranja);font-weight:600;">76%</td></tr>
+                <tr><td><span class="chip-tipo">Férias</span></td><td class="mono">0,8 dias</td><td style="color:var(--verde);font-weight:600;">97%</td></tr>
+                <tr><td><span class="chip-tipo">Reembolso</span></td><td class="mono">1,4 dias</td><td style="color:var(--verde);font-weight:600;">91%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== CONFIGURAÇÃO DE FLUXOS ===== -->
+      <section id="screen-fluxos" class="screen">
+        <div class="row-between" style="margin-bottom:20px;">
+          <div>
+            <h1 style="font-size:22px;">Configuração de Fluxos</h1>
+            <p style="color:var(--ink-soft);font-size:13.5px;margin-top:4px;">Tipos de fluxo, campos de formulário e etapas de aprovação.</p>
+          </div>
+          <button class="btn btn-primary">+ Novo tipo de fluxo</button>
+        </div>
+
+        <div class="stack-16">
+          <div class="card card-pad">
+            <div class="row-between" style="margin-bottom:12px;">
+              <strong style="font-family:'Fraunces',serif;font-size:16px;">Vaga</strong>
+              <button class="btn btn-ghost" style="padding:6px 14px;font-size:12.5px;">Editar</button>
+            </div>
+            <div class="eyebrow" style="margin-bottom:8px;">Etapas de aprovação</div>
+            <div class="steps-row"><span class="step-pill">1 · Gestor</span><span class="step-arrow">→</span><span class="step-pill">2 · RH_Admin</span></div>
+          </div>
+
+          <div class="card card-pad">
+            <div class="row-between" style="margin-bottom:12px;">
+              <strong style="font-family:'Fraunces',serif;font-size:16px;">Férias</strong>
+              <button class="btn btn-ghost" style="padding:6px 14px;font-size:12.5px;">Editar</button>
+            </div>
+            <div class="eyebrow" style="margin-bottom:8px;">Etapas de aprovação</div>
+            <div class="steps-row"><span class="step-pill">1 · Gestor</span></div>
+          </div>
+
+          <div class="card card-pad" style="border-color:var(--azul-500);">
+            <div class="row-between" style="margin-bottom:12px;">
+              <strong style="font-family:'Fraunces',serif;font-size:16px;">Reembolso</strong>
+              <button class="btn btn-ghost" style="padding:6px 14px;font-size:12.5px;">Editar</button>
+            </div>
+            <div class="eyebrow" style="margin-bottom:8px;">Etapas de aprovação</div>
+            <div class="steps-row" style="margin-bottom:16px;"><span class="step-pill">1 · Gestor</span><span class="step-arrow">→</span><span class="step-pill">2 · RH_Admin</span></div>
+            <div class="divider-label"><span>Campos do formulário</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+              <div class="field" style="margin-bottom:0;"><label>Valor (R$)</label><input value="numérico" disabled></div>
+              <div class="field" style="margin-bottom:0;"><label>Data da despesa</label><input value="data" disabled></div>
+              <div class="field" style="margin-bottom:0;"><label>Descrição</label><input value="texto" disabled></div>
+              <div class="field" style="margin-bottom:0;"><label>Link do recibo</label><input value="link" disabled></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== AUDITORIA / LOGS ===== -->
+      <section id="screen-auditoria" class="screen">
+        <div class="row-between" style="margin-bottom:20px;">
+          <div>
+            <h1 style="font-size:22px;">Auditoria &amp; Logs</h1>
+            <p style="color:var(--ink-soft);font-size:13.5px;margin-top:4px;">Nada se perde silenciosamente — toda ação e toda falha ficam registradas.</p>
+          </div>
+          <div class="filter-bar">
+            <select><option>Todos os tipos</option><option>Auditoria</option><option>Erro</option></select>
+            <input type="text" placeholder="Buscar por protocolo ou usuário">
+          </div>
+        </div>
+
+        <div class="card">
+          <table>
+            <thead><tr><th>Quando</th><th>Tipo</th><th>Entidade</th><th>Ação</th><th>Usuário</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono" style="font-size:12px;">30/07 14:22</td>
+                <td><span class="log-tipo auditoria">Auditoria</span></td>
+                <td class="proto">Solicitacao #0417</td>
+                <td>Etapa avançada: Solicitante → Gestor</td>
+                <td>sistema</td>
+              </tr>
+              <tr>
+                <td class="mono" style="font-size:12px;">30/07 09:10</td>
+                <td><span class="log-tipo erro">Erro</span></td>
+                <td class="proto">Aprovacao #0405</td>
+                <td>Falha ao gerar resumo_ia (timeout na OpenAI) — fluxo seguiu sem resumo</td>
+                <td>sistema</td>
+              </tr>
+              <tr>
+                <td class="mono" style="font-size:12px;">29/07 17:45</td>
+                <td><span class="log-tipo auditoria">Auditoria</span></td>
+                <td class="proto">Aprovacao #0412</td>
+                <td>Decisão registrada: Aprovado</td>
+                <td>Beatriz Nunes</td>
+              </tr>
+              <tr>
+                <td class="mono" style="font-size:12px;">29/07 11:02</td>
+                <td><span class="log-tipo erro">Erro</span></td>
+                <td class="proto">Notificacao #8821</td>
+                <td>Falha ao enviar e-mail via Resend — notificação in-app mantida</td>
+                <td>sistema</td>
+              </tr>
+              <tr>
+                <td class="mono" style="font-size:12px;">28/07 16:30</td>
+                <td><span class="log-tipo auditoria">Auditoria</span></td>
+                <td class="proto">TipoFluxo #Reembolso</td>
+                <td>Campo "link do recibo" adicionado ao formulário</td>
+                <td>Beatriz Nunes</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ===== AJUDA / GERAR ISSUE ===== -->
+  <button type="button" class="help-fab" id="help-fab" title="Ajuda / reportar problema">?</button>
+
+  <div class="modal-overlay hidden" id="help-modal-overlay">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="seal" style="width:28px;height:28px;font-size:10px;">FR</div>
+          <strong style="font-family:'Fraunces',serif;font-size:15px;">Reportar algo</strong>
+        </div>
+        <button type="button" class="modal-close" id="help-modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 16px;line-height:1.5;">
+          Encontrou um problema ou tem uma ideia? Isso abre uma issue no GitHub do projeto, já com a tela atual anexada ao relato.
+        </p>
+        <form onsubmit="return false;">
+          <div class="field">
+            <label>Tipo</label>
+            <div class="tab-toggle" id="issue-type-toggle">
+              <button type="button" class="active" data-type="Bug">Bug</button>
+              <button type="button" data-type="Melhoria">Melhoria</button>
+              <button type="button" data-type="Dúvida">Dúvida</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Título</label>
+            <input type="text" id="issue-title" placeholder="Resuma em uma frase">
+          </div>
+          <div class="field" style="margin-bottom:14px;">
+            <label>Descrição</label>
+            <textarea id="issue-desc" rows="4" placeholder="O que aconteceu? O que você esperava que acontecesse?"></textarea>
+          </div>
+          <div class="cell-sub" style="margin-bottom:18px;">Tela atual: <strong id="issue-context" class="mono" style="color:var(--azul-700);">—</strong></div>
+          <div class="row-between">
+            <button type="button" class="btn btn-ghost" id="help-modal-cancel">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="help-modal-submit">Abrir issue no GitHub ↗</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const navRoles = {
+    SOLICITANTE: {name:'Rafael Lima', role:'Solicitante · Analista de Marketing', initials:'RL'},
+    GESTOR: {name:'Marina Costa', role:'Gestora · Marketing', initials:'MC'},
+    RH_ADMIN: {name:'Beatriz Nunes', role:'RH_Admin', initials:'BN'}
+  };
+  const screenTitles = {
+    minhas:['Meu trabalho','Minhas Solicitações'],
+    nova:['Meu trabalho','Nova Solicitação'],
+    aprovacoes:['Meu trabalho','Aprovações Pendentes'],
+    dashboard:['Visão geral','Dashboard de Visão Geral'],
+    pipeline:['Visão geral','Pipeline de Aprovações'],
+    insights:['Visão geral','Painel de Insights'],
+    fluxos:['Administração','Configuração de Fluxos'],
+    auditoria:['Administração','Auditoria & Logs']
+  };
+  // troque pelo repositório real do projeto (owner/repo)
+  const GITHUB_REPO = 'sua-org/rhop';
+
+  let currentRole = 'GESTOR';
+  let currentScreen = 'minhas';
+
+  function enterApp(){
+    document.getElementById('screen-login').classList.add('hidden');
+    document.getElementById('app-shell').classList.remove('hidden');
+    applyRole('GESTOR');
+    goTo('aprovacoes');
+  }
+  function exitApp(){
+    document.getElementById('app-shell').classList.add('hidden');
+    document.getElementById('screen-login').classList.remove('hidden');
+  }
+  function goTo(name){
+    currentScreen = name;
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+name).classList.add('active');
+    document.querySelectorAll('.nav-item[data-nav]').forEach(n=>n.classList.toggle('active', n.dataset.nav===name));
+    document.getElementById('topbar-eyebrow').textContent = screenTitles[name][0];
+    document.getElementById('topbar-title').textContent = screenTitles[name][1];
+  }
+  function applyRole(role){
+    currentRole = role;
+    const u = navRoles[role];
+    document.getElementById('chip-name').textContent = u.name;
+    document.getElementById('chip-role').textContent = u.role;
+    document.getElementById('chip-avatar').textContent = u.initials;
+    document.querySelectorAll('.role-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.role===role));
+    document.querySelectorAll('.nav-item[data-nav]').forEach(n=>{
+      const allowed = n.dataset.roles.split(',').includes(role);
+      n.style.display = allowed ? 'flex' : 'none';
+    });
+    // if current screen isn't allowed for this role, jump to the first allowed one
+    const allowedForRole = Array.from(document.querySelectorAll('.nav-item[data-nav]')).filter(n=>n.dataset.roles.split(',').includes(role));
+    if(!allowedForRole.some(n=>n.dataset.nav===currentScreen)){
+      goTo(allowedForRole[0].dataset.nav);
+    }
+  }
+
+  function wireNavItem(item){
+    item.addEventListener('click', (e)=>{
+      if(e.target.closest('.nav-remove')) return;
+      goTo(item.dataset.nav);
+    });
+  }
+  document.querySelectorAll('.nav-item[data-nav]').forEach(wireNavItem);
+  document.querySelectorAll('.role-toggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=>applyRole(btn.dataset.role));
+  });
+
+  // ---- menu lateral expansível: grupos colapsáveis ----
+  document.querySelectorAll('.nav-group-label[data-toggle-group]').forEach(label=>{
+    label.addEventListener('click', ()=>{
+      label.closest('.nav-group').classList.toggle('collapsed');
+    });
+  });
+
+  // ---- menu lateral expansível: adicionar novas páginas ----
+  let customPageCount = 0;
+  const addPageBtn = document.getElementById('add-page-btn');
+  const addPageForm = document.getElementById('add-page-form');
+  const addPageInput = document.getElementById('add-page-input');
+  const addPageConfirm = document.getElementById('add-page-confirm');
+  const addPageRow = document.getElementById('add-page-row');
+
+  addPageBtn.addEventListener('click', ()=>{
+    addPageForm.classList.toggle('hidden');
+    if(!addPageForm.classList.contains('hidden')) addPageInput.focus();
+  });
+  function createCustomPage(){
+    const name = addPageInput.value.trim();
+    if(!name) return;
+    customPageCount++;
+    const id = 'custom'+customPageCount;
+
+    const nav = document.createElement('div');
+    nav.className = 'nav-item';
+    nav.dataset.nav = id;
+    nav.dataset.roles = 'SOLICITANTE,GESTOR,RH_ADMIN';
+    nav.innerHTML = '<span class="dot"></span> <span style="flex:1;">'+name+'</span><span class="nav-remove" title="Remover página">×</span>';
+    wireNavItem(nav);
+    nav.querySelector('.nav-remove').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      nav.remove();
+      const scr = document.getElementById('screen-'+id);
+      if(scr) scr.remove();
+      delete screenTitles[id];
+      if(currentScreen === id) goTo('minhas');
+    });
+    document.getElementById('custom-pages-list').insertBefore(nav, addPageRow);
+
+    const section = document.createElement('section');
+    section.className = 'screen';
+    section.id = 'screen-'+id;
+    section.innerHTML =
+      '<div class="empty-state" style="text-align:left;padding:56px 4px;">' +
+        '<div class="stamp-seal" style="margin-bottom:20px;"><div class="n">?</div><div class="l">Rascunho</div></div>' +
+        '<h1 style="font-size:22px;margin-bottom:8px;">'+name+'</h1>' +
+        '<p style="color:var(--ink-soft);font-size:13.5px;max-width:420px;">Página criada agora — ainda sem conteúdo definido. Use este espaço para desenhar uma nova tela do fluxo.</p>' +
+      '</div>';
+    document.querySelector('.screen-container').appendChild(section);
+
+    screenTitles[id] = ['Páginas', name];
+    addPageInput.value = '';
+    addPageForm.classList.add('hidden');
+    goTo(id);
+  }
+  addPageConfirm.addEventListener('click', createCustomPage);
+  addPageInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); createCustomPage(); }
+  });
+
+  // ---- botão de ajuda: gerar issue no GitHub ----
+  let issueType = 'Bug';
+  document.querySelectorAll('#issue-type-toggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      issueType = btn.dataset.type;
+      document.querySelectorAll('#issue-type-toggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  function openHelpModal(){
+    const tela = screenTitles[currentScreen] ? screenTitles[currentScreen][1] : 'Login';
+    document.getElementById('issue-context').textContent = tela;
+    document.getElementById('help-modal-overlay').classList.remove('hidden');
+  }
+  function closeHelpModal(){
+    document.getElementById('help-modal-overlay').classList.add('hidden');
+  }
+  document.getElementById('help-fab').addEventListener('click', openHelpModal);
+  document.getElementById('help-modal-close').addEventListener('click', closeHelpModal);
+  document.getElementById('help-modal-cancel').addEventListener('click', closeHelpModal);
+  document.getElementById('help-modal-overlay').addEventListener('click', (e)=>{
+    if(e.target.id === 'help-modal-overlay') closeHelpModal();
+  });
+  document.getElementById('help-modal-submit').addEventListener('click', ()=>{
+    const title = document.getElementById('issue-title').value.trim() || '(sem título)';
+    const desc = document.getElementById('issue-desc').value.trim();
+    const tela = screenTitles[currentScreen] ? screenTitles[currentScreen][1] : 'Login';
+    const body = '**Tipo:** '+issueType+'\n**Tela:** '+tela+'\n\n'+desc;
+    const url = 'https://github.com/'+GITHUB_REPO+'/issues/new?title='+encodeURIComponent('['+issueType+'] '+title)+'&body='+encodeURIComponent(body);
+    window.open(url, '_blank');
+    document.getElementById('issue-title').value = '';
+    document.getElementById('issue-desc').value = '';
+    closeHelpModal();
+  });
+</script>
+</body>
+</html>

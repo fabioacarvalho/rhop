@@ -125,19 +125,19 @@ Cada requisito recebe um ID único para rastreamento entre design, tasks e valid
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| SLA-01 | P1: Detecção e marcação de atrasadas (endpoint/cron de check) | Design | Pending |
-| SLA-02 | P1: Detecção e marcação de atrasadas (identificação de etapa vencida e pendente) | Design | Pending |
-| SLA-03 | P1: Detecção e marcação de atrasadas (marcar atrasada + `Log` `AUDITORIA`, idempotente) | Design | Pending |
-| SLA-04 | P1: Disparo de cobrança ao aprovador responsável (contrato do evento) | Design | Pending |
-| SLA-05 | P2: Resiliência do job (falha isolada + `Log` `ERRO`, não trava fluxo) | - | Pending |
-| SLA-06 | P2: Proteção do endpoint de verificação (segredo/token de cron) | - | Pending |
-| SLA-07 | P3: Observabilidade da execução do job | - | Pending |
+| SLA-01 | P1: Detecção e marcação de atrasadas (endpoint/cron de check) | Tasks | In Tasks |
+| SLA-02 | P1: Detecção e marcação de atrasadas (identificação de etapa vencida e pendente) | Tasks | In Tasks |
+| SLA-03 | P1: Detecção e marcação de atrasadas (marcar atrasada + `Log` `AUDITORIA`, idempotente) | Tasks | In Tasks |
+| SLA-04 | P1: Disparo de cobrança ao aprovador responsável (contrato do evento) | Tasks | In Tasks |
+| SLA-05 | P2: Resiliência do job (falha isolada + `Log` `ERRO`, não trava fluxo) | Tasks | In Tasks |
+| SLA-06 | P2: Proteção do endpoint de verificação (segredo/token de cron) | Tasks | In Tasks |
+| SLA-07 | P3: Observabilidade da execução do job | Tasks | In Tasks |
 
 **ID format:** `[CATEGORY]-[NUMBER]` (ex: `SLA-01`)
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 7 total, 0 mapeados para tasks, 7 não mapeados ⚠️ (mapeamento ocorre na fase de Tasks)
+**Coverage:** 7 total, 7 mapeados para tasks ✅ (ver `tasks.md`)
 
 ---
 
@@ -158,5 +158,5 @@ Como saberemos que a feature está bem-sucedida:
 
 1. ✅ **RESOLVIDO** (ver `context.md`) — **Frequência/deduplicação do reenvio de cobrança**: no máximo 1x por dia por solicitação atrasada.
 2. ✅ **RESOLVIDO** (ver `context.md`) — **Modelagem de "atrasada"**: indicador/flag adicional; NÃO substitui o status "pendente".
-3. **Semântica do `prazo_sla`: por etapa vs. por solicitação.** A seção 6 fala em "qualquer etapa passar do `prazo_sla`" (parece por etapa, com o relógio reiniciando a cada avanço), mas o campo `prazo_sla` está em `Solicitacao`. Precisa ser definido em `solicitacoes` se é uma duração aplicada por etapa (e qual timestamp marca o início da etapa atual) ou um prazo absoluto da solicitação — o cálculo de vencimento do job depende disso.
-4. **Prazo default quando `prazo_sla` é nulo.** Não está definido se toda solicitação sempre terá `prazo_sla` ou se pode ser nulo. Se puder ser nulo, confirmar se o job deve ignorá-la (assumido aqui) ou aplicar um prazo padrão.
+3. ✅ **RESOLVIDO** (ver `design.md`) — **Semântica do `prazo_sla`**: deadline absoluto da **etapa atual**; `aprovacoes` reinicia `prazo_sla` e limpa flags de atraso no avanço (contrato cross-feature; implementação hoje ausente em `decidir`).
+4. ✅ **RESOLVIDO** (ver `design.md`) — **`prazo_sla` nulo**: schema exige `DateTime`; job ignora defensivamente se ausente; sem default no job.
