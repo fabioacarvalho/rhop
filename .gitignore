@@ -42,3 +42,9 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/
+
+# CLAUDE
+.claude
+.agents
+.windsurf
+skills-lock.json
