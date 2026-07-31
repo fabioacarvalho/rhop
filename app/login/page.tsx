@@ -1,31 +1,45 @@
 import LoginForm from "./LoginForm";
+import styles from "./login.module.css";
 
 /**
  * Pagina de login (AUTH-01) — server component so de layout.
  *
- * Nao acessa Supabase/Prisma aqui: toda a logica de submit (chamada a
- * `signInWithPassword`, tratamento de erro, redirect) vive em `LoginForm`
- * (client component), conforme T10 de `.specs/features/autenticacao-usuarios/tasks.md`.
+ * Layout alinhado a `docs/design-ux-ui/fluxorh-mockup.html` (#screen-login)
+ * e `docs/design-ux-ui/fluxorh-ui-layout-specs.md` §4.1: card em 2 colunas
+ * (painel visual 1.1fr + formulario 1fr); abaixo de 860px o painel some.
  *
- * `middleware.ts` ja exclui `/login` do matcher, entao esta pagina renderiza
- * mesmo sem sessao (é a unica rota publica do app).
+ * Nao acessa Supabase/Prisma aqui: toda a logica de submit vive em `LoginForm`.
+ * `middleware.ts` ja exclui `/login` do matcher (unica rota publica).
  */
 export default function LoginPage() {
   return (
-    <main
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "1rem",
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: "360px" }}>
-        <h1 style={{ marginBottom: "1.5rem", textAlign: "center" }}>
-          RHOP — Entrar
-        </h1>
-        <LoginForm />
+    <main className={styles.screen}>
+      <div className={styles.card}>
+        <aside className={styles.visual} aria-hidden="true">
+          <div>
+            <div className={styles.brandmark}>
+              <div className={styles.seal}>FR</div>
+              <div className={styles.brandWord}>FluxoRH</div>
+            </div>
+          </div>
+          <p className={styles.quote}>
+            Cada solicitação chega ao aprovador com o{" "}
+            <span className={styles.quoteAccent}>resumo pronto</span>. Decisão
+            em segundos, não em dias.
+          </p>
+          <div className={styles.meta}>
+            OBRA PRIMA · PLATAFORMA DE FLUXOS DE APROVAÇÃO DE RH
+          </div>
+        </aside>
+
+        <div className={styles.formWrap}>
+          <div className={styles.eyebrow}>Acessar conta</div>
+          <h1 className={styles.title}>Entrar no FluxoRH</h1>
+          <LoginForm />
+          <p className={styles.foot}>
+            Acesso restrito a colaboradores cadastrados pelo RH.
+          </p>
+        </div>
       </div>
     </main>
   );
