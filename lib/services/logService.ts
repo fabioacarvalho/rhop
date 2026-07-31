@@ -56,3 +56,74 @@ export async function registrar(evento: LogEvento): Promise<void> {
     // falha de log para evitar recursão infinita.
   }
 }
+
+/**
+ * Filtros de consulta de `Log` (AUD-06 a AUD-09, AUD-11).
+ *
+ * Todos os campos são opcionais e combinados com AND lógico em `listar`:
+ * apenas os filtros informados entram no `where` (ausência de um filtro não
+ * restringe por ele). `data_inicio`/`data_fim` podem vir independentemente
+ * (um sem o outro) e delimitam `criado_em` via `gte`/`lte`.
+ */
+export interface LogFiltro {
+  tipo?: "AUDITORIA" | "ERRO";
+  entidade?: string;
+  usuario_id?: string;
+  data_inicio?: Date;
+  data_fim?: Date;
+  page?: number;
+  pageSize?: number;
+}
+
+const PAGE_SIZE_PADRAO = 20;
+
+/** Registro de `Log` com o `usuario` (nome/e-mail) já incluído via join. */
+export type LogComUsuario = Prisma.LogGetPayload<{
+  include: { usuario: { select: { nome: true; email: true } } };
+}>;
+
+/**
+ * Consulta paginada de `Log` (AUD-06 a AUD-09, AUD-11).
+ *
+ * - Combina `tipo`, `entidade`, `usuario_id` e período (`data_inicio`/
+ *   `data_fim`) com AND lógico — interseção, não união.
+ * - `orderBy criado_em desc`, preservado entre páginas.
+ * - `include usuario: { nome, email }` — `usuario` vem `null` quando
+ *   `usuario_id` é nulo (log de sistema).
+ * - `total` é a contagem com o MESMO `where`, sem paginação (para a UI
+ *   calcular o número de páginas).
+ */
+export async function listar(
+  filtros: LogFiltro = {}
+): Promise<{ logs: LogComUsuario[]; total: number }> {
+  const page = filtros.page ?? 1;
+  const pageSize = filtros.pageSize ?? PAGE_SIZE_PADRAO;
+
+  const where: Prisma.LogWhereInput = {
+    ...(filtros.tipo !== undefined && { tipo: filtros.tipo }),
+    ...(filtros.entidade !== undefined && { entidade: filtros.entidade }),
+    ...(filtros.usuario_id !== undefined && {
+      usuario_id: filtros.usuario_id,
+    }),
+    ...((filtros.data_inicio !== undefined ||
+      filtros.data_fim !== undefined) && {
+      criado_em: {
+        ...(filtros.data_inicio !== undefined && { gte: filtros.data_inicio }),
+        ...(filtros.data_fim !== undefined && { lte: filtros.data_fim }),
+      },
+    }),
+  };
+
+  const [logs, total] = await Promise.all([
+    prisma.log.findMany({
+      where,
+      include: { usuario: { select: { nome: true, email: true } } },
+      orderBy: { criado_em: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.log.count({ where }),
+  ]);
+
+  return { logs, total };
+}
