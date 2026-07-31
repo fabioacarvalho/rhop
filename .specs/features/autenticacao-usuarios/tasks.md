@@ -2,7 +2,7 @@
 
 **Design**: `.specs/features/autenticacao-usuarios/design.md`
 **Spec**: `.specs/features/autenticacao-usuarios/spec.md`
-**Status**: In Progress — T1, T2, T3, T4, T6, T9 executados e commitados (feitos fora de ordem, como pré-requisito real de `auditoria-logs`, que dependia de schema/User/authService). T5, T7, T8, T10-T14 ainda pendentes; T9 só validado por inspeção/mocks — sem projeto Supabase real configurado nesta sessão, o caminho de login real ainda não foi testado.
+**Status**: In Progress — T1, T2, T3, T4, T5, T6, T7, T8 (via `auditoria-logs`, model/registrar reais, não stub), T9, T10, T13 executados, commitados e testados (Vitest onde a matrix exige unit — T6/T7/T8/T9 com contagem exata de testes pedida; T10 e o fluxo de login validados de ponta a ponta contra Supabase real com os 3 papéis seedados por T13). T11 (`LogoutButton`), T12 (`UserBadge`) e T14 (integração final com expiração de sessão/logout) ficaram fora de escopo desta rodada — decisão explícita, não bloqueiam o teste real de login/auditoria já realizado.
 
 ---
 
