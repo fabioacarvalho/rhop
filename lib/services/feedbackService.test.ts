@@ -79,7 +79,9 @@ describe("feedbackService.enviarFeedback", () => {
 
     const resultado = await enviarFeedback(inputBase);
 
-    expect(resultado.ok).toBe(false);
+    expect(resultado).toEqual(
+      expect.objectContaining({ ok: false, motivo: "LIMITE_DIARIO" }),
+    );
     expect(mockCriarIssue).not.toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
@@ -90,7 +92,9 @@ describe("feedbackService.enviarFeedback", () => {
 
     const resultado = await enviarFeedback(inputBase);
 
-    expect(resultado.ok).toBe(false);
+    expect(resultado).toEqual(
+      expect.objectContaining({ ok: false, motivo: "ERRO_API" }),
+    );
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: "ERRO" }),

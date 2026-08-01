@@ -23,7 +23,7 @@ export interface EnviarFeedbackInput {
 
 export type EnviarFeedbackResultado =
   | { ok: true; url: string; numero: number }
-  | { ok: false; mensagem: string };
+  | { ok: false; motivo: "LIMITE_DIARIO" | "ERRO_API"; mensagem: string };
 
 async function contarFeedbacksHoje(usuarioId: string): Promise<number> {
   const inicioDoDia = new Date();
@@ -48,6 +48,7 @@ export async function enviarFeedback(
   if (totalHoje >= LIMITE_DIARIO) {
     return {
       ok: false,
+      motivo: "LIMITE_DIARIO",
       mensagem: `Você atingiu o limite de ${LIMITE_DIARIO} relatos por dia. Tente novamente amanhã.`,
     };
   }
@@ -97,6 +98,7 @@ export async function enviarFeedback(
 
     return {
       ok: false,
+      motivo: "ERRO_API",
       mensagem: "Não foi possível criar a issue agora. Tente novamente em instantes.",
     };
   }
