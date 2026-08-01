@@ -141,22 +141,22 @@ Each requirement gets a unique ID for tracking across design, tasks, and validat
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| DASH-01 | P1: Visualizar contadores por status | Design | Pending |
-| DASH-02 | P1: Visualizar a lista de solicitações | Design | Pending |
-| DASH-03 | P1: Aplicar visibilidade por papel no backend | Design | Pending |
-| DASH-04 | P2: Filtrar por tipo de fluxo | Design | Pending |
-| DASH-05 | P2: Filtrar por status | Design | Pending |
-| DASH-06 | P2: Filtrar por solicitante | Design | Pending |
-| DASH-07 | P2: Filtros combináveis (AND) respeitando visibilidade | Design | Pending |
-| DASH-08 | P1/P2: Estado vazio (contadores zero / lista vazia) | Design | Pending |
-| DASH-09 | P3: Navegar da lista para o detalhe da solicitação | - | Pending |
-| DASH-10 | P3: Contador como atalho de filtro de status | - | Pending |
+| DASH-01 | P1: Visualizar contadores por status | Tasks (T1, T3, T4, T7) | In Tasks |
+| DASH-02 | P1: Visualizar a lista de solicitações | Tasks (T3, T5, T6, T9, T10) | In Tasks |
+| DASH-03 | P1: Aplicar visibilidade por papel no backend | Tasks (T3, T4, T5, T11) | In Tasks |
+| DASH-04 | P2: Filtrar por tipo de fluxo | Tasks (T2, T3, T5, T8) | In Tasks |
+| DASH-05 | P2: Filtrar por status | Tasks (T2, T3, T5, T8) | In Tasks |
+| DASH-06 | P2: Filtrar por solicitante | Tasks (T3, T5, T8) | In Tasks |
+| DASH-07 | P2: Filtros combináveis (AND) respeitando visibilidade | Tasks (T3, T5) | In Tasks |
+| DASH-08 | P1/P2: Estado vazio (contadores zero / lista vazia) | Tasks (T3, T9) | In Tasks |
+| DASH-09 | P3: Navegar da lista para o detalhe da solicitação | Tasks (T9) | In Tasks |
+| DASH-10 | P3: Contador como atalho de filtro de status | Tasks (T7) | In Tasks |
 
 **ID format:** `[CATEGORY]-[NUMBER]` (ex: `DASH-01`)
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 10 total, 0 mapeados para tasks, 10 não mapeados ⚠️ (esperado nesta fase Specify)
+**Coverage:** 10 total, 10 mapeados para tasks, 0 não mapeados ✅
 
 ---
 

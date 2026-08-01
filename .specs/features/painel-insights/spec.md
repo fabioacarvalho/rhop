@@ -113,23 +113,23 @@ Cada requisito recebe um ID único para rastreio entre design, tasks e validaç�
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| INSIGHT-01 | P1: Gráfico agregado — filtro tipo + período | Design | Pending |
-| INSIGHT-02 | P1: Gráfico agregado — agregação em Postgres (sem IA) + payload numérico compacto | Design | Pending |
-| INSIGHT-03 | P1: Gráfico agregado — renderização Recharts | Design | Pending |
-| INSIGHT-04 | P1: Gráfico agregado — route valida (Zod) + delega a `insightsService`, sem Prisma na route | Design | Pending |
-| INSIGHT-05 | P1: Gráfico agregado — estado vazio sem chamar IA | Design | Pending |
-| INSIGHT-06 | P1: Resumo IA — chamada `gpt-4o-mini` server-side só com números agregados | Design | Pending |
-| INSIGHT-07 | P1: Resumo IA — exibição do resumo junto ao gráfico | Design | Pending |
-| INSIGHT-08 | P1: Resumo IA — falha da OpenAI não trava; gráfico permanece; `Log` tipo `ERRO` | Design | Pending |
-| INSIGHT-09 | P2: Visibilidade — RH_ADMIN vê tudo; GESTOR (se autorizado) só a equipe, filtrado na query de agregação | Design | Pending |
-| INSIGHT-10 | P1/P2: Autorização de acesso ao painel bloqueada no backend | Design | Pending |
-| INSIGHT-11 | P3: Seleção da dimensão de agregação (re-agrega + re-narra) | - | Pending |
+| INSIGHT-01 | P1: Gráfico agregado — filtro tipo + período | Tasks (T1, T6) | In Tasks |
+| INSIGHT-02 | P1: Gráfico agregado — agregação em Postgres (sem IA) + payload numérico compacto | Tasks (T4) | In Tasks |
+| INSIGHT-03 | P1: Gráfico agregado — renderização Recharts | Tasks (T2, T6) | In Tasks |
+| INSIGHT-04 | P1: Gráfico agregado — route valida (Zod) + delega a `insightsService`, sem Prisma na route | Tasks (T1, T5) | In Tasks |
+| INSIGHT-05 | P1: Gráfico agregado — estado vazio sem chamar IA | Tasks (T4, T6) | In Tasks |
+| INSIGHT-06 | P1: Resumo IA — chamada `gpt-4o-mini` server-side só com números agregados | Tasks (T3, T4) | In Tasks |
+| INSIGHT-07 | P1: Resumo IA — exibição do resumo junto ao gráfico | Tasks (T6) | In Tasks |
+| INSIGHT-08 | P1: Resumo IA — falha da OpenAI não trava; gráfico permanece; `Log` tipo `ERRO` | Tasks (T3, T4, T6) | In Tasks |
+| INSIGHT-09 | P2: Visibilidade — RH_ADMIN vê tudo; GESTOR (se autorizado) só a equipe, filtrado na query de agregação | Tasks (T4) | In Tasks |
+| INSIGHT-10 | P1/P2: Autorização de acesso ao painel bloqueada no backend | Tasks (T5) | In Tasks |
+| INSIGHT-11 | P3: Seleção da dimensão de agregação (re-agrega + re-narra) | Tasks (T1, T4, T6) | In Tasks |
 
 **ID format:** `[CATEGORY]-[NUMBER]` (ex.: `INSIGHT-01`).
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 11 total, 0 mapeados a tasks, 11 não mapeados ⚠️ (mapeamento ocorre na fase Tasks).
+**Coverage:** 11 total, 11 mapeados a tasks, 0 não mapeados. Ver `design.md` (Requirement Mapping) e `tasks.md` (Traceability).
 
 ---
 

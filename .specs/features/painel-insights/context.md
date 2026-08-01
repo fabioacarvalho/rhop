@@ -2,7 +2,7 @@
 
 **Gathered:** 2026-07-30
 **Spec:** `.specs/features/painel-insights/spec.md`
-**Status:** Ready for design
+**Status:** Design + Tasks completos — ver `design.md` e `tasks.md`. Pronto para execução (T1–T7).
 
 ---
 
