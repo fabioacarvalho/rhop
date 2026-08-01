@@ -91,12 +91,15 @@ model Solicitacao {
   etapa_atual    Role
   prazo_sla      DateTime
   criado_em      DateTime          @default(now())
+  atrasada_em    DateTime?
   aprovacoes     Aprovacao[]
+  notificacoes   Notificacao[]
 
   @@index([tipo_fluxo_id])
   @@index([status])
   @@index([solicitante_id])
   @@index([etapa_atual])
+  @@index([atrasada_em])
   @@map("solicitacoes")
 }
 
@@ -111,7 +114,7 @@ enum TipoNotificacao {
 model Notificacao {
   id              String          @id @default(uuid()) @db.Uuid
   usuario_id      String          @db.Uuid
-  solicitacao_id  String          @db.Uuid
+  solicitacao_id  String
   tipo            TipoNotificacao
   mensagem        String
   lida            Boolean         @default(false)
@@ -123,6 +126,8 @@ model Notificacao {
 
   @@index([usuario_id, lida])
   @@map("notificacoes")
+}
+
 model Aprovacao {
   id             String            @id @default(cuid())
   solicitacao_id String
