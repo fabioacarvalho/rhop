@@ -171,3 +171,87 @@ async function registrarFalhaIaInsight(
     detalhes,
   });
 }
+
+/**
+ * Gera a justificativa textual de por que um candidato ficou naquela posição
+ * do ranking do Banco de Talentos (TAL-14), via OpenAI `gpt-4o-mini`.
+ *
+ * Mesmo contrato "nunca lança" de `gerarResumoSolicitacao`: qualquer falha
+ * (chave ausente, erro de API, timeout, conteúdo vazio) grava `Log ERRO`
+ * (`entidade: "Candidato"`, `acao: "FALHA_IA"`) e retorna `null` — o item do
+ * ranking fica sem justificativa, o restante da busca segue intacto
+ * (`talentoSearchService`, TAL-17).
+ */
+export async function gerarJustificativaRanking(input: {
+  candidatoId: string;
+  nome: string;
+  curriculoTexto: string;
+  transcricaoTexto: string;
+  queryTexto: string;
+}): Promise<string | null> {
+  const { candidatoId, nome, curriculoTexto, transcricaoTexto, queryTexto } =
+    input;
+
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      await registrarFalhaIaCandidato(candidatoId, {
+        motivo: "OPENAI_API_KEY ausente",
+      });
+      return null;
+    }
+
+    const client = new OpenAI({ apiKey });
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Voce e um assistente de recrutamento. Gere uma justificativa " +
+            "concisa em portugues explicando por que este candidato e " +
+            "relevante para o perfil buscado, com base no curriculo e na " +
+            "transcricao da entrevista.",
+        },
+        {
+          role: "user",
+          content: [
+            `Perfil buscado: ${queryTexto}`,
+            `Candidato: ${nome}`,
+            `Curriculo: ${curriculoTexto}`,
+            `Transcricao: ${transcricaoTexto}`,
+          ].join("\n"),
+        },
+      ],
+    });
+
+    const content = completion.choices[0]?.message?.content?.trim() ?? "";
+    if (!content) {
+      await registrarFalhaIaCandidato(candidatoId, {
+        motivo: "conteudo vazio da OpenAI",
+      });
+      return null;
+    }
+
+    return content;
+  } catch (error) {
+    await registrarFalhaIaCandidato(candidatoId, {
+      motivo: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+/** Grava `Log ERRO` de falha de IA do Banco de Talentos, sem propagar. */
+async function registrarFalhaIaCandidato(
+  candidatoId: string,
+  detalhes: { motivo: string },
+): Promise<void> {
+  await registrar({
+    tipo: "ERRO",
+    entidade: "Candidato",
+    entidade_id: candidatoId,
+    acao: "FALHA_IA",
+    detalhes,
+  });
+}

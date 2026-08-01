@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import styles from "../auditoria-logs.module.css";
 
 /**
  * Filtros de tipo/entidade/usuário/período da tela de Auditoria/Logs
@@ -68,25 +69,22 @@ export default function LogFiltros() {
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label="Filtros de logs">
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "flex-end",
-          gap: "0.75rem",
-        }}
-      >
-        <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+    <form
+      onSubmit={handleSubmit}
+      aria-label="Filtros de logs"
+      className={styles.filtrosForm}
+    >
+      <div className={styles.filterBar}>
+        <label className={styles.field}>
           Tipo
           <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
-            <option value="">Todos</option>
-            <option value="AUDITORIA">AUDITORIA</option>
-            <option value="ERRO">ERRO</option>
+            <option value="">Todos os tipos</option>
+            <option value="AUDITORIA">Auditoria</option>
+            <option value="ERRO">Erro</option>
           </select>
         </label>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        <label className={styles.field}>
           Entidade
           <input
             type="text"
@@ -96,7 +94,7 @@ export default function LogFiltros() {
           />
         </label>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        <label className={styles.field}>
           Usuário (ID)
           <input
             type="text"
@@ -106,7 +104,7 @@ export default function LogFiltros() {
           />
         </label>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        <label className={styles.field}>
           Data início
           <input
             type="date"
@@ -115,7 +113,7 @@ export default function LogFiltros() {
           />
         </label>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        <label className={styles.field}>
           Data fim
           <input
             type="date"
@@ -124,14 +122,20 @@ export default function LogFiltros() {
           />
         </label>
 
-        <button type="submit">Filtrar</button>
-        <button type="button" onClick={handleLimpar}>
+        <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
+          Filtrar
+        </button>
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnGhost}`}
+          onClick={handleLimpar}
+        >
           Limpar filtros
         </button>
       </div>
 
       {erro && (
-        <p role="alert" style={{ color: "#b91c1c", marginTop: "0.5rem" }}>
+        <p role="alert" className={styles.erro}>
           {erro}
         </p>
       )}

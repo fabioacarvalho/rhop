@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PAPEIS_APROVADOR, type PapelAprovador } from "@/lib/validations/tipoFluxo";
+import styles from "../configuracao-fluxos.module.css";
 
 interface EtapasEditorProps {
   value: PapelAprovador[];
@@ -10,7 +11,7 @@ interface EtapasEditorProps {
 
 const RATULO_PAPEL: Record<PapelAprovador, string> = {
   GESTOR: "Gestor",
-  RH_ADMIN: "RH Admin",
+  RH_ADMIN: "RH_Admin",
 };
 
 /**
@@ -19,10 +20,9 @@ const RATULO_PAPEL: Record<PapelAprovador, string> = {
  * aprovação acontece (`etapas[i]` = etapa `i+1`).
  *
  * Componente controlado: `value`/`onChange` sobem o estado para
- * `TipoFluxoForm` (estado compartilhado do formulário, ver `design.md`).
- * Reordenação é só subir/descer (sem drag-and-drop, conforme task T6) e não
- * há restrição de papel repetido — o design não proíbe a mesma role em mais
- * de uma etapa.
+ * `TipoFluxoForm`. Reordenação é só subir/descer (sem drag-and-drop, conforme
+ * task T6) e não há restrição de papel repetido — o design não proíbe a
+ * mesma role em mais de uma etapa.
  */
 export default function EtapasEditor({ value, onChange }: EtapasEditorProps) {
   const [papelParaAdicionar, setPapelParaAdicionar] = useState<PapelAprovador>(
@@ -49,27 +49,19 @@ export default function EtapasEditor({ value, onChange }: EtapasEditorProps) {
 
   return (
     <div>
-      <h3 style={{ marginBottom: "0.5rem" }}>Etapas de aprovação</h3>
-
       {value.length === 0 ? (
-        <p style={{ color: "#64748b" }}>Nenhuma etapa adicionada ainda.</p>
+        <p className={styles.emptyInline}>Nenhuma etapa adicionada ainda.</p>
       ) : (
-        <ol style={{ padding: 0, listStyle: "none", marginBottom: "0.75rem" }}>
+        <ol style={{ listStyle: "none" }}>
           {value.map((papel, indice) => (
-            <li
-              key={indice}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.4rem 0",
-                borderBottom: "1px solid #e2e8f0",
-              }}
-            >
-              <span style={{ minWidth: "1.5rem" }}>{indice + 1}.</span>
-              <span style={{ flex: 1 }}>{RATULO_PAPEL[papel]}</span>
+            <li key={indice} className={styles.stepRow}>
+              <span className={styles.stepPill}>
+                {indice + 1} · {RATULO_PAPEL[papel]}
+              </span>
+              <span className={styles.stepRowSpacer} />
               <button
                 type="button"
+                className={styles.iconBtn}
                 onClick={() => mover(indice, -1)}
                 disabled={indice === 0}
                 aria-label={`Mover etapa ${indice + 1} para cima`}
@@ -78,6 +70,7 @@ export default function EtapasEditor({ value, onChange }: EtapasEditorProps) {
               </button>
               <button
                 type="button"
+                className={styles.iconBtn}
                 onClick={() => mover(indice, 1)}
                 disabled={indice === value.length - 1}
                 aria-label={`Mover etapa ${indice + 1} para baixo`}
@@ -86,18 +79,20 @@ export default function EtapasEditor({ value, onChange }: EtapasEditorProps) {
               </button>
               <button
                 type="button"
+                className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                 onClick={() => remover(indice)}
                 aria-label={`Remover etapa ${indice + 1}`}
               >
-                Remover
+                ×
               </button>
             </li>
           ))}
         </ol>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div className={styles.addRow}>
         <select
+          className={styles.select}
           value={papelParaAdicionar}
           onChange={(e) => setPapelParaAdicionar(e.target.value as PapelAprovador)}
           aria-label="Papel da nova etapa"
@@ -108,8 +103,12 @@ export default function EtapasEditor({ value, onChange }: EtapasEditorProps) {
             </option>
           ))}
         </select>
-        <button type="button" onClick={adicionar}>
-          Adicionar etapa
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnGhost}`}
+          onClick={adicionar}
+        >
+          + Adicionar etapa
         </button>
       </div>
     </div>

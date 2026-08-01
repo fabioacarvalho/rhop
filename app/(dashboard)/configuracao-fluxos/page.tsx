@@ -7,6 +7,13 @@ import {
 } from "@/lib/services/authService";
 import { listar } from "@/lib/services/tipoFluxoService";
 import { Role } from "@/lib/generated/prisma/client";
+import type { PapelAprovador } from "@/lib/validations/tipoFluxo";
+import styles from "./configuracao-fluxos.module.css";
+
+const ROTULO_PAPEL: Record<PapelAprovador, string> = {
+  GESTOR: "Gestor",
+  RH_ADMIN: "RH_Admin",
+};
 
 /**
  * Tela de Configuração de Fluxos (CONF-01, CONF-06) — Server Component.
@@ -33,7 +40,7 @@ export default async function Page() {
 
     if (erro instanceof ErroNaoAutorizado) {
       return (
-        <main style={{ padding: "2rem" }}>
+        <main className={styles.restrito}>
           <h1>Acesso restrito</h1>
           <p>Você não tem permissão para acessar esta página.</p>
         </main>
@@ -46,41 +53,51 @@ export default async function Page() {
   const tiposFluxo = await listar();
 
   return (
-    <main style={{ padding: "2rem" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <h1>Configuração de Fluxos</h1>
-        <Link href="/configuracao-fluxos/novo">Novo tipo de fluxo</Link>
-      </div>
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Configuração de Fluxos</h1>
+          <p className={styles.subtitle}>
+            Tipos de fluxo, campos de formulário e etapas de aprovação.
+          </p>
+        </div>
+        <Link href="/configuracao-fluxos/novo" className={`${styles.btn} ${styles.btnPrimary}`}>
+          + Novo tipo de fluxo
+        </Link>
+      </header>
 
       {tiposFluxo.length === 0 ? (
-        <p>Nenhum tipo de fluxo cadastrado ainda.</p>
+        <p className={styles.empty}>Nenhum tipo de fluxo cadastrado ainda.</p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {tiposFluxo.map((tipoFluxo) => (
-            <li
-              key={tipoFluxo.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "0.75rem 0",
-                borderBottom: "1px solid #e2e8f0",
-              }}
-            >
-              <span>{tipoFluxo.nome}</span>
-              <Link href={`/configuracao-fluxos/${tipoFluxo.id}/editar`}>
-                Editar
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className={styles.stack}>
+          {tiposFluxo.map((tipoFluxo) => {
+            const etapas = tipoFluxo.etapas as PapelAprovador[];
+            return (
+              <div key={tipoFluxo.id} className={styles.card}>
+                <div className={styles.cardHead}>
+                  <strong className={styles.nome}>{tipoFluxo.nome}</strong>
+                  <Link
+                    href={`/configuracao-fluxos/${tipoFluxo.id}/editar`}
+                    className={`${styles.btn} ${styles.btnGhost}`}
+                  >
+                    Editar
+                  </Link>
+                </div>
+                <div className={styles.eyebrow}>Etapas de aprovação</div>
+                <div className={styles.stepsRow}>
+                  {etapas.map((papel, indice) => (
+                    <span key={indice} style={{ display: "contents" }}>
+                      {indice > 0 && <span className={styles.stepArrow}>→</span>}
+                      <span className={styles.stepPill}>
+                        {indice + 1} · {ROTULO_PAPEL[papel]}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </main>
   );

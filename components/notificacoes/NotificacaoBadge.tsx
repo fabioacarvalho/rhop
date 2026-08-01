@@ -19,21 +19,27 @@ export function NotificacaoBadge() {
   if (contagem === 0) return null;
 
   return (
-    <div style={{
-      position: 'absolute',
-      top: '-5px',
-      right: '-5px',
-      backgroundColor: 'red',
-      color: 'white',
-      borderRadius: '50%',
-      width: '20px',
-      height: '20px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '12px',
-      fontWeight: 'bold'
-    }}>
+    <div
+      style={{
+        position: 'absolute',
+        top: '2px',
+        right: '2px',
+        backgroundColor: 'var(--vermelho)',
+        color: '#fff',
+        border: '2px solid var(--paper-raised)',
+        borderRadius: '50%',
+        minWidth: '18px',
+        height: '18px',
+        padding: '0 3px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '10px',
+        fontWeight: 700,
+        lineHeight: 1,
+      }}
+      aria-hidden="true"
+    >
       {contagem > 99 ? '99+' : contagem}
     </div>
   );

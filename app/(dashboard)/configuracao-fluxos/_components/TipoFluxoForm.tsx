@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
   CampoFormularioDefinicao,
@@ -9,6 +10,7 @@ import type {
 } from "@/lib/validations/tipoFluxo";
 import EtapasEditor from "./EtapasEditor";
 import CampoFormularioEditor from "./CampoFormularioEditor";
+import styles from "../configuracao-fluxos.module.css";
 
 interface TipoFluxoFormProps {
   modo: "criar" | "editar";
@@ -117,45 +119,58 @@ export default function TipoFluxoForm({
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-          Nome
-          <input
-            type="text"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder="ex: Solicitação de Férias"
-          />
+    <form onSubmit={handleSubmit} className={`${styles.card} ${styles.ruled}`}>
+      <div className={styles.field}>
+        <label htmlFor="nome" className={styles.fieldLabel}>
+          Nome do tipo de fluxo
         </label>
-      </div>
-
-      <div style={{ marginBottom: "1.5rem" }}>
-        <EtapasEditor value={etapas} onChange={setEtapas} />
-      </div>
-
-      <div style={{ marginBottom: "1.5rem" }}>
-        <CampoFormularioEditor
-          value={camposFormulario}
-          onChange={setCamposFormulario}
+        <input
+          id="nome"
+          type="text"
+          className={styles.input}
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          placeholder="ex: Solicitação de Férias"
         />
       </div>
 
-      {erroValidacao && (
-        <p role="alert" style={{ color: "#b91c1c", marginBottom: "1rem" }}>
-          {erroValidacao}
-        </p>
-      )}
+      <div className={styles.sectionDivider}>
+        <span>Etapas de aprovação</span>
+      </div>
+      <EtapasEditor value={etapas} onChange={setEtapas} />
 
-      {erroSubmissao && (
-        <p role="alert" style={{ color: "#b91c1c", marginBottom: "1rem" }}>
-          {erroSubmissao}
-        </p>
-      )}
+      <div className={styles.sectionDivider}>
+        <span>Campos do formulário</span>
+      </div>
+      <CampoFormularioEditor
+        value={camposFormulario}
+        onChange={setCamposFormulario}
+      />
 
-      <button type="submit" disabled={enviando}>
-        {enviando ? "Salvando..." : modo === "criar" ? "Criar" : "Salvar"}
-      </button>
+      <div className={styles.formFooter}>
+        {(erroValidacao || erroSubmissao) && (
+          <p role="alert" className={styles.formError}>
+            {erroValidacao ?? erroSubmissao}
+          </p>
+        )}
+        <Link
+          href="/configuracao-fluxos"
+          className={`${styles.btn} ${styles.btnLg} ${styles.btnGhost}`}
+        >
+          Cancelar
+        </Link>
+        <button
+          type="submit"
+          disabled={enviando}
+          className={`${styles.btn} ${styles.btnLg} ${styles.btnPrimary}`}
+        >
+          {enviando
+            ? "Salvando..."
+            : modo === "criar"
+              ? "Criar tipo de fluxo"
+              : "Salvar alterações"}
+        </button>
+      </div>
     </form>
   );
 }

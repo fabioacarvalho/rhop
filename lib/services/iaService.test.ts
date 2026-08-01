@@ -22,7 +22,11 @@ vi.mock("@/lib/services/logService", () => ({
 
 import { registrar } from "@/lib/services/logService";
 import { Role } from "@/lib/generated/prisma/client";
-import { gerarResumoInsights, gerarResumoSolicitacao } from "./iaService";
+import {
+  gerarJustificativaRanking,
+  gerarResumoInsights,
+  gerarResumoSolicitacao,
+} from "./iaService";
 
 const mockRegistrar = vi.mocked(registrar);
 
@@ -170,6 +174,88 @@ describe("iaService.gerarResumoInsights", () => {
       entidade_id: "Reembolso:ULTIMOS_30_DIAS:STATUS",
       acao: "FALHA_IA",
       detalhes: { motivo: "timeout" },
+    });
+  });
+});
+
+const rankingInputBase = {
+  candidatoId: "cand-1",
+  nome: "Marina Costa",
+  curriculoTexto: "Engenheira de dados, 6 anos de experiencia.",
+  transcricaoTexto: "Entrevista tecnica: forte em SQL e pipelines.",
+  queryTexto: "engenheiro de dados senior",
+};
+
+describe("iaService.gerarJustificativaRanking", () => {
+  it("sucesso com conteudo nao-vazio -> retorna texto trimado e nao grava ERRO", async () => {
+    mockCreate.mockResolvedValueOnce({
+      choices: [{ message: { content: "  Forte aderencia ao perfil.  " } }],
+    });
+
+    const result = await gerarJustificativaRanking(rankingInputBase);
+
+    expect(result).toBe("Forte aderencia ao perfil.");
+    expect(mockRegistrar).not.toHaveBeenCalled();
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "gpt-4o-mini",
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: "user",
+            content: expect.stringContaining("engenheiro de dados senior"),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it("OPENAI_API_KEY ausente -> null + registrar ERRO sem chamar OpenAI", async () => {
+    delete process.env.OPENAI_API_KEY;
+
+    const result = await gerarJustificativaRanking(rankingInputBase);
+
+    expect(result).toBeNull();
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockRegistrar).toHaveBeenCalledWith({
+      tipo: "ERRO",
+      entidade: "Candidato",
+      entidade_id: "cand-1",
+      acao: "FALHA_IA",
+      detalhes: { motivo: "OPENAI_API_KEY ausente" },
+    });
+  });
+
+  it("falha/throw da OpenAI -> null + registrar ERRO FALHA_IA com entidade Candidato", async () => {
+    mockCreate.mockRejectedValueOnce(new Error("rate limit"));
+
+    const result = await gerarJustificativaRanking(rankingInputBase);
+
+    expect(result).toBeNull();
+    expect(mockRegistrar).toHaveBeenCalledTimes(1);
+    expect(mockRegistrar).toHaveBeenCalledWith({
+      tipo: "ERRO",
+      entidade: "Candidato",
+      entidade_id: "cand-1",
+      acao: "FALHA_IA",
+      detalhes: { motivo: "rate limit" },
+    });
+  });
+
+  it("conteudo vazio da OpenAI -> null + registrar ERRO FALHA_IA", async () => {
+    mockCreate.mockResolvedValueOnce({
+      choices: [{ message: { content: "   " } }],
+    });
+
+    const result = await gerarJustificativaRanking(rankingInputBase);
+
+    expect(result).toBeNull();
+    expect(mockRegistrar).toHaveBeenCalledTimes(1);
+    expect(mockRegistrar).toHaveBeenCalledWith({
+      tipo: "ERRO",
+      entidade: "Candidato",
+      entidade_id: "cand-1",
+      acao: "FALHA_IA",
+      detalhes: { motivo: "conteudo vazio da OpenAI" },
     });
   });
 });

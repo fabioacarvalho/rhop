@@ -39,20 +39,26 @@ export class ErroValidacaoTipoFluxo extends Error {
   }
 }
 
-/** Item de `listar()` — id + nome, o minimo exigido por CONF-06. */
-export type TipoFluxoResumo = Pick<TipoFluxo, "id" | "nome">;
+/**
+ * Item de `listar()` — inclui `etapas` alem de `id`+`nome` porque a tela de
+ * listagem (Screen 7, `docs/design-ux-ui/fluxorh-ui-layout-specs.md`) exibe
+ * as etapas de aprovacao de cada tipo de fluxo direto no card, sem round-trip
+ * extra por `buscarPorId`. `campos_formulario` continua fora (so a tela de
+ * edicao precisa do registro completo).
+ */
+export type TipoFluxoResumo = Pick<TipoFluxo, "id" | "nome" | "etapas">;
 
 /** Registro completo de `TipoFluxo`, retornado por `buscarPorId`/`criar`/`editar`. */
 export type TipoFluxoDetalhe = TipoFluxo;
 
 /**
  * Lista todos os `TipoFluxo` cadastrados (CONF-06), ordenados por `nome`
- * para exibicao estavel na UI. Retorna apenas `id`+`nome` — a listagem nao
- * precisa do registro completo (`campos_formulario`/`etapas`).
+ * para exibicao estavel na UI. Retorna `id`+`nome`+`etapas` — a listagem nao
+ * precisa do registro completo (`campos_formulario` fica de fora).
  */
 export async function listar(): Promise<TipoFluxoResumo[]> {
   return prisma.tipoFluxo.findMany({
-    select: { id: true, nome: true },
+    select: { id: true, nome: true, etapas: true },
     orderBy: { nome: "asc" },
   });
 }

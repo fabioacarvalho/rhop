@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PAGE_SIZE_PADRAO, definirPaginacaoInfo } from "./AuditoriaLogsContext";
+import styles from "../auditoria-logs.module.css";
 
 interface LogUsuarioResumo {
   nome: string;
@@ -55,6 +56,14 @@ function nomeUsuario(log: LogRegistro): string {
     return "Sistema";
   }
   return log.usuario?.nome ?? log.usuario_id;
+}
+
+function tipoClasse(tipo: LogRegistro["tipo"]): string {
+  return tipo === "AUDITORIA" ? styles.logTipoAuditoria : styles.logTipoErro;
+}
+
+function tipoRotulo(tipo: LogRegistro["tipo"]): string {
+  return tipo === "AUDITORIA" ? "Auditoria" : "Erro";
 }
 
 /**
@@ -145,81 +154,95 @@ export default function LogTabela() {
   }
 
   if (erro) {
-    return <p role="alert">{erro}</p>;
+    return (
+      <div className={styles.card}>
+        <p className={styles.erro} role="alert">
+          {erro}
+        </p>
+      </div>
+    );
   }
 
   if (carregando) {
-    return <p>Carregando logs...</p>;
+    return (
+      <div className={styles.card}>
+        <p className={styles.carregando}>Carregando logs...</p>
+      </div>
+    );
   }
 
   if (logs.length === 0) {
-    return <p>Nenhum log encontrado.</p>;
+    return (
+      <div className={styles.card}>
+        <p className={styles.empty}>Nenhum log encontrado</p>
+      </div>
+    );
   }
 
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-      <thead>
-        <tr>
-          <th></th>
-          <th style={{ textAlign: "left" }}>Data/hora</th>
-          <th style={{ textAlign: "left" }}>Tipo</th>
-          <th style={{ textAlign: "left" }}>Entidade</th>
-          <th style={{ textAlign: "left" }}>ID da entidade</th>
-          <th style={{ textAlign: "left" }}>Ação</th>
-          <th style={{ textAlign: "left" }}>Usuário</th>
-        </tr>
-      </thead>
-      <tbody>
-        {logs.map((log) => {
-          const expandido = expandidos.has(log.id);
-          return (
-            <Fragment key={log.id}>
-              <tr>
-                <td>
-                  <button
-                    type="button"
-                    onClick={() => alternarExpandido(log.id)}
-                    aria-expanded={expandido}
-                    aria-label={
-                      expandido ? "Recolher detalhes" : "Expandir detalhes"
-                    }
-                  >
-                    {expandido ? "−" : "+"}
-                  </button>
-                </td>
-                <td>{formatarData(log.criado_em)}</td>
-                <td>{log.tipo}</td>
-                <td>{log.entidade}</td>
-                <td>{log.entidade_id}</td>
-                <td>{log.acao}</td>
-                <td>{nomeUsuario(log)}</td>
-              </tr>
-              {expandido && (
+    <div className={styles.card}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th className={styles.expandCol}></th>
+            <th>Quando</th>
+            <th>Tipo</th>
+            <th>Entidade</th>
+            <th>Ação</th>
+            <th>Usuário</th>
+          </tr>
+        </thead>
+        <tbody>
+          {logs.map((log) => {
+            const expandido = expandidos.has(log.id);
+            return (
+              <Fragment key={log.id}>
                 <tr>
-                  <td colSpan={7}>
-                    {temDetalhes(log.detalhes) ? (
-                      <pre
-                        style={{
-                          maxHeight: "16rem",
-                          overflow: "auto",
-                          background: "#f8fafc",
-                          color: "#0f172a",
-                          padding: "0.75rem",
-                          borderRadius: "4px",
-                        }}
-                      >
-                        {JSON.stringify(log.detalhes, null, 2)}
-                      </pre>
-                    ) : (
-                      <p>Sem detalhes adicionais.</p>
-                    )}
+                  <td>
+                    <button
+                      type="button"
+                      className={styles.expandBtn}
+                      onClick={() => alternarExpandido(log.id)}
+                      aria-expanded={expandido}
+                      aria-label={
+                        expandido ? "Recolher detalhes" : "Expandir detalhes"
+                      }
+                    >
+                      {expandido ? "−" : "+"}
+                    </button>
                   </td>
+                  <td className={styles.mono}>{formatarData(log.criado_em)}</td>
+                  <td>
+                    <span className={`${styles.logTipo} ${tipoClasse(log.tipo)}`}>
+                      {tipoRotulo(log.tipo)}
+                    </span>
+                  </td>
+                  <td className={styles.proto}>
+                    {log.entidade} #{log.entidade_id}
+                  </td>
+                  <td>{log.acao}</td>
+                  <td>{nomeUsuario(log)}</td>
                 </tr>
-              )}
-            </Fragment>
-          );
-        })}
-      </tbody>
-    </table>
+                {expandido && (
+                  <tr className={styles.detalheRow}>
+                    <td colSpan={6}>
+                      {temDetalhes(log.detalhes) ? (
+                        <pre className={styles.detalhePre}>
+                          {JSON.stringify(log.detalhes, null, 2)}
+                        </pre>
+                      ) : (
+                        <p className={styles.semDetalhes}>
+                          Sem detalhes adicionais.
+                        </p>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

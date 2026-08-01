@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PAGE_SIZE_PADRAO, usePaginacaoInfo } from "./AuditoriaLogsContext";
+import styles from "../auditoria-logs.module.css";
 
 /**
  * Paginação simples da tela de Auditoria/Logs (AUD-11).
@@ -37,17 +38,10 @@ export default function LogPaginacao() {
   }
 
   return (
-    <nav
-      aria-label="Paginação de logs"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "0.75rem",
-        marginTop: "1rem",
-      }}
-    >
+    <nav aria-label="Paginação de logs" className={styles.paginacao}>
       <button
         type="button"
+        className={`${styles.btn} ${styles.btnGhost}`}
         onClick={() => irParaPagina(paginaAtual - 1)}
         disabled={!podeVoltar}
       >
@@ -58,6 +52,7 @@ export default function LogPaginacao() {
       </span>
       <button
         type="button"
+        className={`${styles.btn} ${styles.btnGhost}`}
         onClick={() => irParaPagina(paginaAtual + 1)}
         disabled={!podeAvancar}
       >

@@ -4,13 +4,15 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../lib/generated/prisma"
-  moduleFormat = "cjs"
+  provider        = "prisma-client"
+  output          = "../lib/generated/prisma"
+  moduleFormat    = "cjs"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [vector]
 }
 
 enum Role {
@@ -33,6 +35,7 @@ model User {
   solicitacoes Solicitacao[]
   aprovacoes   Aprovacao[]
   feedbacks    Feedback[]
+  candidatos   Candidato[]
 }
 
 enum LogTipo {
@@ -96,6 +99,7 @@ model Solicitacao {
   criado_em          DateTime          @default(now())
   aprovacoes         Aprovacao[]
   notificacoes       Notificacao[]
+  candidatos         Candidato[]
 
   @@index([tipo_fluxo_id])
   @@index([status])
@@ -176,4 +180,31 @@ model Feedback {
   @@index([usuario_id])
   @@index([status])
   @@map("feedbacks")
+}
+
+enum StatusEmbedding {
+  pendente
+  processado
+  falhou
+}
+
+model Candidato {
+  id                    String          @id @default(cuid())
+  nome                  String
+  email                 String          @unique
+  telefone              String
+  curriculo_texto       String
+  curriculo_arquivo_url String?
+  transcricao_texto     String
+  embedding             Unsupported("vector(1536)")?
+  status_embedding      StatusEmbedding @default(pendente)
+  solicitacao_id        String?
+  solicitacao           Solicitacao?    @relation(fields: [solicitacao_id], references: [id])
+  criado_por            String          @db.Uuid
+  criador               User            @relation(fields: [criado_por], references: [id])
+  criado_em             DateTime        @default(now())
+
+  @@index([status_embedding])
+  @@index([solicitacao_id])
+  @@map("candidatos")
 }

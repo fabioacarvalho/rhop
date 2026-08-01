@@ -8,6 +8,7 @@ import { Role } from "@/lib/generated/prisma/client";
 import LogFiltros from "./_components/LogFiltros";
 import LogTabela from "./_components/LogTabela";
 import LogPaginacao from "./_components/LogPaginacao";
+import styles from "./auditoria-logs.module.css";
 
 /**
  * Tela de Auditoria/Logs (AUD-05) — Server Component.
@@ -52,7 +53,7 @@ export default async function Page() {
 
     if (erro instanceof ErroNaoAutorizado) {
       return (
-        <main style={{ padding: "2rem" }}>
+        <main className={styles.restrito}>
           <h1>Acesso restrito</h1>
           <p>Você não tem permissão para acessar esta página.</p>
         </main>
@@ -63,8 +64,16 @@ export default async function Page() {
   }
 
   return (
-    <main style={{ padding: "2rem" }}>
-      <h1>Auditoria e Logs</h1>
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Auditoria &amp; Logs</h1>
+          <p className={styles.subtitle}>
+            Nada se perde silenciosamente — toda ação e toda falha ficam registradas.
+          </p>
+        </div>
+      </header>
+
       <LogFiltros />
       <LogTabela />
       <LogPaginacao />

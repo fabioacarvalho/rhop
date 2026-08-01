@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   requireUser,
@@ -6,6 +7,7 @@ import {
 } from "@/lib/services/authService";
 import { Role } from "@/lib/generated/prisma/client";
 import TipoFluxoForm from "../_components/TipoFluxoForm";
+import styles from "../configuracao-fluxos.module.css";
 
 /**
  * Tela de criação de `TipoFluxo` (CONF-01, CONF-07) — Server Component.
@@ -32,7 +34,7 @@ export default async function Page() {
 
     if (erro instanceof ErroNaoAutorizado) {
       return (
-        <main style={{ padding: "2rem" }}>
+        <main className={styles.restrito}>
           <h1>Acesso restrito</h1>
           <p>Você não tem permissão para acessar esta página.</p>
         </main>
@@ -43,8 +45,19 @@ export default async function Page() {
   }
 
   return (
-    <main style={{ padding: "2rem" }}>
-      <h1>Novo tipo de fluxo</h1>
+    <main className={styles.page}>
+      <Link href="/configuracao-fluxos" className={styles.backLink}>
+        ← Configuração de Fluxos
+      </Link>
+      <header className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Novo tipo de fluxo</h1>
+          <p className={styles.subtitle}>
+            Defina o nome, as etapas de aprovação e os campos do formulário.
+          </p>
+        </div>
+      </header>
+
       <TipoFluxoForm modo="criar" />
     </main>
   );

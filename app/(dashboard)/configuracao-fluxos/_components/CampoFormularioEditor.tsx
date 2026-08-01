@@ -5,6 +5,7 @@ import {
   type CampoFormularioDefinicao,
   type TipoCampo,
 } from "@/lib/validations/tipoFluxo";
+import styles from "../configuracao-fluxos.module.css";
 
 interface CampoFormularioEditorProps {
   value: CampoFormularioDefinicao[];
@@ -96,34 +97,18 @@ export default function CampoFormularioEditor({
 
   return (
     <div>
-      <h3 style={{ marginBottom: "0.5rem" }}>Campos do formulário</h3>
-
       {value.length === 0 ? (
-        <p style={{ color: "#64748b" }}>Nenhum campo adicionado ainda.</p>
+        <p className={styles.emptyInline}>Nenhum campo adicionado ainda.</p>
       ) : (
-        <ul style={{ padding: 0, listStyle: "none", marginBottom: "0.75rem" }}>
+        <div>
           {value.map((campo, indice) => (
-            <li
-              key={indice}
-              style={{
-                border: "1px solid #e2e8f0",
-                borderRadius: "4px",
-                padding: "0.75rem",
-                marginBottom: "0.75rem",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                <strong>Campo {indice + 1}</strong>
-                <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div key={indice} className={styles.fieldCard}>
+              <div className={styles.fieldCardHead}>
+                <span className={styles.fieldCardTitle}>Campo {indice + 1}</span>
+                <div className={styles.fieldCardActions}>
                   <button
                     type="button"
+                    className={styles.iconBtn}
                     onClick={() => moverCampo(indice, -1)}
                     disabled={indice === 0}
                     aria-label={`Mover campo ${indice + 1} para cima`}
@@ -132,6 +117,7 @@ export default function CampoFormularioEditor({
                   </button>
                   <button
                     type="button"
+                    className={styles.iconBtn}
                     onClick={() => moverCampo(indice, 1)}
                     disabled={indice === value.length - 1}
                     aria-label={`Mover campo ${indice + 1} para baixo`}
@@ -140,27 +126,21 @@ export default function CampoFormularioEditor({
                   </button>
                   <button
                     type="button"
+                    className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                     onClick={() => removerCampo(indice)}
                     aria-label={`Remover campo ${indice + 1}`}
                   >
-                    Remover
+                    ×
                   </button>
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "0.75rem",
-                }}
-              >
-                <label
-                  style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-                >
-                  Chave
+              <div className={styles.fieldGrid}>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Chave</span>
                   <input
                     type="text"
+                    className={styles.input}
                     value={campo.chave}
                     onChange={(e) =>
                       atualizarCampo(indice, { chave: e.target.value })
@@ -169,12 +149,11 @@ export default function CampoFormularioEditor({
                   />
                 </label>
 
-                <label
-                  style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-                >
-                  Rótulo
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Rótulo</span>
                   <input
                     type="text"
+                    className={styles.input}
                     value={campo.rotulo}
                     onChange={(e) =>
                       atualizarCampo(indice, { rotulo: e.target.value })
@@ -183,11 +162,10 @@ export default function CampoFormularioEditor({
                   />
                 </label>
 
-                <label
-                  style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-                >
-                  Tipo
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Tipo</span>
                   <select
+                    className={styles.select}
                     value={campo.tipo}
                     onChange={(e) => mudarTipo(indice, e.target.value as TipoCampo)}
                   >
@@ -199,14 +177,7 @@ export default function CampoFormularioEditor({
                   </select>
                 </label>
 
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.25rem",
-                    alignSelf: "flex-end",
-                  }}
-                >
+                <label className={styles.checkboxField}>
                   <input
                     type="checkbox"
                     checked={campo.obrigatorio}
@@ -219,16 +190,13 @@ export default function CampoFormularioEditor({
 
                 {(campo.tipo === "texto" || campo.tipo === "numero") && (
                   <>
-                    <label
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.25rem",
-                      }}
-                    >
-                      {campo.tipo === "numero" ? "Valor mínimo" : "Tamanho mínimo"}
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>
+                        {campo.tipo === "numero" ? "Valor mínimo" : "Tamanho mínimo"}
+                      </span>
                       <input
                         type="number"
+                        className={styles.input}
                         value={campo.min ?? ""}
                         onChange={(e) =>
                           atualizarCampo(indice, {
@@ -241,16 +209,13 @@ export default function CampoFormularioEditor({
                       />
                     </label>
 
-                    <label
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.25rem",
-                      }}
-                    >
-                      {campo.tipo === "numero" ? "Valor máximo" : "Tamanho máximo"}
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>
+                        {campo.tipo === "numero" ? "Valor máximo" : "Tamanho máximo"}
+                      </span>
                       <input
                         type="number"
+                        className={styles.input}
                         value={campo.max ?? ""}
                         onChange={(e) =>
                           atualizarCampo(indice, {
@@ -267,19 +232,13 @@ export default function CampoFormularioEditor({
               </div>
 
               {campo.tipo === "selecao" && (
-                <div style={{ marginTop: "0.5rem" }}>
-                  <span>Opções</span>
+                <div className={styles.opcoesBox}>
+                  <span className={styles.opcoesLabel}>Opções</span>
                   {(campo.opcoes ?? []).map((opcao, indiceOpcao) => (
-                    <div
-                      key={indiceOpcao}
-                      style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        marginTop: "0.25rem",
-                      }}
-                    >
+                    <div key={indiceOpcao} className={styles.opcaoRow}>
                       <input
                         type="text"
+                        className={styles.input}
                         value={opcao}
                         onChange={(e) =>
                           atualizarOpcao(indice, indiceOpcao, e.target.value)
@@ -288,31 +247,37 @@ export default function CampoFormularioEditor({
                       />
                       <button
                         type="button"
+                        className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                         onClick={() => removerOpcao(indice, indiceOpcao)}
                         aria-label={`Remover opção ${indiceOpcao + 1} do campo ${
                           indice + 1
                         }`}
                       >
-                        Remover
+                        ×
                       </button>
                     </div>
                   ))}
                   <button
                     type="button"
+                    className={`${styles.btn} ${styles.btnGhost}`}
+                    style={{ marginTop: "10px" }}
                     onClick={() => adicionarOpcao(indice)}
-                    style={{ marginTop: "0.5rem" }}
                   >
-                    Adicionar opção
+                    + Adicionar opção
                   </button>
                 </div>
               )}
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
-      <button type="button" onClick={adicionarCampo}>
-        Adicionar campo
+      <button
+        type="button"
+        className={`${styles.btn} ${styles.btnGhost}`}
+        onClick={adicionarCampo}
+      >
+        + Adicionar campo
       </button>
     </div>
   );

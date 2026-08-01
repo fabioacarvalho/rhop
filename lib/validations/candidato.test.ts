@@ -1,0 +1,73 @@
+import { describe, expect, it } from "vitest";
+import { candidatoInputSchema, type CandidatoInput } from "./candidato";
+
+function candidatoValido(
+  overrides: Partial<CandidatoInput> = {},
+): CandidatoInput {
+  return {
+    nome: "Marina Costa",
+    email: "marina.costa@empresa.com",
+    telefone: "11999998888",
+    curriculo_texto: "Engenheira de software com 8 anos de experiência.",
+    transcricao_texto: "Entrevista: candidata demonstrou forte domínio técnico.",
+    ...overrides,
+  };
+}
+
+describe("candidatoInputSchema", () => {
+  it("aceita um envelope válido", () => {
+    expect(candidatoInputSchema.safeParse(candidatoValido()).success).toBe(true);
+  });
+
+  it("aceita solicitacao_id ausente (campo opcional)", () => {
+    const resultado = candidatoInputSchema.safeParse(candidatoValido());
+    expect(resultado.success).toBe(true);
+  });
+
+  it("aceita solicitacao_id quando informado", () => {
+    const resultado = candidatoInputSchema.safeParse(
+      candidatoValido({ solicitacao_id: "sol-123" }),
+    );
+    expect(resultado.success).toBe(true);
+  });
+
+  it("rejeita nome ausente", () => {
+    const { nome: _nome, ...semNome } = candidatoValido();
+    expect(candidatoInputSchema.safeParse(semNome).success).toBe(false);
+  });
+
+  it("rejeita nome vazio", () => {
+    expect(
+      candidatoInputSchema.safeParse(candidatoValido({ nome: "" })).success,
+    ).toBe(false);
+  });
+
+  it("rejeita email mal formatado", () => {
+    expect(
+      candidatoInputSchema.safeParse(candidatoValido({ email: "nao-e-email" }))
+        .success,
+    ).toBe(false);
+  });
+
+  it("rejeita telefone vazio", () => {
+    expect(
+      candidatoInputSchema.safeParse(candidatoValido({ telefone: "" })).success,
+    ).toBe(false);
+  });
+
+  it("rejeita curriculo_texto vazio", () => {
+    expect(
+      candidatoInputSchema.safeParse(
+        candidatoValido({ curriculo_texto: "" }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it("rejeita transcricao_texto vazio", () => {
+    expect(
+      candidatoInputSchema.safeParse(
+        candidatoValido({ transcricao_texto: "" }),
+      ).success,
+    ).toBe(false);
+  });
+});

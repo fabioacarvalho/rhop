@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import {
   requireUser,
@@ -12,6 +13,7 @@ import type {
   TipoFluxoInput,
 } from "@/lib/validations/tipoFluxo";
 import TipoFluxoForm from "../../_components/TipoFluxoForm";
+import styles from "../../configuracao-fluxos.module.css";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -53,7 +55,7 @@ export default async function Page({ params }: PageProps) {
 
     if (erro instanceof ErroNaoAutorizado) {
       return (
-        <main style={{ padding: "2rem" }}>
+        <main className={styles.restrito}>
           <h1>Acesso restrito</h1>
           <p>Você não tem permissão para acessar esta página.</p>
         </main>
@@ -82,8 +84,20 @@ export default async function Page({ params }: PageProps) {
   };
 
   return (
-    <main style={{ padding: "2rem" }}>
-      <h1>Editar tipo de fluxo</h1>
+    <main className={styles.page}>
+      <Link href="/configuracao-fluxos" className={styles.backLink}>
+        ← Configuração de Fluxos
+      </Link>
+      <header className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Editar tipo de fluxo</h1>
+          <p className={styles.subtitle}>
+            Ajuste o nome, as etapas de aprovação e os campos do formulário de{" "}
+            {tipoFluxo.nome}.
+          </p>
+        </div>
+      </header>
+
       <TipoFluxoForm modo="editar" tipoFluxoId={id} initialData={initialData} />
     </main>
   );

@@ -1,0 +1,23 @@
+.trigger {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.trigger:hover {
+  background: var(--azul-100);
+  color: var(--azul-700);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--azul-500);
+  outline-offset: 2px;
+}
