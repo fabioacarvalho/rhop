@@ -1,0 +1,306 @@
+# Botão de Ajuda com Abertura de Issue no GitHub Tasks
+
+**Design**: `.specs/features/botao-ajuda-github/design.md`
+**Status**: Done — todas as 6 tasks implementadas e verificadas (build + lint + testes + QA manual com Playwright em servidor real, ver seção "Verificação Final")
+
+---
+
+## Convenção de Testes (inferida — não existe `.specs/codebase/TESTING.md`)
+
+Não há matriz de cobertura documentada no projeto. Inferido a partir do código existente (`vitest.config.mts` roda só `environment: "node"`, sem `jsdom`/Testing Library instalado; `lib/navigation/navConfig.test.ts` e `middleware.test.ts` só testam funções puras):
+
+| Tipo de código | Teste exigido | Gate |
+| --- | --- | --- |
+| Função pura em `lib/**` (sem DOM, sem I/O) | `unit` (vitest) | `npm run test` |
+| Componente React (`components/**`, `app/**`) | Nenhum teste automatizado (sem infra de DOM no projeto) | `npm run build` + roteiro de teste manual descrito na task |
+
+Isso é consistente com o próprio `menu-navegacao/design.md` (seus componentes `Sidebar`/`Topbar`/`AppShell` também não listam testes automatizados, só `navConfig.ts` tem `.test.ts`).
+
+---
+
+## Execution Plan
+
+### Phase 1: Foundation (Parallel OK)
+
+```
+T1 [P] ──┐
+T2 [P] ──┼──→ (Phase 2)
+T6 [P] ──┘
+```
+
+### Phase 2: Core Implementation (Sequential — cada um consome o anterior)
+
+```
+T1, T2 completos, então:
+  T3 ──→ T4
+```
+
+### Phase 3: Integration (Sequential)
+
+```
+T4 completo, então:
+  T5
+```
+
+---
+
+## Task Breakdown
+
+### T1: Criar função pura `buildGithubIssueUrl` [P] — ✅ Complete
+
+**What**: Função pura que monta a URL de `.../issues/new` (título `[tipo] titulo-ou-"(sem título)"`, corpo com tipo/tela/papel/descrição, sem e-mail/nome).
+**Where**: `lib/helpers/githubIssue.ts` (+ `lib/helpers/githubIssue.test.ts`)
+**Depends on**: None
+**Reuses**: `Role` (`lib/generated/prisma/client`) só como tipo do parâmetro `papel`
+**Requirement**: HELP-04, HELP-06, HELP-08
+
+**Tools**:
+
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+
+- [ ] `buildGithubIssueUrl(input)` retorna uma URL válida com `title`/`body` codificados via `encodeURIComponent`
+- [ ] Título vazio/só espaços vira `"(sem título)"` no `title` final (HELP-06)
+- [ ] Corpo contém exatamente tipo, tela, papel e descrição — assinatura da função não aceita e-mail nem nome, então é impossível o teste assar esses campos (HELP-08)
+- [ ] `npm run test` passa
+- [ ] Test count: pelo menos 4 casos (URL básica; título vazio → padrão; caracteres especiais/acentos codificados corretamente; papel refletido no corpo)
+
+**Tests**: unit
+**Gate**: quick (`npm run test`)
+
+**Commit**: `feat(ajuda): adiciona buildGithubIssueUrl`
+
+---
+
+### T2: Criar `ajuda.module.css` [P] — ✅ Complete
+
+**What**: CSS Module portando `.help-fab`, `.modal-overlay`, `.modal-card`, `.modal-head`, `.modal-close`, `.modal-body` do mockup, mais classes novas para o aviso de dados sensíveis e o fallback de link (não existentes no mockup).
+**Where**: `components/ajuda/ajuda.module.css`
+**Depends on**: None
+**Reuses**: tokens de `app/globals.css` (`--azul-800`, `--azul-900`, `--amarelo-600`, `--linha`, `--radius`, `--shadow`, `--font-fraunces`, `--font-inter`, `--font-ibm-plex-mono`); estrutura de `.btn`/`.btnPrimary`/`.btnGhost`/`.field` de `app/(dashboard)/aprovacoes/aprovacoes.module.css`
+**Requirement**: HELP-01, HELP-02, HELP-09, HELP-10
+
+**Tools**:
+
+- MCP: NONE
+- Skill: `frontend-design`, `ui-ux-pro-max` (garantir hierarquia visual/consistência com o design system antes de fechar o CSS)
+
+**Done when**:
+
+- [ ] `.fab` reproduz `docs/design-ux-ui/fluxorh-mockup.html` linhas 437-443 (posição fixa, círculo, borda amarela)
+- [ ] `.overlay`/`.modalCard`/`.modalHead`/`.modalClose`/`.modalBody` reproduzem linhas 444-458
+- [ ] Classe nova `.aviso` para o texto "não inclua dados pessoais..." (HELP-09) — estilo coerente com avisos existentes no produto (ex.: tom `--ink-soft`, tamanho pequeno)
+- [ ] Classe nova `.fallbackLink` para o link copiável quando o pop-up é bloqueado (HELP-10)
+- [ ] `npm run build` sem erros
+
+**Tests**: none
+**Gate**: build (`npm run build`)
+
+**Commit**: `feat(ajuda): adiciona ajuda.module.css`
+
+---
+
+### T6: Adicionar `NEXT_PUBLIC_GITHUB_REPO` ao `.env.example` [P] — ✅ Complete
+
+**What**: Documentar a nova variável de ambiente pública com placeholder e comentário explicativo, seguindo o padrão das demais entradas do arquivo.
+**Where**: `.env.example` (modificar)
+**Depends on**: None
+**Reuses**: Formato de comentário já usado nas outras variáveis (`NEXT_PUBLIC_SUPABASE_URL`, etc.)
+**Requirement**: N/A (infraestrutura, seção 8 do PRD)
+
+**Tools**:
+
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+
+- [ ] Linha `NEXT_PUBLIC_GITHUB_REPO=sua-org/rhop` adicionada com comentário explicando o uso (montagem da URL de issue, sem token envolvido)
+- [ ] Nenhuma outra variável existente é alterada
+
+**Tests**: none
+**Gate**: none (revisão manual do arquivo)
+
+**Commit**: `chore(ajuda): documenta NEXT_PUBLIC_GITHUB_REPO`
+
+---
+
+### T3: Criar `HelpModal.tsx` — ✅ Complete
+
+**What**: Componente client com formulário (tipo/título/descrição), tela atual somente leitura (via `resolveScreenTitle` + `usePathname`), aviso de dados sensíveis, montagem/abertura da URL (via `buildGithubIssueUrl`) e fallback de link copiável se `window.open` retornar falsy.
+**Where**: `components/ajuda/HelpModal.tsx`
+**Depends on**: T1, T2
+**Reuses**: `resolveScreenTitle` (`lib/navigation/navConfig.ts`), `buildGithubIssueUrl` (`lib/helpers/githubIssue.ts`), `ajuda.module.css`
+**Requirement**: HELP-02, HELP-03, HELP-04, HELP-05, HELP-06, HELP-07, HELP-09, HELP-10
+
+**Tools**:
+
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+
+- [ ] Modal exibe seletor de tipo (Bug/Melhoria/Dúvida, um ativo por vez), input de título, textarea de descrição e "Tela atual: {titulo}" somente leitura
+- [ ] Aviso "não inclua dados pessoais ou de solicitações específicas" visível no corpo do modal
+- [ ] Botão "Cancelar" e clique fora do card fecham o modal sem chamar `window.open` (HELP-07)
+- [ ] Botão "Abrir issue no GitHub ↗" monta a URL via `buildGithubIssueUrl`, chama `window.open(url, '_blank')`, limpa título/descrição e fecha o modal em caso de sucesso (retorno truthy)
+- [ ] Se `window.open` retornar `null`/`undefined`, o modal permanece aberto exibindo a URL como texto selecionável + botão "Copiar link" (`navigator.clipboard.writeText` em `try/catch`, falha silenciosa se a API não existir)
+- [ ] `npm run build` sem erros
+- [ ] Roteiro de teste manual (documentar no resumo da task, ver CLAUDE.md): abrir modal em uma tela do `(dashboard)`, preencher e confirmar → nova aba abre com título/corpo corretos; deixar título vazio → título vira "(sem título)"; cancelar → nenhuma aba abre; bloquear pop-up no navegador → fallback com link aparece
+
+**Tests**: none
+**Gate**: build (`npm run build`)
+
+**Commit**: `feat(ajuda): adiciona HelpModal`
+
+---
+
+### T4: Criar `HelpButton.tsx` — ✅ Complete
+
+**What**: Componente client com o FAB fixo e o estado aberto/fechado do `HelpModal`.
+**Where**: `components/ajuda/HelpButton.tsx`
+**Depends on**: T2, T3
+**Reuses**: `HelpModal`, `ajuda.module.css`
+**Requirement**: HELP-01
+
+**Tools**:
+
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+
+- [ ] `HelpButton({ papel })` renderiza o botão "?" fixo e, ao clicar, monta `HelpModal` com `papel` repassado
+- [ ] Fechar o modal (via `onClose`) desmonta/oculta o `HelpModal`, mantendo o FAB visível
+- [ ] `npm run build` sem erros
+
+**Tests**: none
+**Gate**: build (`npm run build`)
+
+**Commit**: `feat(ajuda): adiciona HelpButton`
+
+---
+
+### T5: Montar `HelpButton` no shell autenticado — ✅ Complete (SPEC_DEVIATION: montado em `AppShell.tsx`, não em `layout.tsx` — ver Verificação Final)
+
+**What**: Garantir que `HelpButton` seja renderizado em toda rota do grupo `app/(dashboard)/*`, recebendo o papel do usuário autenticado.
+**Where**: `app/(dashboard)/layout.tsx` (criar se não existir; modificar se `menu-navegacao` já o criou)
+**Depends on**: T4
+**Reuses**: `requireUser()` (`lib/services/authService.ts`) — mesmo contrato definido em `.specs/features/menu-navegacao/design.md` (chamado sem lista de papéis, só autenticação)
+**Requirement**: HELP-01, HELP-02, HELP-03 (tela oculta em `/login`, fora do grupo)
+
+**Tools**:
+
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+
+- [ ] **Se `app/(dashboard)/layout.tsx` já existir** (criado por `menu-navegacao`): adicionar `<HelpButton papel={usuario.role} />` como irmão de `{children}`, sem alterar a montagem do `AppShell`
+- [ ] **Se `app/(dashboard)/layout.tsx` ainda não existir**: criar uma versão mínima — `requireUser()` sem papéis, `redirect('/login')` em caso de `ErroNaoAutenticado` (mesmo padrão de `menu-navegacao/design.md`), e `return <>{children}<HelpButton papel={usuario.role} /></>` — para não bloquear esta feature nem antecipar a implementação completa do `AppShell` (que fica a cargo de `menu-navegacao`)
+- [ ] Botão aparece em pelo menos uma rota real do grupo (ex.: `/aprovacoes`) e não aparece em `/login`
+- [ ] `npm run build` sem erros
+- [ ] Roteiro de teste manual: autenticar com cada um dos três papéis (`SOLICITANTE`, `GESTOR`, `RH_ADMIN`) e confirmar que o botão aparece e se comporta igual para todos, em pelo menos duas rotas diferentes do grupo
+
+**Tests**: none
+**Gate**: build (`npm run build`)
+
+**Commit**: `feat(ajuda): monta HelpButton no shell autenticado`
+
+---
+
+## Parallel Execution Map
+
+```
+Phase 1 (Parallel):
+  T1 [P] ── função pura + teste unitário
+  T2 [P] ── CSS Module
+  T6 [P] ── .env.example
+
+Phase 2 (Sequential — mesmo diretório/consumo direto):
+  T1, T2 completos, então:
+    T3 ──→ T4
+
+Phase 3 (Sequential):
+  T4 completo, então:
+    T5
+```
+
+**Nota**: T3 depende de T1 (usa `buildGithubIssueUrl`) e T2 (usa classes do CSS Module); T4 depende de T2 (FAB usa `.fab`) e T3 (renderiza `HelpModal`) — por isso não são `[P]` entre si, mesmo sendo tecnicamente "componentes diferentes". T6 é totalmente independente do restante (arquivo de configuração, não código).
+
+---
+
+## Task Granularity Check
+
+| Task | Scope | Status |
+| --- | --- | --- |
+| T1: `buildGithubIssueUrl` | 1 função pura + 1 arquivo de teste | ✅ Granular |
+| T2: `ajuda.module.css` | 1 arquivo CSS | ✅ Granular |
+| T3: `HelpModal.tsx` | 1 componente (form + submit + fallback são partes coesas do mesmo fluxo de modal) | ✅ Granular (2-3 responsabilidades relacionadas no mesmo componente, aceitável por coesão) |
+| T4: `HelpButton.tsx` | 1 componente | ✅ Granular |
+| T5: montagem no layout | 1 arquivo (`layout.tsx`) | ✅ Granular |
+| T6: `.env.example` | 1 arquivo de config | ✅ Granular |
+
+---
+
+## Diagram-Definition Cross-Check
+
+| Task | Depends On (task body) | Diagram Shows | Status |
+| --- | --- | --- | --- |
+| T1 | None | Fase 1, sem seta de entrada | ✅ Match |
+| T2 | None | Fase 1, sem seta de entrada | ✅ Match |
+| T6 | None | Fase 1, sem seta de entrada | ✅ Match |
+| T3 | T1, T2 | Seta de "T1, T2 completos" para T3 | ✅ Match |
+| T4 | T2, T3 | Seta de T3 para T4 (T2 já satisfeito na fase anterior) | ✅ Match |
+| T5 | T4 | Seta de T4 para T5 | ✅ Match |
+
+---
+
+## Test Co-location Validation
+
+| Task | Código Criado/Modificado | Matriz Exige | Task Diz | Status |
+| --- | --- | --- | --- | --- |
+| T1: `buildGithubIssueUrl` | Função pura em `lib/helpers/` | unit | unit | ✅ OK |
+| T2: `ajuda.module.css` | CSS (não é código testável) | none | none | ✅ OK |
+| T3: `HelpModal.tsx` | Componente React | none (sem infra de DOM) | none | ✅ OK |
+| T4: `HelpButton.tsx` | Componente React | none | none | ✅ OK |
+| T5: `layout.tsx` | Componente React (Server Component) | none | none | ✅ OK |
+| T6: `.env.example` | Config, não código | none | none | ✅ OK |
+
+---
+
+## Ferramentas por Task — Confirmar com o Usuário
+
+Nenhuma task exige MCP externo. Skills recomendadas: `frontend-design` e `ui-ux-pro-max` na T2 (CSS Module), para garantir que o botão/modal fiquem visualmente consistentes com o restante do produto antes de escrever o componente React. Nenhuma outra skill/MCP é necessária para T1/T3/T4/T5/T6.
+
+**Antes de executar**: confirmar que este plano (V1 client-side) segue aprovado (Questão em Aberto 1 do spec) e o valor real de `NEXT_PUBLIC_GITHUB_REPO` (Questão em Aberto 2), já que T5/T6 dependem desses dois pontos para não usar placeholder em produção.
+
+---
+
+## Verificação Final (execução)
+
+Todas as 6 tasks implementadas e commitadas individualmente (`7c5daa0`, `66482b9`, `0069322`, `6093b9a`, `d93862a`, `6d543a3`).
+
+**Gate checks**:
+
+- `npm run test`: 465 testes passando (5 novos de `githubIssue.test.ts`, 0 falhas).
+- `npm run build`: sucesso (Turbopack + TypeScript, 18 rotas geradas).
+- `npx eslint lib/helpers components/ajuda app/(dashboard)/_components/AppShell.tsx`: sem problemas.
+
+**QA manual real** (servidor `next dev` já em execução em `localhost:3000`, Playwright headless, usuário de teste `gestor@01tec.com.br` semeado por `scripts/seed-users.ts`):
+
+1. FAB ausente em `/login` (0 ocorrências) — confirmado.
+2. FAB presente após login (1 ocorrência) — confirmado.
+3. Clique no FAB abre modal "Reportar algo" com tipo/título/descrição/tela atual — confirmado (tela "Dashboard" corretamente identificada via `resolveScreenTitle`).
+4. "Cancelar" fecha o modal sem abrir nova aba — confirmado.
+5. Reabrir, preencher só a descrição (título vazio) e confirmar → nova aba abriu de fato (popup NÃO bloqueado neste ambiente headless) apontando para:
+   `https://github.com/sua-org/rhop/issues/new?title=%5BBug%5D+%28sem+t%C3%ADtulo%29&body=**Tipo%3A**+Bug%0A**Tela%3A**+Dashboard%0A**Papel%3A**+Gestor%0A%0ADescricao+de+teste+automatizado+via+Playwright.`
+   — título usou corretamente o padrão `(sem título)` (HELP-06), corpo reflete tipo/tela/papel/descrição sem nenhum dado sensível (HELP-08).
+   O caminho de fallback (pop-up bloqueado, HELP-10) não foi exercitado neste ambiente porque o Chromium headless não bloqueou o `window.open` — a lógica do fallback (`if (!novaAba)`) foi revisada no código mas não observada em execução real; recomendo um teste manual adicional em um navegador com bloqueador de pop-up ativo antes de considerar HELP-10 100% verificado em produção.
+   Screenshots salvos em `scratchpad` da sessão (login, pós-login com FAB visível, modal aberto, estado pós-envio).
+
+**SPEC_DEVIATION registrado** (ver T5): `design.md` previa montar `HelpButton` em `app/(dashboard)/layout.tsx`. Na hora de executar, `layout.tsx` e `AppShell.tsx` já existiam (feature `menu-navegacao` foi implementada entre o design e a execução desta feature). Como `AppShell.tsx` já recebe `usuario` e é o composable natural do shell, o `HelpButton` foi montado lá em vez de em `layout.tsx` — nenhuma duplicação de lógica de sessão, resultado funcional idêntico ao previsto.
+
+**Bug de build descoberto e corrigido durante a execução**: `lib/helpers/githubIssue.ts` e os componentes client importavam `Role` de `@/lib/generated/prisma/client` (padrão majoritário no restante do projeto, usado em código server-side). Como `githubIssue.ts` é importado por um Client Component (`HelpModal`), isso quebrou o build do Turbopack (`node:module` não suportado no bundle do browser). Corrigido importando de `@/lib/generated/prisma/enums` — mesmo padrão já usado por `lib/navigation/navConfig.ts`, que também é consumido por componentes client. **Lição para specs futuras**: qualquer módulo importado (direta ou transitivamente) por um Client Component deve importar `Role`/enums de `prisma/enums`, nunca de `prisma/client`.

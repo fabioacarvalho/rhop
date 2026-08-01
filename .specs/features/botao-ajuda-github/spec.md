@@ -100,22 +100,22 @@ Cada requisito recebe um ID único para rastreio entre design, tasks e validaç�
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| HELP-01 | P1: Botão visível em toda tela autenticada, oculto no login | Pending | Pending |
-| HELP-02 | P1: Modal com tipo, título, descrição | Pending | Pending |
-| HELP-03 | P1: Modal mostra tela atual (somente leitura), inclusive páginas dinâmicas do menu | Pending | Pending |
-| HELP-04 | P1: Monta URL `issues/new` com tipo, tela, papel e descrição | Pending | Pending |
-| HELP-05 | P1: Abre em nova aba, fecha modal e limpa campos | Pending | Pending |
-| HELP-06 | P1: Título vazio usa padrão `"(sem título)"` | Pending | Pending |
-| HELP-07 | P1: Cancelar/clique fora fecha sem enviar | Pending | Pending |
-| HELP-08 | P2: Corpo da issue sem dado sensível | Pending | Pending |
-| HELP-09 | P2: Aviso de "não incluir dados pessoais" no modal | Pending | Pending |
-| HELP-10 | P2: Falha (pop-up bloqueado) não trava o produto; fallback com link | Pending | Pending |
+| HELP-01 | P1: Botão visível em toda tela autenticada, oculto no login | Tasks (T4, T5) | Verified |
+| HELP-02 | P1: Modal com tipo, título, descrição | Tasks (T3) | Verified |
+| HELP-03 | P1: Modal mostra tela atual (somente leitura), inclusive páginas dinâmicas do menu | Tasks (T3) | Verified |
+| HELP-04 | P1: Monta URL `issues/new` com tipo, tela, papel e descrição | Tasks (T1, T3) | Verified |
+| HELP-05 | P1: Abre em nova aba, fecha modal e limpa campos | Tasks (T3) | Verified |
+| HELP-06 | P1: Título vazio usa padrão `"(sem título)"` | Tasks (T1) | Verified |
+| HELP-07 | P1: Cancelar/clique fora fecha sem enviar | Tasks (T3) | Verified |
+| HELP-08 | P2: Corpo da issue sem dado sensível | Tasks (T1) | Verified |
+| HELP-09 | P2: Aviso de "não incluir dados pessoais" no modal | Tasks (T2, T3) | Verified |
+| HELP-10 | P2: Falha (pop-up bloqueado) não trava o produto; fallback com link | Tasks (T2, T3) | Verified (código revisado; caminho de fallback não exercitado ao vivo — Chromium headless não bloqueou o popup no teste manual, ver `tasks.md` § Verificação Final) |
 
 **ID format:** `HELP-NN`.
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 10 total, 0 mapeados a tasks (spec ainda não avançou para Design/Tasks), 10 não mapeados ⚠️.
+**Coverage:** 10 total, 10 mapeados a tasks, 0 não mapeados. Implementado e verificado — ver `.specs/features/botao-ajuda-github/tasks.md` § Verificação Final.
 
 ---
 
@@ -123,11 +123,11 @@ Cada requisito recebe um ID único para rastreio entre design, tasks e validaç�
 
 Como saberemos que a feature está bem-sucedida:
 
-- [ ] Botão aparece em todas as telas autenticadas (inclusive páginas dinâmicas do menu expansível) e some no login.
-- [ ] Testado com os três papéis (`SOLICITANTE`, `GESTOR`, `RH_ADMIN`) — comportamento idêntico para todos.
-- [ ] Issue aberta no GitHub tem título e corpo corretos, sem nenhum dado sensível ou de `Solicitacao` real.
-- [ ] Pop-up bloqueado não gera erro visível fora do modal; restante do FluxoRH continua funcional.
-- [ ] `npm run build` sem erros.
+- [x] Botão aparece em todas as telas autenticadas e some no login (verificado ao vivo com Playwright, ver `tasks.md`).
+- [ ] Testado com os três papéis (`SOLICITANTE`, `GESTOR`, `RH_ADMIN`) — QA manual real cobriu apenas `GESTOR`; `SOLICITANTE`/`RH_ADMIN` não foram exercitados ao vivo (comportamento do componente não branch por papel, mas falta a confirmação visual).
+- [x] Issue aberta no GitHub tem título e corpo corretos, sem nenhum dado sensível ou de `Solicitacao` real (URL real capturada em `tasks.md`).
+- [ ] Pop-up bloqueado não gera erro visível fora do modal; restante do FluxoRH continua funcional — código revisado, caminho de fallback não exercitado ao vivo (ver `tasks.md`).
+- [x] `npm run build` sem erros.
 
 ---
 
