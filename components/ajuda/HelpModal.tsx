@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import type { Role } from "@/lib/generated/prisma/client";
+import type { Role } from "@/lib/generated/prisma/enums";
 import { resolveScreenTitle } from "@/lib/navigation/navConfig";
 import { buildGithubIssueUrl, type TipoRelato } from "@/lib/helpers/githubIssue";
 import styles from "./ajuda.module.css";

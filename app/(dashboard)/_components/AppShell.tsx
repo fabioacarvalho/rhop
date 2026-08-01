@@ -2,6 +2,7 @@ import type { AuthenticatedUser } from "@/lib/services/authService";
 import { Role } from "@/lib/generated/prisma/client";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { HelpButton } from "@/components/ajuda/HelpButton";
 import styles from "./AppShell.module.css";
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -25,6 +26,8 @@ export function AppShell({ usuario, children }: AppShellProps) {
 
         <div className={styles.content}>{children}</div>
       </div>
+
+      <HelpButton papel={usuario.role} />
     </div>
   );
 }

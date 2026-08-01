@@ -1,4 +1,4 @@
-import { Role } from "@/lib/generated/prisma/client";
+import { Role } from "@/lib/generated/prisma/enums";
 
 export type TipoRelato = "Bug" | "Melhoria" | "Dúvida";
 

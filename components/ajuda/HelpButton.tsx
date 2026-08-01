@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Role } from "@/lib/generated/prisma/client";
+import type { Role } from "@/lib/generated/prisma/enums";
 import { HelpModal } from "./HelpModal";
 import styles from "./ajuda.module.css";
 
