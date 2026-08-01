@@ -1,4 +1,7 @@
-import { Role } from "@/lib/generated/prisma/client";
+// Importa de `enums` (nao `client`) porque este modulo e usado por
+// Client Components (Sidebar/Topbar) — `client.ts` traz o runtime do
+// Prisma inteiro e quebra o bundle de browser.
+import { Role } from "@/lib/generated/prisma/enums";
 
 export interface NavItem {
   label: string;

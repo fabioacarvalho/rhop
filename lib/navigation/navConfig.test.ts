@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Role } from "@/lib/generated/prisma/client";
+import { Role } from "@/lib/generated/prisma/enums";
 import { getVisibleGroups, resolveScreenTitle } from "./navConfig";
 
 describe("getVisibleGroups", () => {

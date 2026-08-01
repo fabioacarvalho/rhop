@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Role } from "@/lib/generated/prisma/client";
+import { Role } from "@/lib/generated/prisma/enums";
 import { getVisibleGroups } from "@/lib/navigation/navConfig";
 import { logout } from "@/lib/actions/logout";
 import styles from "./Sidebar.module.css";
