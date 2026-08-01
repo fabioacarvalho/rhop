@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authService } from '@/lib/services/authService';
+import { requireUser } from '@/lib/services/authService';
 import { notificacaoService } from '@/lib/services/notificacaoService';
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await authService.requireUser();
-    const id = params.id;
+    const user = await requireUser();
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
