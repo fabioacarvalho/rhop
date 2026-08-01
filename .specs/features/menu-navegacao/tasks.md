@@ -1,7 +1,7 @@
 # Menu de Navegação (App Shell) — Tasks
 
 **Design**: `.specs/features/menu-navegacao/design.md`
-**Status**: Draft
+**Status**: Done (T1–T8 implementados; ver ressalvas de execução no final do arquivo)
 
 ---
 
@@ -358,3 +358,18 @@ Nenhuma task marcada `[P]` depende de outra task `[P]` na mesma fase (T1/T2/T3 i
 ## Tools per Task (a confirmar com o usuário)
 
 Nenhuma task exige MCP ou skill externa para execução (todas as decisões de design/UX já foram tomadas nas fases Specify/Design com apoio de `frontend-design` e `ui-ux-pro-max`). Sugestão: executar sequencialmente por sub-agente único por task, sem necessidade de ferramentas adicionais além de leitura/edição de arquivo e `npm run build`/`npm test`.
+
+---
+
+## Execução — Resultado (T1–T8)
+
+Todas as 8 tasks implementadas e commitadas individualmente. `npm run build` e `npx prisma validate` verdes ao final. `npm test -- lib/navigation/navConfig.test.ts` — 9/9 passando.
+
+**Desvio de implementação (SPEC_DEVIATION):** `navConfig.ts` e `Sidebar.tsx` importam `Role` de `@/lib/generated/prisma/enums`, não de `.../client` como o restante do projeto. Motivo: `client.ts` (gerado pelo Prisma) importa `node:process`/`node:path` e o runtime completo do Prisma; como `Sidebar`/`Topbar` são Client Components, importar `Role` de `client.ts` quebrava o build do Turbopack ("chunking context does not support external modules"). `enums.ts` é o mesmo arquivo que `browser.ts` (entry point "para o browser" do próprio Prisma) reexporta — seguro para uso client-side.
+
+**Ressalvas conhecidas (não resolvidas por esta feature — fora do seu escopo):**
+
+1. **3 itens do menu apontam para rotas ainda não implementadas**: "Minhas Solicitações" (`/solicitacoes`), "Nova Solicitação" (`/solicitacoes/nova`) e "Banco de Talentos" (`/banco-de-talentos`). Confirmado via `find app/(dashboard)` — nenhum desses diretórios existe ainda. Isso viola o Success Criteria "0 links quebrados/404" *temporariamente*: qualquer usuário `SOLICITANTE` logado hoje vê um menu com 2 itens que 404iam ao clicar (o papel inteiro fica sem navegação funcional até `solicitacoes` ser executada — já tem `spec.md`/`design.md`/`tasks.md` prontos). Mantidos no menu porque NAV-02 exige exibi-los para `SOLICITANTE` e um menu vazio para esse papel seria pior. Assim que `solicitacoes` (e depois `banco-de-talentos`) forem executadas nos paths já assumidos aqui, o 404 desaparece sem tocar em `navConfig.ts`.
+2. **Conflito de landing em `/` para `SOLICITANTE`**: já documentado em `design.md` ("Riscos/Observações") e confirmado no código — `app/(dashboard)/page.tsx` (Dashboard) chama `requireUser([GESTOR, RH_ADMIN])`. Um `SOLICITANTE` que acesse `/` diretamente recebe "Acesso restrito" em vez de pouso útil. Não é dono desta feature corrigir (arquivo pertence a `dashboard-visao-geral`).
+3. **Verificação visual autenticada não foi feita via navegador automatizado** — Playwright não está instalado no projeto (`package.json` não lista `@playwright/test`) e instalá-lo não fazia parte do escopo das tasks. Verificado em vez disso: `npm run build` limpo, `npx prisma validate` ok, suíte unit de `navConfig` (9/9), e via `curl` contra o dev server já em execução (porta 3000) que as 5 rotas reais (`/`, `/aprovacoes`, `/auditoria-logs`, `/configuracao-fluxos`, `/insights`) redirecionam corretamente para `/login` quando não autenticado, sem erro 500.
+   **Recomendação de verificação manual** (contas de seed em `scripts/seed-users.ts`, senha `Teste@123` para todas): logar como `solicitante@01tec.com.br`, `gestor@01tec.com.br` e `rh.admin@01tec.com.br` e conferir a matriz de itens visíveis de T8, mais o fluxo de "Sair".
