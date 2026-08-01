@@ -81,24 +81,26 @@ enum DecisaoAprovacao {
 }
 
 model Solicitacao {
-  id             String            @id @default(cuid())
-  tipo_fluxo_id  String
-  tipoFluxo      TipoFluxo         @relation(fields: [tipo_fluxo_id], references: [id])
-  solicitante_id String            @db.Uuid
-  solicitante    User              @relation(fields: [solicitante_id], references: [id])
-  dados          Json
-  status         StatusSolicitacao @default(PENDENTE)
-  etapa_atual    Role
-  prazo_sla      DateTime
-  criado_em      DateTime          @default(now())
-  atrasada_em    DateTime?
-  aprovacoes     Aprovacao[]
-  notificacoes   Notificacao[]
+  id                 String            @id @default(cuid())
+  tipo_fluxo_id      String
+  tipoFluxo          TipoFluxo         @relation(fields: [tipo_fluxo_id], references: [id])
+  solicitante_id     String            @db.Uuid
+  solicitante        User              @relation(fields: [solicitante_id], references: [id])
+  dados              Json
+  status             StatusSolicitacao @default(PENDENTE)
+  etapa_atual        Role
+  prazo_sla          DateTime
+  atrasada_em        DateTime?
+  ultima_cobranca_em DateTime?
+  criado_em          DateTime          @default(now())
+  aprovacoes         Aprovacao[]
+  notificacoes       Notificacao[]
 
   @@index([tipo_fluxo_id])
   @@index([status])
   @@index([solicitante_id])
   @@index([etapa_atual])
+  @@index([status, prazo_sla])
   @@index([atrasada_em])
   @@map("solicitacoes")
 }
