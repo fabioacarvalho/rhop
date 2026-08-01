@@ -32,6 +32,7 @@ model User {
   notificacoes Notificacao[] @relation("NotificacoesUsuario")
   solicitacoes Solicitacao[]
   aprovacoes   Aprovacao[]
+  feedbacks    Feedback[]
 }
 
 enum LogTipo {
@@ -146,4 +147,33 @@ model Aprovacao {
   @@unique([solicitacao_id, etapa])
   @@index([solicitacao_id])
   @@map("aprovacoes")
+}
+
+enum TipoRelato {
+  BUG
+  MELHORIA
+  DUVIDA
+}
+
+enum FeedbackStatus {
+  ENVIADO
+  ERRO
+}
+
+model Feedback {
+  id                  String         @id @default(cuid())
+  usuario_id          String         @db.Uuid
+  usuario             User           @relation(fields: [usuario_id], references: [id])
+  tipo                TipoRelato
+  titulo              String
+  descricao           String
+  tela_contexto       String
+  github_issue_url    String?
+  github_issue_numero Int?
+  status              FeedbackStatus
+  criado_em           DateTime       @default(now())
+
+  @@index([usuario_id])
+  @@index([status])
+  @@map("feedbacks")
 }
