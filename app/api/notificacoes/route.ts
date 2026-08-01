@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authService } from '@/lib/services/authService';
+import { requireUser } from '@/lib/services/authService';
 import { notificacaoService } from '@/lib/services/notificacaoService';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await authService.requireUser();
+    const user = await requireUser();
     
     // Suporta flag ?contagem=true
     const url = new URL(req.url);

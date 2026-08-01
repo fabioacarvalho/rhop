@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { logService } from './logService';
+import { registrar } from './logService';
 
 const resendApiKey = process.env.RESEND_API_KEY;
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
@@ -29,7 +29,7 @@ export const resendService = {
       });
 
       if (error) {
-        await logService.registrar({
+        await registrar({
           tipo: 'ERRO',
           entidade: 'Email',
           entidade_id: input.entidade_id || 'N/A',
@@ -42,7 +42,7 @@ export const resendService = {
 
       return true;
     } catch (e: any) {
-      await logService.registrar({
+      await registrar({
         tipo: 'ERRO',
         entidade: 'Email',
         entidade_id: input.entidade_id || 'N/A',
