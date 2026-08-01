@@ -134,5 +134,5 @@ Como saberemos que a feature está bem-sucedida:
 ## Questões em Aberto
 
 1. **Confirmação de escopo com o time.** Este PRD é uma adição fora do design doc original. Antes de avançar para Design/Tasks, confirmar com o time se V1 (redirect client-side) é aceitável para o hackathon ou se V2 (API do GitHub) já deveria entrar.
-2. **Valor de `NEXT_PUBLIC_GITHUB_REPO`.** Precisa do nome real do repositório de destino (ex.: `sua-org/rhop`) antes da implementação.
+2. ✅ **RESOLVIDO** — **Valor de `NEXT_PUBLIC_GITHUB_REPO`**: `fabioacarvalho/rhop` (confirmado via `git remote -v`). Placeholder `sua-org/rhop` trocado em `.env`/`.env.example`.
 3. **Nome amigável de páginas dinâmicas do menu.** O PRD cita um dicionário simples (`screenTitles`) para rotas fixas; falta definir como esse dicionário resolve nomes de páginas criadas dinamicamente via menu lateral expansível (RF3 / HELP-03).
