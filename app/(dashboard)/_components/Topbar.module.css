@@ -1,0 +1,91 @@
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid var(--linha);
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  gap: 16px;
+}
+
+.eyebrow {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--azul-500);
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.title {
+  font-family: var(--font-fraunces), serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--azul-900);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.userChip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.userInfo {
+  text-align: right;
+  min-width: 0;
+}
+
+.name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--azul-100);
+  color: var(--azul-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: var(--font-fraunces), serif;
+  flex-shrink: 0;
+}
+
+@media (max-width: 860px) {
+  .topbar {
+    padding: 16px 20px 16px 64px;
+  }
+
+  .name {
+    max-width: 120px;
+  }
+}
