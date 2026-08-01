@@ -58,6 +58,23 @@
   gap: 10px;
 }
 
+.modalSeal {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--amarelo-400);
+  outline: 1.5px dashed rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--amarelo-400);
+  flex-shrink: 0;
+}
+
 .modalHeadTitle {
   font-family: var(--font-fraunces), serif;
   font-size: 15px;
