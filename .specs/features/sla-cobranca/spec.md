@@ -125,13 +125,13 @@ Cada requisito recebe um ID único para rastreamento entre design, tasks e valid
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| SLA-01 | P1: Detecção e marcação de atrasadas (endpoint/cron de check) | Tasks | In Tasks |
-| SLA-02 | P1: Detecção e marcação de atrasadas (identificação de etapa vencida e pendente) | Tasks | In Tasks |
-| SLA-03 | P1: Detecção e marcação de atrasadas (marcar atrasada + `Log` `AUDITORIA`, idempotente) | Tasks | In Tasks |
-| SLA-04 | P1: Disparo de cobrança ao aprovador responsável (contrato do evento) | Tasks | In Tasks |
-| SLA-05 | P2: Resiliência do job (falha isolada + `Log` `ERRO`, não trava fluxo) | Tasks | In Tasks |
-| SLA-06 | P2: Proteção do endpoint de verificação (segredo/token de cron) | Tasks | In Tasks |
-| SLA-07 | P3: Observabilidade da execução do job | Tasks | In Tasks |
+| SLA-01 | P1: Detecção e marcação de atrasadas (endpoint/cron de check) | Implementing | Verified |
+| SLA-02 | P1: Detecção e marcação de atrasadas (identificação de etapa vencida e pendente) | Implementing | Verified |
+| SLA-03 | P1: Detecção e marcação de atrasadas (marcar atrasada + `Log` `AUDITORIA`, idempotente) | Implementing | Verified |
+| SLA-04 | P1: Disparo de cobrança ao aprovador responsável (contrato do evento) | Implementing | Verified |
+| SLA-05 | P2: Resiliência do job (falha isolada + `Log` `ERRO`, não trava fluxo) | Implementing | Verified |
+| SLA-06 | P2: Proteção do endpoint de verificação (segredo/token de cron) | Implementing | Verified |
+| SLA-07 | P3: Observabilidade da execução do job | Implementing | Verified |
 
 **ID format:** `[CATEGORY]-[NUMBER]` (ex: `SLA-01`)
 

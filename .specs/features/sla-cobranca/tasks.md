@@ -2,7 +2,7 @@
 
 **Design**: `.specs/features/sla-cobranca/design.md`
 **Spec**: `.specs/features/sla-cobranca/spec.md`
-**Status**: Draft
+**Status**: Implemented (worktree `.worktrees/sla-cobranca`, branch `sla-cobranca`)
 
 ---
 
@@ -74,9 +74,9 @@ Nenhum `[P]` interno: T2–T5 compartilham o mesmo fluxo e contrato; paralelismo
 - Skill: `supabase-postgres-best-practices` (se alterar schema)
 
 **Done when**:
-- [ ] Campos `atrasada_em` e `ultima_cobranca_em` opcionais no model
-- [ ] Índices adicionados
-- [ ] Gate check passa: `npx prisma validate`
+- [x] Campos `atrasada_em` e `ultima_cobranca_em` opcionais no model
+- [x] Índices adicionados
+- [x] Gate check passa: `npx prisma validate`
 
 **Tests**: none
 **Gate**: build
@@ -98,12 +98,12 @@ Nenhum `[P]` interno: T2–T5 compartilham o mesmo fluxo e contrato; paralelismo
 - Skill: NONE
 
 **Done when**:
-- [ ] `GESTOR` resolve para `solicitante.gestor_id` (ou `[]` se nulo)
-- [ ] `RH_ADMIN` resolve para todos users com esse role (ou `[]` se nenhum)
-- [ ] Marcação só grava `atrasada_em` + Log quando ainda `null` e `status=PENDENTE`
-- [ ] Segunda chamada não gera novo Log de transição
-- [ ] Gate check passa: `npm run test`
-- [ ] Test count: ≥ 4 testes novos passam (resolver GESTOR/RH/vazio; marcação idempotente)
+- [x] `GESTOR` resolve para `solicitante.gestor_id` (ou `[]` se nulo)
+- [x] `RH_ADMIN` resolve para todos users com esse role (ou `[]` se nenhum)
+- [x] Marcação só grava `atrasada_em` + Log quando ainda `null` e `status=PENDENTE`
+- [x] Segunda chamada não gera novo Log de transição
+- [x] Gate check passa: `npm run test`
+- [x] Test count: ≥ 4 testes novos passam (resolver GESTOR/RH/vazio; marcação idempotente)
 
 **Tests**: unit
 **Gate**: quick
@@ -130,14 +130,14 @@ npm run test -- lib/services/slaService.test.ts
 - Skill: NONE
 
 **Done when**:
-- [ ] Candidatas = `PENDENTE` + `prazo_sla < now`
-- [ ] Cobrança só se `ultima_cobranca_em` nulo ou ≥ 24h
-- [ ] Evento contém `solicitacao_id`, `usuario_id` (aprovador), tipo `COBRANCA_SLA`
-- [ ] Falha de notificação / item isolado → Log ERRO, demais processadas, marcação não revertida
-- [ ] Solicitação já decidida na corrida → ignorada
-- [ ] Resumo com `verificadas`, `marcadas_atrasadas`, `cobrancas_disparadas`, `erros` + Log de resumo
-- [ ] Gate check passa: `npm run test`
-- [ ] Test count: ≥ 8 testes no arquivo (inclui T2; sem deleção silenciosa)
+- [x] Candidatas = `PENDENTE` + `prazo_sla < now`
+- [x] Cobrança só se `ultima_cobranca_em` nulo ou ≥ 24h
+- [x] Evento contém `solicitacao_id`, `usuario_id` (aprovador), tipo `COBRANCA_SLA`
+- [x] Falha de notificação / item isolado → Log ERRO, demais processadas, marcação não revertida
+- [x] Solicitação já decidida na corrida → ignorada
+- [x] Resumo com `verificadas`, `marcadas_atrasadas`, `cobrancas_disparadas`, `erros` + Log de resumo
+- [x] Gate check passa: `npm run test`
+- [x] Test count: ≥ 8 testes no arquivo (inclui T2; sem deleção silenciosa)
 
 **Tests**: unit
 **Gate**: quick
@@ -165,10 +165,10 @@ npm run test -- lib/services/slaService.test.ts
 - Skill: `next-best-practices` (route handler)
 
 **Done when**:
-- [ ] Sem header / Bearer errado / `CRON_SECRET` unset → 401 e `verificarSla` **não** chamado
-- [ ] Bearer válido → 200 JSON com campos do `SlaCheckResumo`
-- [ ] Gate check passa: `npm run test`
-- [ ] Test count: ≥ 2 testes da route passam
+- [x] Sem header / Bearer errado / `CRON_SECRET` unset → 401 e `verificarSla` **não** chamado
+- [x] Bearer válido → 200 JSON com campos do `SlaCheckResumo`
+- [x] Gate check passa: `npm run test`
+- [x] Test count: ≥ 2 testes da route passam
 
 **Tests**: unit
 **Gate**: quick
@@ -195,9 +195,9 @@ npm run test -- app/api/cron/sla-check/route.test.ts
 - Skill: NONE
 
 **Done when**:
-- [ ] `vercel.json` contém cron `0 * * * *` → `/api/cron/sla-check`
-- [ ] Gate check passa: `npm run build && npx prisma validate && npm run test`
-- [ ] Test count: suite completa passa (sem deleção silenciosa vs. baseline da branch)
+- [x] `vercel.json` contém cron `0 * * * *` → `/api/cron/sla-check`
+- [x] Gate check passa: `npm run build && npx prisma validate && npm run test`
+- [x] Test count: suite completa passa (sem deleção silenciosa vs. baseline da branch)
 
 **Tests**: none
 **Gate**: full
@@ -263,13 +263,13 @@ Phase 3 (Sequential):
 
 | Requirement ID | Task(s) | Status |
 | --- | --- | --- |
-| SLA-01 | T3, T4, T5 | In Tasks |
-| SLA-02 | T2, T3 | In Tasks |
-| SLA-03 | T1, T2 | In Tasks |
-| SLA-04 | T3 | In Tasks |
-| SLA-05 | T3 | In Tasks |
-| SLA-06 | T4 | In Tasks |
-| SLA-07 | T3 | In Tasks |
+| SLA-01 | T3, T4, T5 | Verified |
+| SLA-02 | T2, T3 | Verified |
+| SLA-03 | T1, T2 | Verified |
+| SLA-04 | T3 | Verified |
+| SLA-05 | T3 | Verified |
+| SLA-06 | T4 | Verified |
+| SLA-07 | T3 | Verified |
 
 **Coverage:** 7 total, 7 mapeados ✅
 
