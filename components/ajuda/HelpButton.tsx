@@ -1,15 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { Role } from "@/lib/generated/prisma/enums";
 import { HelpModal } from "./HelpModal";
 import styles from "./ajuda.module.css";
 
-interface HelpButtonProps {
-  papel: Role;
-}
-
-export function HelpButton({ papel }: HelpButtonProps) {
+export function HelpButton() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -23,7 +18,7 @@ export function HelpButton({ papel }: HelpButtonProps) {
         ?
       </button>
 
-      {open && <HelpModal papel={papel} onClose={() => setOpen(false)} />}
+      {open && <HelpModal onClose={() => setOpen(false)} />}
     </>
   );
 }

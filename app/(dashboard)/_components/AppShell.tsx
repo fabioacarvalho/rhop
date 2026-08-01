@@ -27,7 +27,7 @@ export function AppShell({ usuario, children }: AppShellProps) {
         <div className={styles.content}>{children}</div>
       </div>
 
-      <HelpButton papel={usuario.role} />
+      <HelpButton />
     </div>
   );
 }

@@ -2,59 +2,66 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import type { Role } from "@/lib/generated/prisma/enums";
 import { resolveScreenTitle } from "@/lib/navigation/navConfig";
-import { buildGithubIssueUrl, type TipoRelato } from "@/lib/helpers/githubIssue";
+import type { TipoRelato } from "@/lib/helpers/githubIssue";
 import styles from "./ajuda.module.css";
 
 const TIPOS: TipoRelato[] = ["Bug", "Melhoria", "Dúvida"];
 
 interface HelpModalProps {
-  papel: Role;
   onClose: () => void;
 }
 
-export function HelpModal({ papel, onClose }: HelpModalProps) {
+interface SucessoEnvio {
+  url: string;
+  numero: number;
+}
+
+export function HelpModal({ onClose }: HelpModalProps) {
   const pathname = usePathname();
   const tela = resolveScreenTitle(pathname).titulo;
 
   const [tipo, setTipo] = useState<TipoRelato>("Bug");
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [sucesso, setSucesso] = useState<SucessoEnvio | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
 
   function handleOverlayClick(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) onClose();
   }
 
-  function handleSubmit() {
-    const url = buildGithubIssueUrl({
-      repo: process.env.NEXT_PUBLIC_GITHUB_REPO!,
-      tipo,
-      tela,
-      papel,
-      titulo,
-      descricao,
-    });
+  async function handleSubmit() {
+    setEnviando(true);
+    setErro(null);
 
-    const novaAba = window.open(url, "_blank");
-
-    if (!novaAba) {
-      setFallbackUrl(url);
-      return;
-    }
-
-    setTitulo("");
-    setDescricao("");
-    onClose();
-  }
-
-  async function handleCopyFallback() {
-    if (!fallbackUrl) return;
     try {
-      await navigator.clipboard.writeText(fallbackUrl);
+      const resposta = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tipo,
+          titulo,
+          descricao,
+          tela_contexto: tela,
+        }),
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        setErro(dados.error ?? "Não foi possível criar a issue agora.");
+        return;
+      }
+
+      setSucesso({ url: dados.url, numero: dados.numero });
+      setTitulo("");
+      setDescricao("");
     } catch {
-      // Clipboard API indisponível — o link já está visível para copiar manualmente.
+      setErro("Não foi possível criar a issue agora. Verifique sua conexão e tente novamente.");
+    } finally {
+      setEnviando(false);
     }
   }
 
@@ -77,89 +84,109 @@ export function HelpModal({ papel, onClose }: HelpModalProps) {
         </div>
 
         <div className={styles.modalBody}>
-          <p className={styles.intro}>
-            Encontrou um problema ou tem uma ideia? Isso abre uma issue no
-            GitHub do projeto, já com a tela atual anexada ao relato.
-          </p>
-
-          <div className={styles.aviso}>
-            Não inclua dados pessoais ou de solicitações específicas.
-          </div>
-
-          <div className={styles.field}>
-            <label>Tipo</label>
-            <div className={styles.tabToggle}>
-              {TIPOS.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className={t === tipo ? styles.tabToggleActive : undefined}
-                  onClick={() => setTipo(t)}
+          {sucesso ? (
+            <>
+              <div className={styles.sucesso}>
+                Issue <strong>#{sucesso.numero}</strong> criada no GitHub com
+                sucesso.
+                <a
+                  className={styles.sucessoLink}
+                  href={sucesso.url}
+                  target="_blank"
+                  rel="noreferrer"
                 >
-                  {t}
+                  Ver issue ↗
+                </a>
+              </div>
+              <div className={styles.rowBetween}>
+                <span />
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnPrimary}`}
+                  onClick={onClose}
+                >
+                  Fechar
                 </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.field}>
-            <label>Título</label>
-            <input
-              type="text"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              placeholder="Resuma em uma frase"
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label>Descrição</label>
-            <textarea
-              rows={4}
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              placeholder="O que aconteceu? O que você esperava que acontecesse?"
-            />
-          </div>
-
-          <div className={styles.cellSub}>
-            Tela atual: <strong>{tela}</strong>
-          </div>
-
-          <div className={styles.rowBetween}>
-            <button
-              type="button"
-              className={`${styles.btn} ${styles.btnGhost}`}
-              onClick={onClose}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className={`${styles.btn} ${styles.btnPrimary}`}
-              onClick={handleSubmit}
-            >
-              Abrir issue no GitHub ↗
-            </button>
-          </div>
-
-          {fallbackUrl && (
-            <div className={styles.fallback}>
-              <p className={styles.fallbackText}>
-                Não foi possível abrir automaticamente (pop-up bloqueado).
-                Copie o link abaixo:
+              </div>
+            </>
+          ) : (
+            <>
+              <p className={styles.intro}>
+                Encontrou um problema ou tem uma ideia? Isso cria uma issue no
+                GitHub do projeto direto, já com a tela atual anexada ao
+                relato.
               </p>
-              <div className={styles.fallbackLinkRow}>
-                <span className={styles.fallbackLink}>{fallbackUrl}</span>
+
+              <div className={styles.aviso}>
+                Não inclua dados pessoais ou de solicitações específicas.
+              </div>
+
+              <div className={styles.field}>
+                <label>Tipo</label>
+                <div className={styles.tabToggle}>
+                  {TIPOS.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      className={
+                        t === tipo ? styles.tabToggleActive : undefined
+                      }
+                      onClick={() => setTipo(t)}
+                      disabled={enviando}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label>Título</label>
+                <input
+                  type="text"
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  placeholder="Resuma em uma frase"
+                  disabled={enviando}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label>Descrição</label>
+                <textarea
+                  rows={4}
+                  value={descricao}
+                  onChange={(e) => setDescricao(e.target.value)}
+                  placeholder="O que aconteceu? O que você esperava que acontecesse?"
+                  disabled={enviando}
+                />
+              </div>
+
+              <div className={styles.cellSub}>
+                Tela atual: <strong>{tela}</strong>
+              </div>
+
+              {erro && <div className={styles.erro}>{erro}</div>}
+
+              <div className={styles.rowBetween}>
                 <button
                   type="button"
                   className={`${styles.btn} ${styles.btnGhost}`}
-                  onClick={handleCopyFallback}
+                  onClick={onClose}
+                  disabled={enviando}
                 >
-                  Copiar link
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnPrimary}`}
+                  onClick={handleSubmit}
+                  disabled={enviando}
+                >
+                  {enviando ? "Criando issue…" : "Abrir issue no GitHub ↗"}
                 </button>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
