@@ -1,13 +1,62 @@
 # Botão de Ajuda com Abertura de Issue no GitHub Design
 
 **Spec**: `.specs/features/botao-ajuda-github/spec.md`
-**Status**: Draft
+**Status**: Done (V2) — V1 abaixo fica registrada como histórico/superada, a pedido explícito do usuário de criar a issue sem interação com a página do GitHub.
 
 > Layout de referência: `docs/design-ux-ui/fluxorh-ui-layout-specs.md` §4.11 (Componente Flutuante: Botão de Ajuda & Modal de Issue) e markup/CSS correspondente em `docs/design-ux-ui/fluxorh-mockup.html` (`.help-fab`, `.modal-overlay`, `.modal-card`, linhas ~437-458 e ~1108-1148).
 
 ---
 
-## Architecture Overview
+## Architecture Overview (V2 — implementado)
+
+Criação da issue via API do GitHub, 100% server-side. `HelpModal` faz `POST /api/feedback`; a route valida sessão/payload e delega para `feedbackService`, que checa rate limit, chama `githubService` (REST API do GitHub com token de bot) e persiste um registro em `Feedback` (sucesso ou falha) — nunca lança para o chamador.
+
+```mermaid
+graph TD
+    HELPBTN["HelpButton (client)"] -->|"useState open"| HELPMODAL["HelpModal (client)"]
+    HELPMODAL -->|"usePathname()"| NAVCONFIG["resolveScreenTitle (lib/navigation/navConfig.ts)"]
+    HELPMODAL -->|"fetch POST"| ROUTE["app/api/feedback/route.ts"]
+    ROUTE -->|"requireUser() + feedbackInputSchema"| SERVICE["feedbackService.enviarFeedback"]
+    SERVICE -->|"rate limit (5/dia)"| PRISMA["prisma.feedback.count/create"]
+    SERVICE -->|"monta title/body"| HELPER["montarIssuePayload (lib/helpers/githubIssue.ts)"]
+    SERVICE -->|"criarIssue"| GITHUBSVC["githubService.ts"]
+    GITHUBSVC -->|"GITHUB_TOKEN/GITHUB_REPO"| GHAPI["POST api.github.com/repos/.../issues"]
+    GITHUBSVC -.->|"ErroGithubApi"| SERVICE
+    SERVICE -.->|"falha"| LOG["logService.registrar (Log ERRO)"]
+    SERVICE -->|"resultado ok/erro"| ROUTE
+    ROUTE -->|"201 ou 429/502"| HELPMODAL
+
+    classDef client fill:#1F3F7A,color:#fff;
+    classDef server fill:#142A52,color:#fff;
+    class HELPBTN,HELPMODAL client;
+    class ROUTE,SERVICE,GITHUBSVC,PRISMA,LOG server;
+```
+
+### Componentes V2
+
+| Componente | Local | O que faz |
+| --- | --- | --- |
+| `montarIssuePayload` | `lib/helpers/githubIssue.ts` | Pura — monta `{title, body}` a partir de tipo/tela/papel/descrição (refatorado de `buildGithubIssueUrl`, que montava URL). |
+| `githubService.criarIssue` | `lib/services/githubService.ts` | `POST /repos/{GITHUB_REPO}/issues` com `GITHUB_TOKEN`. Lança `ErroGithubApi` em qualquer falha (token/repo ausente, resposta não-ok). |
+| `feedbackService.enviarFeedback` | `lib/services/feedbackService.ts` | Orquestra: checa limite diário (5/usuário), chama `githubService`, persiste `Feedback` (ENVIADO com `github_issue_url`/`numero`, ou ERRO), grava `Log ERRO` em falha. Nunca lança — mesmo contrato de `iaService`/`resendService`. |
+| `feedbackInputSchema` | `lib/validations/feedback.ts` | Zod: `tipo` enum, `titulo`/`descricao` opcionais (default `""`), `tela_contexto` obrigatório. |
+| `POST /api/feedback` | `app/api/feedback/route.ts` | `requireUser()` (qualquer papel) → Zod → `feedbackService`. Mapeia falha para `429` (limite) ou `502` (erro GitHub), `401` sem sessão, `400` payload inválido. |
+| `Feedback` (model) | `prisma/schema.prisma` | Tabela `feedbacks`: `usuario_id`, `tipo` (enum `TipoRelato`: `BUG`/`MELHORIA`/`DUVIDA`), `titulo`, `descricao`, `tela_contexto`, `github_issue_url?`, `github_issue_numero?`, `status` (enum `FeedbackStatus`: `ENVIADO`/`ERRO`), `criado_em`. Migration `20260801131954_add_feedback_model`. |
+| `HelpModal` (atualizado) | `components/ajuda/HelpModal.tsx` | Não recebe mais `papel` (o servidor resolve via sessão). Estados: formulário → `enviando` → `sucesso` (número + link da issue) ou `erro` (mensagem inline, formulário preservado para nova tentativa). |
+
+### Tech Decisions (V2)
+
+| Decisão | Escolha | Motivo |
+| --- | --- | --- |
+| `papel` deixa de ser prop client | Resolvido server-side via `requireUser()` na route | Antes (V1) o client precisava do papel só para montar a URL; agora quem monta o payload é o servidor, então propagar `papel` por `AppShell → HelpButton → HelpModal` virou código morto — removido. |
+| Separação `githubService` (lança) vs `feedbackService` (nunca lança) | `githubService.criarIssue` propaga `ErroGithubApi`; `feedbackService` é quem captura, loga e converte em resultado amigável | Mesma divisão de responsabilidade do PRD (seção 9): o wrapper de API é "burro" e testável isoladamente (fetch mockado); a lógica de "nunca travar o fluxo" fica um nível acima, onde já existe o padrão (`iaService`). |
+| Status HTTP diferenciado (429 vs 502) | `feedbackService` retorna `motivo: "LIMITE_DIARIO" \| "ERRO_API"`, a route mapeia cada um para o código certo | Mistura os dois em um único "falhou" perderia a distinção entre "usuário está espamando" e "GitHub/token com problema" — útil para debug e para o cliente eventualmente diferenciar a mensagem. |
+| `tipo` como enum Prisma (`BUG`/`MELHORIA`/`DUVIDA`) em vez de string livre | Mapeamento explícito em `feedbackService` entre os rótulos exibidos (`"Bug"`, `"Melhoria"`, `"Dúvida"`) e o enum do banco | Mesma convenção já usada no schema (`StatusSolicitacao`, `DecisaoAprovacao`, `TipoNotificacao`) — enums fechados no banco em vez de string livre, evita valores inválidos persistidos. |
+| `GITHUB_REPO`/`GITHUB_TOKEN` (sem `NEXT_PUBLIC_`) | Antes (V1) `NEXT_PUBLIC_GITHUB_REPO` era público porque só montava uma URL no client; agora a chamada é server-side, então nem o nome do repo precisa ser público | Reduz superfície exposta ao client sem necessidade. |
+
+---
+
+## Architecture Overview (V1 — histórico, superada)
 
 Feature 100% client-side (V1), sem rota de API nem Prisma. Um utilitário puro monta a URL do GitHub; um componente de UI cuida do botão flutuante e do modal; o ponto de montagem é o layout compartilhado do grupo de rotas autenticadas.
 
@@ -25,7 +74,7 @@ graph TD
     class HELPBTN,HELPMODAL client;
 ```
 
-Nenhuma chamada a `app/api/**`, nenhum acesso a `lib/prisma.ts`, nenhum `Log` gravado — consistente com a seção 7 do PRD ("não há chamada a nenhuma rota do FluxoRH nem ao Prisma nessa versão").
+Nenhuma chamada a `app/api/**`, nenhum acesso a `lib/prisma.ts`, nenhum `Log` gravado — consistente com a seção 7 do PRD ("não há chamada a nenhuma rota do FluxoRH nem ao Prisma nessa versão"). **Superado pela V2 acima** — `buildGithubIssueUrl` foi refatorada para `montarIssuePayload` (title/body em vez de URL), e o `window.open`/fallback de pop-up bloqueado foram removidos de `HelpModal`.
 
 ---
 

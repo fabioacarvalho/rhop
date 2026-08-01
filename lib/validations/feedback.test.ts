@@ -35,8 +35,11 @@ describe("feedbackInputSchema", () => {
   });
 
   it("rejeita payload sem 'tela_contexto'", () => {
-    const { tela_contexto: _omitido, ...semTela } = feedbackValido();
-    const resultado = feedbackInputSchema.safeParse(semTela);
+    const resultado = feedbackInputSchema.safeParse({
+      tipo: "Bug",
+      titulo: "x",
+      descricao: "y",
+    });
     expect(resultado.success).toBe(false);
   });
 

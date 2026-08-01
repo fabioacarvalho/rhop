@@ -1,7 +1,7 @@
 # Botão de Ajuda com Abertura de Issue no GitHub Tasks
 
 **Design**: `.specs/features/botao-ajuda-github/design.md`
-**Status**: Done — todas as 6 tasks implementadas e verificadas (build + lint + testes + QA manual com Playwright em servidor real, ver seção "Verificação Final")
+**Status**: Done — V1 (T1-T6) implementada e depois substituída por V2 (T7-T13) a pedido explícito do usuário. Ver "Verificação Final" (V1) e "Verificação Final V2" (abaixo).
 
 ---
 
@@ -304,3 +304,121 @@ Todas as 6 tasks implementadas e commitadas individualmente (`7c5daa0`, `66482b9
 **SPEC_DEVIATION registrado** (ver T5): `design.md` previa montar `HelpButton` em `app/(dashboard)/layout.tsx`. Na hora de executar, `layout.tsx` e `AppShell.tsx` já existiam (feature `menu-navegacao` foi implementada entre o design e a execução desta feature). Como `AppShell.tsx` já recebe `usuario` e é o composable natural do shell, o `HelpButton` foi montado lá em vez de em `layout.tsx` — nenhuma duplicação de lógica de sessão, resultado funcional idêntico ao previsto.
 
 **Bug de build descoberto e corrigido durante a execução**: `lib/helpers/githubIssue.ts` e os componentes client importavam `Role` de `@/lib/generated/prisma/client` (padrão majoritário no restante do projeto, usado em código server-side). Como `githubIssue.ts` é importado por um Client Component (`HelpModal`), isso quebrou o build do Turbopack (`node:module` não suportado no bundle do browser). Corrigido importando de `@/lib/generated/prisma/enums` — mesmo padrão já usado por `lib/navigation/navConfig.ts`, que também é consumido por componentes client. **Lição para specs futuras**: qualquer módulo importado (direta ou transitivamente) por um Client Component deve importar `Role`/enums de `prisma/enums`, nunca de `prisma/client`.
+
+---
+
+## V2 — Criação via API (substitui V1)
+
+**Motivação**: usuário pediu explicitamente "que a issue fosse criada direto no github sem que o usuario tenha que interagir com a pagina do github". V1 (redirect client-side) não atende isso por definição — precisa de V2 (PRD, seção 9).
+
+## Task Breakdown V2
+
+### T7: Model `Feedback` + migration — ✅ Complete
+
+**What**: `enum TipoRelato` (`BUG`/`MELHORIA`/`DUVIDA`), `enum FeedbackStatus` (`ENVIADO`/`ERRO`), `model Feedback` (`usuario_id`, `tipo`, `titulo`, `descricao`, `tela_contexto`, `github_issue_url?`, `github_issue_numero?`, `status`, `criado_em`) + relação `feedbacks Feedback[]` em `User`.
+**Where**: `prisma/schema.prisma`, `prisma/migrations/20260801131954_add_feedback_model/`
+**Depends on**: None
+**Requirement**: HELP-12
+
+**Done when**: `npx prisma migrate dev` aplicado no Supabase real (confirmado via `SELECT count(*) FROM feedbacks`), `npx prisma generate` rodado.
+**Tests**: none (schema)
+**Gate**: migration aplicada sem erro + client gerado
+
+---
+
+### T8: `feedbackInputSchema` [P] — ✅ Complete
+
+**What**: Zod schema (`tipo` enum de 3 valores, `titulo`/`descricao` opcionais com default `""`, `tela_contexto` obrigatório).
+**Where**: `lib/validations/feedback.ts` (+ `.test.ts`)
+**Depends on**: None
+**Requirement**: HELP-04, HELP-06
+
+**Tests**: unit (7 casos)
+**Gate**: quick (`npm run test`)
+
+---
+
+### T9: `githubService.criarIssue` [P] — ✅ Complete
+
+**What**: `POST /repos/{GITHUB_REPO}/issues` via `fetch`, com `GITHUB_TOKEN`. Lança `ErroGithubApi` se token/repo ausente ou resposta não-ok.
+**Where**: `lib/services/githubService.ts` (+ `.test.ts`)
+**Depends on**: None
+**Requirement**: HELP-05, HELP-10
+
+**Tests**: unit (4 casos, `fetch` mockado via `vi.stubGlobal`)
+**Gate**: quick
+
+---
+
+### T10: Refatora `githubIssue.ts` (`buildGithubIssueUrl` → `montarIssuePayload`) — ✅ Complete
+
+**What**: A função pura passa a devolver `{title, body}` em vez de montar uma URL — V2 não abre aba, só precisa do payload para o POST da API.
+**Where**: `lib/helpers/githubIssue.ts` (+ `.test.ts` reescrito)
+**Depends on**: None
+**Requirement**: HELP-04, HELP-08
+
+**Tests**: unit (5 casos, mesma cobertura de V1 adaptada)
+**Gate**: quick
+
+---
+
+### T11: `feedbackService.enviarFeedback` — ✅ Complete
+
+**What**: Orquestra rate limit (5/dia via `prisma.feedback.count`), chama `githubService`, persiste `Feedback` (ENVIADO ou ERRO), grava `Log ERRO` em falha. Retorna `{ok: true, url, numero}` ou `{ok: false, motivo, mensagem}` — nunca lança.
+**Where**: `lib/services/feedbackService.ts` (+ `.test.ts`)
+**Depends on**: T9, T10
+**Requirement**: HELP-10, HELP-11, HELP-12
+
+**Tests**: unit (3 casos: sucesso, limite diário, falha do GitHub — prisma/githubService/logService mockados)
+**Gate**: quick
+
+---
+
+### T12: `POST /api/feedback` — ✅ Complete
+
+**What**: `requireUser()` (qualquer papel) → `feedbackInputSchema` → `feedbackService`. Mapeia `429` (limite), `502` (erro GitHub), `401` (sem sessão), `400` (payload inválido), `201` (sucesso).
+**Where**: `app/api/feedback/route.ts`
+**Depends on**: T8, T11
+**Requirement**: HELP-05
+
+**Tests**: none (mesma convenção das demais routes do projeto — só `cron/sla-check` tem `route.test.ts`; lógica de negócio já coberta em `feedbackService.test.ts`)
+**Gate**: build
+
+---
+
+### T13: Atualiza `HelpModal`/`HelpButton`/`AppShell`/CSS + env vars — ✅ Complete
+
+**What**: `HelpModal` faz `fetch POST /api/feedback` em vez de `window.open`; estados `enviando`/`sucesso` (número + link)/`erro` (mensagem inline, formulário preservado). `papel` removido de `HelpModal`/`HelpButton`/`AppShell` (servidor resolve via sessão). `.sucesso`/`.sucessoLink`/`.erro` em `ajuda.module.css` substituem `.fallback*` (mortos, removidos). `NEXT_PUBLIC_GITHUB_REPO` trocado por `GITHUB_REPO`+`GITHUB_TOKEN` (server-only) em `.env`/`.env.example`/`README.md`.
+**Where**: `components/ajuda/HelpModal.tsx`, `components/ajuda/HelpButton.tsx`, `components/ajuda/ajuda.module.css`, `app/(dashboard)/_components/AppShell.tsx`, `.env`, `.env.example`, `README.md`
+**Depends on**: T12
+**Requirement**: HELP-01, HELP-05, HELP-07, HELP-09, HELP-10
+
+**Tests**: none (componentes React, mesma convenção já estabelecida em V1)
+**Gate**: build
+
+---
+
+## Verificação Final V2
+
+Commits: `686e19e` (schema+migration), `081386a` (validação), `df96a8c` (refactor helper), `57882ff` (githubService), `50003e3`+`467de6f` (feedbackService), `a86af9c` (route), `48ba96f` (HelpModal/HelpButton/AppShell/CSS), `e7828b1` (env vars).
+
+**Gate checks**:
+
+- `npx vitest run`: 479 testes passando (14 novos: 7 `feedbackInputSchema` + 4 `githubService` + 3 `feedbackService`; `githubIssue.test.ts` reescrito, ainda 5 casos), 0 falhas.
+- `npm run build`: sucesso, rota `/api/feedback` presente no manifest.
+- `npx eslint` nos arquivos alterados: 0 erros (1 warning corrigido — `no-unused-vars` num destructure de teste, teste reescrito).
+
+**QA manual real** (servidor `next dev` reiniciado após mudança de env vars, Playwright headless, usuário `rh.admin@01tec.com.br`):
+
+1. Login → clique no FAB → preenche descrição (sem título) → clica "Abrir issue no GitHub".
+2. **Sem `GITHUB_TOKEN` configurado** (estado real no momento do teste — token real não gerado ainda): `POST /api/feedback` respondeu `502` com `{"error": "Não foi possível criar a issue agora. Tente novamente em instantes."}` — comportamento correto e esperado (HELP-10).
+3. Modal permaneceu aberto, exibindo o banner de erro inline (vermelho, tokens `--vermelho`/`--vermelho-bg`), formulário preservado, resto do FluxoRH (sidebar, dashboard atrás do overlay) continuou renderizado normalmente — nenhum crash.
+4. Screenshot confirmando o estado salvo em `scratchpad` da sessão.
+
+**Não verificado ao vivo (requer ação humana fora do alcance do agente)**:
+
+- **Caminho de sucesso real** (issue de fato criada em `fabioacarvalho/rhop`): exige um `GITHUB_TOKEN` real. O agente não pode gerar tokens do GitHub em nome do usuário. Ação pendente: gerar um Personal Access Token fine-grained (escopo `Issues: write`, restrito ao repositório `fabioacarvalho/rhop`) em `github.com/settings/tokens`, colocar em `GITHUB_TOKEN` no `.env` local, reiniciar `npm run dev` e testar novamente o mesmo fluxo — o banner de sucesso (`.sucesso`, verde, com link `Ver issue ↗`) e a criação real da issue devem aparecer.
+- **Limite diário (5/dia)**: coberto por teste unitário (mockado); não exercitado ao vivo, pois exigiria 5 envios reais bem-sucedidos primeiro (o que por sua vez depende do `GITHUB_TOKEN` acima).
+- **Papel `SOLICITANTE`**: QA ao vivo cobriu `GESTOR` (V1) e `RH_ADMIN` (V2); `SOLICITANTE` não foi testado, mas a rota não distingue papel (`requireUser()` sem lista de papéis) — risco baixo.
+
+**SPEC_DEVIATION**: nenhuma além da já registrada em V1 (montagem em `AppShell.tsx`). A remoção do prop `papel` de `HelpButton`/`HelpModal` não estava no `design.md` original de V1, mas é consequência direta e esperada da migração para V2 (servidor passa a resolver o papel via sessão) — documentada nas Tech Decisions de V2 acima.
