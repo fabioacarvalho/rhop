@@ -2,7 +2,7 @@
 
 **Design**: `.specs/features/painel-insights/design.md`
 **Context**: `.specs/features/painel-insights/context.md`
-**Status**: Ready for execution (T1–T7)
+**Status**: T1–T6 implementadas e verificadas (testes automatizados + build). T7 parcial — ver nota na task.
 
 ---
 
@@ -58,10 +58,10 @@ T4 ─────┼→ T6 [P] (depende também de T5 para tipagem da resposta)
 **Requirement**: INSIGHT-04 (validação), INSIGHT-01/11 (enums de período/dimensão)
 
 **Done when**:
-- [ ] `PERIODOS_INSIGHTS` / `DIMENSOES_INSIGHTS` exportados; `insightsFiltroSchema` valida os três campos; `dimensao` ausente → default `"STATUS"`
-- [ ] `parseInsightsQuery(url)` extrai de `URLSearchParams` e retorna `safeParse`
-- [ ] Testes: válido completo, válido sem `dimensao` (default), `tipoFluxoId` ausente falha, `periodo` fora do enum falha, `dimensao` fora do enum falha (≥5 casos)
-- [ ] `npm test` no arquivo + build passam
+- [x] `PERIODOS_INSIGHTS` / `DIMENSOES_INSIGHTS` exportados; `insightsFiltroSchema` valida os três campos; `dimensao` ausente → default `"STATUS"`
+- [x] `parseInsightsQuery(url)` extrai de `URLSearchParams` e retorna `safeParse`
+- [x] Testes: válido completo, válido sem `dimensao` (default), `tipoFluxoId` ausente falha, `periodo` fora do enum falha, `dimensao` fora do enum falha (≥5 casos)
+- [x] `npm test` no arquivo + build passam
 
 **Tests**: unit
 **Gate**: quick + build
@@ -77,8 +77,8 @@ T4 ─────┼→ T6 [P] (depende também de T5 para tipagem da resposta)
 **Requirement**: INSIGHT-03
 
 **Done when**:
-- [ ] `recharts` em `dependencies`
-- [ ] `npm run build` passa (import ainda não existe até T6, mas a dependência resolve)
+- [x] `recharts` em `dependencies`
+- [x] `npm run build` passa (import ainda não existe até T6, mas a dependência resolve)
 
 **Tests**: none
 **Gate**: build
@@ -95,10 +95,10 @@ T4 ─────┼→ T6 [P] (depende também de T5 para tipagem da resposta)
 **Requirement**: INSIGHT-06, INSIGHT-08
 
 **Done when**:
-- [ ] `gerarResumoInsights({ tipoFluxoNome, periodo, dimensao, itens, total })` retorna `string` em sucesso, `null` em falha/conteúdo vazio/chave ausente
-- [ ] Falha → `Log ERRO` com `entidade: "Insight"`, `entidade_id` = `` `${tipoFluxoNome}:${periodo}:${dimensao}` ``, `acao: "FALHA_IA"`
-- [ ] Nunca lança para o chamador por erro da OpenAI
-- [ ] Testes cobrem sucesso e falha (≥2); gate quick + build
+- [x] `gerarResumoInsights({ tipoFluxoNome, periodo, dimensao, itens, total })` retorna `string` em sucesso, `null` em falha/conteúdo vazio/chave ausente
+- [x] Falha → `Log ERRO` com `entidade: "Insight"`, `entidade_id` = `` `${tipoFluxoNome}:${periodo}:${dimensao}` ``, `acao: "FALHA_IA"`
+- [x] Nunca lança para o chamador por erro da OpenAI
+- [x] Testes cobrem sucesso e falha (≥2); gate quick + build
 
 **Tests**: unit
 **Gate**: quick + build
@@ -115,17 +115,17 @@ T4 ─────┼→ T6 [P] (depende também de T5 para tipagem da resposta)
 **Requirement**: INSIGHT-02, INSIGHT-05, INSIGHT-06, INSIGHT-08, INSIGHT-09, INSIGHT-11 (dados)
 
 **Done when**:
-- [ ] `periodoParaIntervalo(periodo, agora?)` — `agora` injetável; `ULTIMOS_30_DIAS`/`ULTIMOS_90_DIAS` = janela relativa; `ANO_ATUAL` = 1º de janeiro do ano de `agora` até `agora`
-- [ ] `resolverIdsVisiveis(usuario)` — RH_ADMIN → `null`; GESTOR → `[usuario.id, ...idsDaEquipe]` (via `prisma.user.findMany({ gestor_id: usuario.id })`)
-- [ ] `agregar(usuario, filtro)`:
+- [x] `periodoParaIntervalo(periodo, agora?)` — `agora` injetável; `ULTIMOS_30_DIAS`/`ULTIMOS_90_DIAS` = janela relativa; `ANO_ATUAL` = 1º de janeiro do ano de `agora` até `agora`
+- [x] `resolverIdsVisiveis(usuario)` — RH_ADMIN → `null`; GESTOR → `[usuario.id, ...idsDaEquipe]` (via `prisma.user.findMany({ gestor_id: usuario.id })`)
+- [x] `agregar(usuario, filtro)`:
   - `tipoFluxoId` inexistente → propaga `ErroNaoEncontrado` (sem agregar)
   - `dimensao STATUS` → `groupBy(status)` respeitando `where` (tipo + período + visibilidade)
   - `dimensao MES` → `$queryRaw` com `date_trunc('month', criado_em)`, mesmo filtro de visibilidade traduzido para SQL parametrizado
   - `total === 0` → `itens: []`, `resumo_ia: null`, **sem** chamar `gerarResumoInsights`
   - `total > 0` → chama `gerarResumoInsights`; falha → `resumo_ia: null` sem lançar
   - GESTOR sem subordinados → `idsVisiveis = [usuario.id]` (não lança, não quebra)
-- [ ] Testes: RH_ADMIN vê global, GESTOR só equipe, tipo inexistente → erro, período vazio não chama IA (mock `gerarResumoInsights` e assert não-chamado), ambas dimensões retornam `itens` coerentes (≥6 casos)
-- [ ] `npm test` + build passam
+- [x] Testes: RH_ADMIN vê global, GESTOR só equipe, tipo inexistente → erro, período vazio não chama IA (mock `gerarResumoInsights` e assert não-chamado), ambas dimensões retornam `itens` coerentes (≥6 casos)
+- [x] `npm test` + build passam
 
 **Tests**: unit
 **Gate**: quick + build
@@ -141,12 +141,12 @@ T4 ─────┼→ T6 [P] (depende também de T5 para tipagem da resposta)
 **Requirement**: INSIGHT-04, INSIGHT-10
 
 **Done when**:
-- [ ] `requireUser([Role.GESTOR, Role.RH_ADMIN])` — 401/403 antes de qualquer validação/agregação
-- [ ] `parseInsightsQuery` inválido → 400 com `issues`
-- [ ] `ErroNaoEncontrado` (tipo inválido) → 404
-- [ ] Sucesso → 200 com `InsightResultado`
-- [ ] Nenhum acesso direto a `prisma` nem lógica de agregação na rota
-- [ ] Build passa
+- [x] `requireUser([Role.GESTOR, Role.RH_ADMIN])` — 401/403 antes de qualquer validação/agregação
+- [x] `parseInsightsQuery` inválido → 400 com `issues`
+- [x] `ErroNaoEncontrado` (tipo inválido) → 404
+- [x] Sucesso → 200 com `InsightResultado`
+- [x] Nenhum acesso direto a `prisma` nem lógica de agregação na rota
+- [x] Build passa
 
 **Tests**: none
 **Gate**: build
@@ -162,14 +162,14 @@ T4 ─────┼→ T6 [P] (depende também de T5 para tipagem da resposta)
 **Requirement**: INSIGHT-01, INSIGHT-03, INSIGHT-05, INSIGHT-07, INSIGHT-08, INSIGHT-11
 
 **Done when**:
-- [ ] Gate `[GESTOR, RH_ADMIN]` no `page.tsx` (mesmo padrão de `auditoria-logs/page.tsx`: `redirect('/login')` / bloco "Acesso restrito")
-- [ ] `page.tsx` busca `tipoFluxoService.listar()` e passa como prop — sem endpoint extra só para o select
-- [ ] `InsightsPanel`: selects de tipo/período/dimensão sempre visíveis; ao mudar, refaz `fetch('/api/insights?...')`
-- [ ] Recharts `BarChart` renderiza `itens` (eixo X `chave`, eixo Y `quantidade`)
-- [ ] `total === 0` → estado vazio claro, sem callout de IA
-- [ ] `total > 0` e `resumo_ia` presente → callout com o texto
-- [ ] `total > 0` e `resumo_ia === null` → aviso "resumo não pôde ser gerado", gráfico continua visível
-- [ ] Build passa
+- [x] Gate `[GESTOR, RH_ADMIN]` no `page.tsx` (mesmo padrão de `auditoria-logs/page.tsx`: `redirect('/login')` / bloco "Acesso restrito")
+- [x] `page.tsx` busca `tipoFluxoService.listar()` e passa como prop — sem endpoint extra só para o select
+- [x] `InsightsPanel`: selects de tipo/período/dimensão sempre visíveis; ao mudar, refaz `fetch('/api/insights?...')`
+- [x] Recharts `BarChart` renderiza `itens` (eixo X `chave`, eixo Y `quantidade`)
+- [x] `total === 0` → estado vazio claro, sem callout de IA
+- [x] `total > 0` e `resumo_ia` presente → callout com o texto
+- [x] `total > 0` e `resumo_ia === null` → aviso "resumo não pôde ser gerado", gráfico continua visível
+- [x] Build passa
 
 **Tests**: none
 **Gate**: build
@@ -190,6 +190,15 @@ T4 ─────┼→ T6 [P] (depende também de T5 para tipagem da resposta)
 - [ ] SOLICITANTE tentando acessar `/api/insights` → 403
 - [ ] Falha forçada da OpenAI (chave inválida) → gráfico permanece, aviso de resumo indisponível, exatamente um `Log ERRO` novo
 - [ ] Descrever os cenários testados no resumo da task (regra do `CLAUDE.md` para mudanças de autorização/fluxo)
+
+**Nota de execução (2026-07-31):** click-through real no navegador (login Supabase + OpenAI real) **não foi executado** nesta sessão — ambiente sem sessão autenticada disponível para dirigir o browser. Em vez disso, cada cenário acima tem um equivalente coberto por teste automatizado, todos passando:
+- RH_ADMIN vê agregação global / GESTOR só enxerga a própria equipe (ids do gestor + subordinados) → `lib/services/insightsService.test.ts` ("RH_ADMIN vê global", "GESTOR só equipe").
+- Tipo de fluxo inexistente → `ErroNaoEncontrado` propagado, sem agregar → mesmo arquivo.
+- Período sem dados → `resumo_ia: null`, `gerarResumoInsights` **não** chamado (asserção explícita de `not.toHaveBeenCalled()`) → mesmo arquivo (dimensões STATUS e MES).
+- SOLICITANTE bloqueado → `requireUser([GESTOR, RH_ADMIN])` já teria papel fora da lista → `ErroNaoAutorizado` → rota converte em 403 (`app/api/insights/route.ts`); a checagem `roles.includes(user.role)` é genérica e já coberta por `lib/services/authService.test.ts`.
+- Falha da OpenAI (throw/timeout/conteúdo vazio/chave ausente) → `resumo_ia: null` + exatamente um `Log ERRO` (`entidade: "Insight"`, `acao: "FALHA_IA"`), sem lançar → `lib/services/iaService.test.ts`.
+
+Recomendação: antes da demo, rodar `npm run dev` e repetir os 5 cenários manualmente com dados reais (Supabase + `OPENAI_API_KEY`), já que teste automatizado não substitui UAT de UI real (fonte, layout, resposta de rede) — combina com a diretriz do projeto de nunca declarar uma feature de UI validada sem passar pelo navegador.
 
 **Tests**: manual
 **Gate**: none (documentação do resultado)

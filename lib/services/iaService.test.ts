@@ -22,7 +22,7 @@ vi.mock("@/lib/services/logService", () => ({
 
 import { registrar } from "@/lib/services/logService";
 import { Role } from "@/lib/generated/prisma/client";
-import { gerarResumoSolicitacao } from "./iaService";
+import { gerarResumoInsights, gerarResumoSolicitacao } from "./iaService";
 
 const mockRegistrar = vi.mocked(registrar);
 
@@ -122,6 +122,54 @@ describe("iaService.gerarResumoSolicitacao", () => {
       entidade_id: "sol-1",
       acao: "FALHA_IA",
       detalhes: { motivo: "OPENAI_API_KEY ausente" },
+    });
+  });
+});
+
+const insightsInputBase = {
+  tipoFluxoNome: "Reembolso",
+  periodo: "ULTIMOS_30_DIAS",
+  dimensao: "STATUS",
+  itens: [{ chave: "APROVADA", quantidade: 5 }],
+  total: 5,
+};
+
+describe("iaService.gerarResumoInsights", () => {
+  it("sucesso com conteudo nao-vazio -> retorna texto trimado e nao grava ERRO", async () => {
+    mockCreate.mockResolvedValueOnce({
+      choices: [{ message: { content: "  Maioria aprovada no periodo.  " } }],
+    });
+
+    const result = await gerarResumoInsights(insightsInputBase);
+
+    expect(result).toBe("Maioria aprovada no periodo.");
+    expect(mockRegistrar).not.toHaveBeenCalled();
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "gpt-4o-mini",
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: "user",
+            content: expect.stringContaining("Reembolso"),
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it("falha/throw da OpenAI -> null + registrar ERRO FALHA_IA com entidade Insight", async () => {
+    mockCreate.mockRejectedValueOnce(new Error("timeout"));
+
+    const result = await gerarResumoInsights(insightsInputBase);
+
+    expect(result).toBeNull();
+    expect(mockRegistrar).toHaveBeenCalledTimes(1);
+    expect(mockRegistrar).toHaveBeenCalledWith({
+      tipo: "ERRO",
+      entidade: "Insight",
+      entidade_id: "Reembolso:ULTIMOS_30_DIAS:STATUS",
+      acao: "FALHA_IA",
+      detalhes: { motivo: "timeout" },
     });
   });
 });
