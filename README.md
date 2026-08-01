@@ -74,6 +74,8 @@ SUPABASE_SERVICE_ROLE_KEY=
 OPENAI_API_KEY=
 RESEND_API_KEY=
 CRON_SECRET=                # token simples para proteger o endpoint de SLA
+GITHUB_REPO=                # owner/repo de destino do botão de ajuda (ex: fabioacarvalho/rhop)
+GITHUB_TOKEN=               # PAT fine-grained com escopo "Issues: write" em GITHUB_REPO
 ```
 
 ## Scripts
