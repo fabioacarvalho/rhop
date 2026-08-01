@@ -2,8 +2,7 @@ import { Role } from "@/lib/generated/prisma/enums";
 
 export type TipoRelato = "Bug" | "Melhoria" | "Dúvida";
 
-export interface BuildGithubIssueUrlInput {
-  repo: string;
+export interface MontarIssuePayloadInput {
   tipo: TipoRelato;
   tela: string;
   papel: Role;
@@ -18,20 +17,19 @@ const ROLE_LABELS: Record<Role, string> = {
 };
 
 /**
- * Monta a URL de nova issue do GitHub com titulo/corpo pre-preenchidos
- * (HELP-04). So recebe tipo/tela/papel/descricao — nunca e-mail ou nome —
- * tornando estruturalmente impossivel vazar dado sensivel por aqui (HELP-08).
+ * Monta titulo/corpo da issue do GitHub (HELP-04). So recebe tipo/tela/
+ * papel/descricao — nunca e-mail ou nome — tornando estruturalmente
+ * impossivel vazar dado sensivel por aqui (HELP-08).
  */
-export function buildGithubIssueUrl({
-  repo,
+export function montarIssuePayload({
   tipo,
   tela,
   papel,
   titulo,
   descricao,
-}: BuildGithubIssueUrlInput): string {
+}: MontarIssuePayloadInput): { title: string; body: string } {
   const tituloFinal = titulo.trim() || "(sem título)";
-  const corpo = [
+  const body = [
     `**Tipo:** ${tipo}`,
     `**Tela:** ${tela}`,
     `**Papel:** ${ROLE_LABELS[papel]}`,
@@ -39,10 +37,5 @@ export function buildGithubIssueUrl({
     descricao.trim(),
   ].join("\n");
 
-  const params = new URLSearchParams({
-    title: `[${tipo}] ${tituloFinal}`,
-    body: corpo,
-  });
-
-  return `https://github.com/${repo}/issues/new?${params.toString()}`;
+  return { title: `[${tipo}] ${tituloFinal}`, body };
 }
