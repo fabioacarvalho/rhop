@@ -102,6 +102,8 @@ docs/           # especificação e plano de execução
 ## Documentação de apoio
 
 - [Design completo](./docs/2026-07-30-fluxorh-design.md) — modelo de dados, telas, arquitetura, regras de negócio
+- [PRD banco de talentos](./docs/prd/2026-07-30-banco-de-talentos-prd.md) — modelo de dados, telas, arquitetura, regras de negócio para banco de talentos
+- [Design e mockups](./docs/design-ux-ui/fluxorh-ui-layout-specs.md) — modelo de de telas, design e mockups
 - [`CLAUDE.md`](./CLAUDE.md) — convenções e regras de negócio para geração de código com IA
 
 ## Escopo do hackathon
