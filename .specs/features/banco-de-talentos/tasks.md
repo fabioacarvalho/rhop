@@ -1,7 +1,7 @@
 # Banco de Talentos — Tasks
 
 **Design**: `.specs/features/banco-de-talentos/design.md`
-**Status**: Draft
+**Status**: Concluído
 
 ---
 
@@ -106,14 +106,14 @@ gerar e aplicar a migration.
 - Skill: NONE
 
 **Done when**:
-- [ ] **Primeiro passo**: confirmado (documentação oficial do Prisma para `prisma@^7.9.1` + `@prisma/adapter-pg`, ou teste direto no ambiente) como habilitar a extensão `vector` — via `previewFeatures = ["postgresqlExtensions"]` + `extensions = [vector]` no `datasource`, OU via migration SQL manual (`CREATE EXTENSION IF NOT EXISTS vector;`) antes do `Unsupported`. Este era o ponto sinalizado como incerto no `design.md` — não fabricar, verificar contra a doc oficial ou testar a migration real.
-- [ ] `enum StatusEmbedding { pendente processado falhou }` definido
-- [ ] `model Candidato` com todos os campos do `design.md`: `nome`, `email` (`@unique`), `telefone`, `curriculo_texto`, `curriculo_arquivo_url?`, `transcricao_texto`, `embedding Unsupported("vector(1536)")?`, `status_embedding StatusEmbedding @default(pendente)`, `solicitacao_id?`, `criado_por String @db.Uuid`, `criado_em`
-- [ ] `@@index([status_embedding])`, `@@index([solicitacao_id])`, `@@map("candidatos")`
-- [ ] `User` ganha `candidatos Candidato[]`; `Solicitacao` ganha `candidatos Candidato[]`
-- [ ] Migration gerada e aplicada sem erro (`npx prisma migrate dev --name adiciona_candidato`)
-- [ ] Query manual de teste (`INSERT`/`UPDATE` de um vetor de teste via `$executeRaw`, `SELECT ... <=>` via `$queryRaw`) confirma que a extensão está ativa e o tipo `vector` funciona neste ambiente
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] **Primeiro passo**: confirmado (documentação oficial do Prisma para `prisma@^7.9.1` + `@prisma/adapter-pg`, ou teste direto no ambiente) como habilitar a extensão `vector` — via `previewFeatures = ["postgresqlExtensions"]` + `extensions = [vector]` no `datasource`, OU via migration SQL manual (`CREATE EXTENSION IF NOT EXISTS vector;`) antes do `Unsupported`. Este era o ponto sinalizado como incerto no `design.md` — não fabricar, verificar contra a doc oficial ou testar a migration real.
+- [x] `enum StatusEmbedding { pendente processado falhou }` definido
+- [x] `model Candidato` com todos os campos do `design.md`: `nome`, `email` (`@unique`), `telefone`, `curriculo_texto`, `curriculo_arquivo_url?`, `transcricao_texto`, `embedding Unsupported("vector(1536)")?`, `status_embedding StatusEmbedding @default(pendente)`, `solicitacao_id?`, `criado_por String @db.Uuid`, `criado_em`
+- [x] `@@index([status_embedding])`, `@@index([solicitacao_id])`, `@@map("candidatos")`
+- [x] `User` ganha `candidatos Candidato[]`; `Solicitacao` ganha `candidatos Candidato[]`
+- [x] Migration gerada e aplicada sem erro (`npx prisma migrate dev --name adiciona_candidato`)
+- [x] Query manual de teste (`INSERT`/`UPDATE` de um vetor de teste via `$executeRaw`, `SELECT ... <=>` via `$queryRaw`) confirma que a extensão está ativa e o tipo `vector` funciona neste ambiente
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -135,11 +135,11 @@ gerar e aplicar a migration.
 - Skill: NONE
 
 **Done when**:
-- [ ] `candidatoInputSchema = z.object({ nome: z.string().min(1), email: z.string().email(), telefone: z.string().min(1), curriculo_texto: z.string().min(1), transcricao_texto: z.string().min(1), solicitacao_id: z.string().optional() })`
-- [ ] Teste cobre: válido passa; cada campo obrigatório ausente/vazio falha; `email` mal formatado falha; `solicitacao_id` ausente é aceito (campo opcional)
-- [ ] Gate check passa: `npm test` (arquivo `candidato.test.ts`)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
-- [ ] Test count: ≥6 casos (sem deleção silenciosa)
+- [x] `candidatoInputSchema = z.object({ nome: z.string().min(1), email: z.string().email(), telefone: z.string().min(1), curriculo_texto: z.string().min(1), transcricao_texto: z.string().min(1), solicitacao_id: z.string().optional() })`
+- [x] Teste cobre: válido passa; cada campo obrigatório ausente/vazio falha; `email` mal formatado falha; `solicitacao_id` ausente é aceito (campo opcional)
+- [x] Gate check passa: `npm test` (arquivo `candidato.test.ts`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥6 casos (sem deleção silenciosa)
 
 **Tests**: unit
 **Gate**: quick + build
@@ -161,11 +161,11 @@ gerar e aplicar a migration.
 - Skill: NONE
 
 **Done when**:
-- [ ] `talentoBuscaInputSchema = z.object({ texto: z.string().min(1), n: z.number().int().positive().default(20) })`
-- [ ] Teste cobre: válido passa; `texto` vazio/ausente falha; `n` ausente aplica default 20; `n` zero/negativo/não-inteiro falha (o teto máximo NÃO é testado aqui — é responsabilidade do service, T8)
-- [ ] Gate check passa: `npm test` (arquivo `talentoBusca.test.ts`)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
-- [ ] Test count: ≥5 casos
+- [x] `talentoBuscaInputSchema = z.object({ texto: z.string().min(1), n: z.number().int().positive().default(20) })`
+- [x] Teste cobre: válido passa; `texto` vazio/ausente falha; `n` ausente aplica default 20; `n` zero/negativo/não-inteiro falha (o teto máximo NÃO é testado aqui — é responsabilidade do service, T8)
+- [x] Gate check passa: `npm test` (arquivo `talentoBusca.test.ts`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥5 casos
 
 **Tests**: unit
 **Gate**: quick + build
@@ -189,13 +189,13 @@ ficou naquela posição do ranking, seguindo o mesmo padrão de resiliência de 
 - Skill: NONE
 
 **Done when**:
-- [ ] `gerarJustificativaRanking(input: { candidatoId: string; nome: string; curriculoTexto: string; transcricaoTexto: string; queryTexto: string }): Promise<string | null>` exportada
-- [ ] Prompt inclui o texto da busca e o currículo/transcrição do candidato; resposta em português
-- [ ] Falha (chave ausente, erro de API, conteúdo vazio) → `Log ERRO` (`entidade: "Candidato"`, `entidade_id: candidatoId`, `acao: FALHA_IA`) + retorna `null`, nunca lança
-- [ ] Sucesso com conteúdo não-vazio → string trimada
-- [ ] Gate check passa: `npm test` (arquivo `iaService.test.ts`, casos novos + existentes intactos)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
-- [ ] Test count: ≥4 casos novos (sucesso, chave ausente, erro de API, conteúdo vazio) sem quebrar os testes existentes de `gerarResumoSolicitacao`
+- [x] `gerarJustificativaRanking(input: { candidatoId: string; nome: string; curriculoTexto: string; transcricaoTexto: string; queryTexto: string }): Promise<string | null>` exportada
+- [x] Prompt inclui o texto da busca e o currículo/transcrição do candidato; resposta em português
+- [x] Falha (chave ausente, erro de API, conteúdo vazio) → `Log ERRO` (`entidade: "Candidato"`, `entidade_id: candidatoId`, `acao: FALHA_IA`) + retorna `null`, nunca lança
+- [x] Sucesso com conteúdo não-vazio → string trimada
+- [x] Gate check passa: `npm test` (arquivo `iaService.test.ts`, casos novos + existentes intactos)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥4 casos novos (sucesso, chave ausente, erro de API, conteúdo vazio) sem quebrar os testes existentes de `gerarResumoSolicitacao`
 
 **Tests**: unit
 **Gate**: quick + build
@@ -218,11 +218,11 @@ e-mail, vaga vinculada (se houver), score de similaridade em barra visual + perc
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] Recebe `candidato: CandidatoRankeado` (nome, email, solicitacao_id, score 0-1, justificativa)
-- [ ] Renderiza score como barra visual (largura proporcional a `score`) + percentual (`Math.round(score * 100)}%`)
-- [ ] `justificativa === null` → exibe texto alternativo claro (ex: "Justificativa indisponível"), sem quebrar o card
-- [ ] Sem erros de TypeScript
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Recebe `candidato: CandidatoRankeado` (nome, email, solicitacao_id, score 0-1, justificativa)
+- [x] Renderiza score como barra visual (largura proporcional a `score`) + percentual (`Math.round(score * 100)}%`)
+- [x] `justificativa === null` → exibe texto alternativo claro (ex: "Justificativa indisponível"), sem quebrar o card
+- [x] Sem erros de TypeScript
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -245,12 +245,12 @@ com cast `::vector`), `marcarFalha` (`status_embedding = 'falhou'`).
 - Skill: NONE
 
 **Done when**:
-- [ ] `gerar(texto: string): Promise<number[] | null>` — `client.embeddings.create({ model: "text-embedding-3-small", input: texto })`; falha (chave ausente, erro de API, timeout) → `Log ERRO` (`entidade: "Candidato"`, `acao: FALHA_IA`) + `null`, nunca lança
-- [ ] `persistirEmbedding(candidatoId: string, vetor: number[]): Promise<void>` — `$executeRaw` grava o vetor formatado como literal `vector` e `status_embedding = 'processado'`
-- [ ] `marcarFalha(candidatoId: string): Promise<void>` — `status_embedding = 'falhou'`
-- [ ] Gate check passa: `npm test` (arquivo `embeddingService.test.ts`, Prisma/OpenAI mockados)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
-- [ ] Test count: ≥6 casos (gerar sucesso/chave-ausente/erro-api, persistirEmbedding, marcarFalha, formatação do vetor)
+- [x] `gerar(texto: string): Promise<number[] | null>` — `client.embeddings.create({ model: "text-embedding-3-small", input: texto })`; falha (chave ausente, erro de API, timeout) → `Log ERRO` (`entidade: "Candidato"`, `acao: FALHA_IA`) + `null`, nunca lança
+- [x] `persistirEmbedding(candidatoId: string, vetor: number[]): Promise<void>` — `$executeRaw` grava o vetor formatado como literal `vector` e `status_embedding = 'processado'`
+- [x] `marcarFalha(candidatoId: string): Promise<void>` — `status_embedding = 'falhou'`
+- [x] Gate check passa: `npm test` (arquivo `embeddingService.test.ts`, Prisma/OpenAI mockados)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥6 casos (gerar sucesso/chave-ausente/erro-api, persistirEmbedding, marcarFalha, formatação do vetor)
 
 **Tests**: unit
 **Gate**: quick + build
@@ -274,14 +274,14 @@ gera embedding síncrono, grava `Log AUDITORIA`), `listar` (todos, sem filtro po
 - Skill: NONE
 
 **Done when**:
-- [ ] `ErroEmailDuplicado`, `ErroNaoEncontrado`, `ErroReprocessamentoNaoPermitido` exportados
-- [ ] `cadastrar(input, usuarioId)`: e-mail já existente (`P2002`) → `ErroEmailDuplicado`, sem persistir; sucesso → cria com `status_embedding=pendente`, chama `embeddingService.gerar` com `curriculo_texto + "\n" + transcricao_texto`, sucesso → `persistirEmbedding`, falha → `marcarFalha`; grava `Log AUDITORIA` (`acao: CRIACAO`) em ambos os casos
-- [ ] `listar()`: retorna todos os candidatos (`id, nome, email, status_embedding, criado_em`), sem filtro por `criado_por`, `orderBy criado_em desc`
-- [ ] `reprocessarEmbedding(id, usuarioId)`: `id` inexistente → `ErroNaoEncontrado`; `status_embedding !== 'falhou'` → `ErroReprocessamentoNaoPermitido`; senão repete o fluxo de geração de embedding de `cadastrar`
-- [ ] Falha de `logService.registrar` (mockada rejeitando) não impede `cadastrar` de retornar sucesso
-- [ ] Gate check passa: `npm test` (arquivo `candidatoService.test.ts`)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
-- [ ] Test count: ≥10 casos (cadastrar feliz/embedding-sucesso/embedding-falha/email-duplicado/log-falha, listar, reprocessar feliz/não-encontrado/status-invalido)
+- [x] `ErroEmailDuplicado`, `ErroNaoEncontrado`, `ErroReprocessamentoNaoPermitido` exportados
+- [x] `cadastrar(input, usuarioId)`: e-mail já existente (`P2002`) → `ErroEmailDuplicado`, sem persistir; sucesso → cria com `status_embedding=pendente`, chama `embeddingService.gerar` com `curriculo_texto + "\n" + transcricao_texto`, sucesso → `persistirEmbedding`, falha → `marcarFalha`; grava `Log AUDITORIA` (`acao: CRIACAO`) em ambos os casos
+- [x] `listar()`: retorna todos os candidatos (`id, nome, email, status_embedding, criado_em`), sem filtro por `criado_por`, `orderBy criado_em desc`
+- [x] `reprocessarEmbedding(id, usuarioId)`: `id` inexistente → `ErroNaoEncontrado`; `status_embedding !== 'falhou'` → `ErroReprocessamentoNaoPermitido`; senão repete o fluxo de geração de embedding de `cadastrar`
+- [x] Falha de `logService.registrar` (mockada rejeitando) não impede `cadastrar` de retornar sucesso
+- [x] Gate check passa: `npm test` (arquivo `candidatoService.test.ts`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥10 casos (cadastrar feliz/embedding-sucesso/embedding-falha/email-duplicado/log-falha, listar, reprocessar feliz/não-encontrado/status-invalido)
 
 **Tests**: unit
 **Gate**: quick + build
@@ -305,15 +305,15 @@ chama `iaService.gerarJustificativaRanking` por item (falha isolada não interro
 - Skill: NONE
 
 **Done when**:
-- [ ] `N_MAXIMO_PADRAO = 100`; teto lido de `process.env.TALENTO_BUSCA_N_MAXIMO`, fallback `100` se ausente/inválido
-- [ ] `buscar(texto: string, n: number): Promise<ResultadoBusca>`: `n` fora de `1..teto` → lança `ErroNInvalido` (rota converte em 400)
-- [ ] `embeddingService.gerar(texto)` falha (`null`) → lança `ErroBuscaIndisponivel` (rota converte em 422)
-- [ ] `$queryRaw` filtra `status_embedding='processado'`, ordena por `embedding <=> vetor`, `LIMIT n`, calcula `score = 1 - distancia` (0-1)
-- [ ] Nenhum candidato `processado` → retorna `{ candidatos: [], disponivel: false }`, sem lançar
-- [ ] Para cada candidato do resultado, chama `gerarJustificativaRanking`; falha em um item não interrompe os demais (item fica com `justificativa: null`)
-- [ ] Gate check passa: `npm test` (arquivo `talentoSearchService.test.ts`, Prisma/`iaService`/`embeddingService` mockados)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
-- [ ] Test count: ≥8 casos (n inválido, n acima do teto, embedding-da-query-falha, nenhum-processado, ranking-feliz, justificativa-falha-isolada, teto-via-env, teto-fallback)
+- [x] `N_MAXIMO_PADRAO = 100`; teto lido de `process.env.TALENTO_BUSCA_N_MAXIMO`, fallback `100` se ausente/inválido
+- [x] `buscar(texto: string, n: number): Promise<ResultadoBusca>`: `n` fora de `1..teto` → lança `ErroNInvalido` (rota converte em 400)
+- [x] `embeddingService.gerar(texto)` falha (`null`) → lança `ErroBuscaIndisponivel` (rota converte em 422)
+- [x] `$queryRaw` filtra `status_embedding='processado'`, ordena por `embedding <=> vetor`, `LIMIT n`, calcula `score = 1 - distancia` (0-1)
+- [x] Nenhum candidato `processado` → retorna `{ candidatos: [], disponivel: false }`, sem lançar
+- [x] Para cada candidato do resultado, chama `gerarJustificativaRanking`; falha em um item não interrompe os demais (item fica com `justificativa: null`)
+- [x] Gate check passa: `npm test` (arquivo `talentoSearchService.test.ts`, Prisma/`iaService`/`embeddingService` mockados)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥8 casos (n inválido, n acima do teto, embedding-da-query-falha, nenhum-processado, ranking-feliz, justificativa-falha-isolada, teto-via-env, teto-fallback)
 
 **Tests**: unit
 **Gate**: quick + build
@@ -336,10 +336,10 @@ chama `iaService.gerarJustificativaRanking` por item (falha isolada não interro
 - Skill: NONE
 
 **Done when**:
-- [ ] `GET`: sem sessão → 401; papel SOLICITANTE → 403; GESTOR/RH_ADMIN → 200 com lista de `listar()`
-- [ ] `POST`: sem sessão → 401; papel SOLICITANTE → 403; corpo inválido (Zod) → 400 com `detalhes`; `ErroEmailDuplicado` → 409; sucesso → 201 com o `Candidato` criado
-- [ ] Nenhuma lógica de negócio na rota
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] `GET`: sem sessão → 401; papel SOLICITANTE → 403; GESTOR/RH_ADMIN → 200 com lista de `listar()`
+- [x] `POST`: sem sessão → 401; papel SOLICITANTE → 403; corpo inválido (Zod) → 400 com `detalhes`; `ErroEmailDuplicado` → 409; sucesso → 201 com o `Candidato` criado
+- [x] Nenhuma lógica de negócio na rota
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -361,11 +361,11 @@ chama `iaService.gerarJustificativaRanking` por item (falha isolada não interro
 - Skill: NONE
 
 **Done when**:
-- [ ] Sem sessão → 401; papel SOLICITANTE → 403
-- [ ] `id` inexistente → 404 (`ErroNaoEncontrado`)
-- [ ] `status_embedding !== 'falhou'` → 409 (`ErroReprocessamentoNaoPermitido`)
-- [ ] Sucesso → 200 com o `Candidato` atualizado
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Sem sessão → 401; papel SOLICITANTE → 403
+- [x] `id` inexistente → 404 (`ErroNaoEncontrado`)
+- [x] `status_embedding !== 'falhou'` → 409 (`ErroReprocessamentoNaoPermitido`)
+- [x] Sucesso → 200 com o `Candidato` atualizado
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -388,12 +388,12 @@ chama `iaService.gerarJustificativaRanking` por item (falha isolada não interro
 - Skill: NONE
 
 **Done when**:
-- [ ] Sem sessão → 401; papel SOLICITANTE → 403
-- [ ] Corpo inválido (Zod) → 400
-- [ ] `ErroNInvalido` → 400 com mensagem citando o teto atual
-- [ ] `ErroBuscaIndisponivel` → 422
-- [ ] Sucesso → 200 com `ResultadoBusca` (`candidatos`, `disponivel`)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Sem sessão → 401; papel SOLICITANTE → 403
+- [x] Corpo inválido (Zod) → 400
+- [x] `ErroNInvalido` → 400 com mensagem citando o teto atual
+- [x] `ErroBuscaIndisponivel` → 422
+- [x] Sucesso → 200 com `ResultadoBusca` (`candidatos`, `disponivel`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -416,11 +416,11 @@ com estado de loading e feedback de sucesso/erro.
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] Recebe `candidatoId: string` como prop
-- [ ] Ao clicar, desabilita o botão, chama a rota, mostra estado de carregamento
-- [ ] Sucesso → feedback visual + atualiza a linha (ex: `router.refresh()`)
-- [ ] Erro (409/500) → mensagem clara, botão reabilitado
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Recebe `candidatoId: string` como prop
+- [x] Ao clicar, desabilita o botão, chama a rota, mostra estado de carregamento
+- [x] Sucesso → feedback visual + atualiza a linha (ex: `router.refresh()`)
+- [x] Erro (409/500) → mensagem clara, botão reabilitado
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -444,11 +444,11 @@ duplicado) inline no campo e-mail; sucesso → redireciona pra listagem.
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] 5 campos obrigatórios renderizados, `required` nativo (validação client é só UX)
-- [ ] Submit desabilitado durante o `fetch`
-- [ ] Erro 400 (Zod) exibe mensagem de validação; erro 409 exibe mensagem no campo e-mail especificamente ("Já existe candidato com este e-mail")
-- [ ] Sucesso (201) → redireciona pra `/banco-de-talentos`
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] 5 campos obrigatórios renderizados, `required` nativo (validação client é só UX)
+- [x] Submit desabilitado durante o `fetch`
+- [x] Erro 400 (Zod) exibe mensagem de validação; erro 409 exibe mensagem no campo e-mail especificamente ("Já existe candidato com este e-mail")
+- [x] Sucesso (201) → redireciona pra `/banco-de-talentos`
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -472,12 +472,12 @@ com mensagem clara; N inválido bloqueia antes de submeter (espelha a regra do s
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] Campo de texto (obrigatório) + campo N (numérico, default 20)
-- [ ] N inválido (não numérico, ≤0) bloqueia o submit com mensagem clara antes de chamar a API
-- [ ] Erro 400/422 da API exibe mensagem retornada pelo backend
-- [ ] `disponivel: false` → mensagem "nenhum candidato disponível para busca ainda"
-- [ ] `disponivel: true` → renderiza um `CandidatoCard` por resultado, na ordem retornada
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Campo de texto (obrigatório) + campo N (numérico, default 20)
+- [x] N inválido (não numérico, ≤0) bloqueia o submit com mensagem clara antes de chamar a API
+- [x] Erro 400/422 da API exibe mensagem retornada pelo backend
+- [x] `disponivel: false` → mensagem "nenhum candidato disponível para busca ainda"
+- [x] `disponivel: true` → renderiza um `CandidatoCard` por resultado, na ordem retornada
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -501,12 +501,12 @@ links "Novo Candidato" e "Buscar Candidatos"; estado vazio.
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] Sem sessão → `redirect('/login')`; papel SOLICITANTE → mensagem "Acesso restrito"
-- [ ] Lista mostra nome, e-mail, badge de `status_embedding` (pendente/processado/falhou)
-- [ ] `ReprocessarButton` aparece só na linha `falhou`
-- [ ] Lista vazia → mensagem explícita, sem erro
-- [ ] Links "Novo Candidato" (`/banco-de-talentos/novo`) e "Buscar Candidatos" (`/banco-de-talentos/busca`)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Sem sessão → `redirect('/login')`; papel SOLICITANTE → mensagem "Acesso restrito"
+- [x] Lista mostra nome, e-mail, badge de `status_embedding` (pendente/processado/falhou)
+- [x] `ReprocessarButton` aparece só na linha `falhou`
+- [x] Lista vazia → mensagem explícita, sem erro
+- [x] Links "Novo Candidato" (`/banco-de-talentos/novo`) e "Buscar Candidatos" (`/banco-de-talentos/busca`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -528,9 +528,9 @@ links "Novo Candidato" e "Buscar Candidatos"; estado vazio.
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] Sem sessão → `redirect('/login')`; papel SOLICITANTE → mensagem "Acesso restrito"
-- [ ] Renderiza `NovoCandidatoForm`
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Sem sessão → `redirect('/login')`; papel SOLICITANTE → mensagem "Acesso restrito"
+- [x] Renderiza `NovoCandidatoForm`
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -552,9 +552,9 @@ links "Novo Candidato" e "Buscar Candidatos"; estado vazio.
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] Sem sessão → `redirect('/login')`; papel SOLICITANTE → mensagem "Acesso restrito"
-- [ ] Renderiza `BuscaForm`
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Sem sessão → `redirect('/login')`; papel SOLICITANTE → mensagem "Acesso restrito"
+- [x] Renderiza `BuscaForm`
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
