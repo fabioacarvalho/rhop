@@ -1,7 +1,7 @@
 # Solicitações — Tasks
 
 **Design**: `.specs/features/solicitacoes/design.md`
-**Status**: Draft
+**Status**: Concluído (T1–T11 implementadas na branch `solicitacoes-v2`)
 
 ---
 
@@ -90,11 +90,11 @@ os índices `solicitante_id`/`etapa_atual`, e a relação inversa `solicitacoes 
 - Skill: NONE
 
 **Done when**:
-- [ ] `Solicitacao` tem `solicitante_id String @db.Uuid`, `solicitante User @relation(...)`, `dados Json`, `etapa_atual Role`, `prazo_sla DateTime`
-- [ ] `@@index([solicitante_id])` e `@@index([etapa_atual])` adicionados (mantendo os já existentes)
-- [ ] `User` ganha `solicitacoes Solicitacao[]`
-- [ ] Migration gerada (`npx prisma migrate dev --name extende_solicitacao`) e aplicada sem erro
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] `Solicitacao` tem `solicitante_id String @db.Uuid`, `solicitante User @relation(...)`, `dados Json`, `etapa_atual Role`, `prazo_sla DateTime`
+- [x] `@@index([solicitante_id])` e `@@index([etapa_atual])` adicionados (mantendo os já existentes)
+- [x] `User` ganha `solicitacoes Solicitacao[]`
+- [x] Migration gerada (`npx prisma migrate dev --name extende_solicitacao`) e aplicada sem erro
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -117,11 +117,11 @@ não valida os campos dinâmicos (isso é T3, no service).
 - Skill: NONE
 
 **Done when**:
-- [ ] `solicitacaoInputSchema = z.object({ tipo_fluxo_id: z.string().min(1), dados: z.record(z.string(), z.unknown()) })`
-- [ ] Teste cobre: válido passa; `tipo_fluxo_id` vazio/ausente falha; `dados` que não é objeto falha
-- [ ] Gate check passa: `npm test` (arquivo `solicitacao.test.ts`)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
-- [ ] Test count: ≥3 casos (sem deleção silenciosa)
+- [x] `solicitacaoInputSchema = z.object({ tipo_fluxo_id: z.string().min(1), dados: z.record(z.string(), z.unknown()) })`
+- [x] Teste cobre: válido passa; `tipo_fluxo_id` vazio/ausente falha; `dados` que não é objeto falha
+- [x] Gate check passa: `npm test` (arquivo `solicitacao.test.ts`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥3 casos (sem deleção silenciosa)
 
 **Tests**: unit
 **Gate**: quick + build
@@ -144,16 +144,16 @@ não valida os campos dinâmicos (isso é T3, no service).
 - Skill: NONE
 
 **Done when**:
-- [ ] `validarDados(dados, campos): { valido: true } | { valido: false; erros: Array<{ chave, mensagem }> }`
-- [ ] Campo `obrigatorio` ausente/vazio → erro
-- [ ] Tipo `numero`: valor não numérico OU fora de `min`/`max` → erro
-- [ ] Tipo `data`: valor não parseável como data → erro
-- [ ] Tipo `selecao`: valor fora de `opcoes` → erro
-- [ ] Tipo `texto`: fora de `min`/`max` (tamanho da string) → erro
-- [ ] Chave em `dados` sem correspondência em `campos_formulario` → ignorada, sem erro
-- [ ] Gate check passa: `npm test` (arquivo `solicitacaoDados.test.ts`)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
-- [ ] Test count: ≥8 casos (um por regra acima, incluindo o caminho feliz)
+- [x] `validarDados(dados, campos): { valido: true } | { valido: false; erros: Array<{ chave, mensagem }> }`
+- [x] Campo `obrigatorio` ausente/vazio → erro
+- [x] Tipo `numero`: valor não numérico OU fora de `min`/`max` → erro
+- [x] Tipo `data`: valor não parseável como data → erro
+- [x] Tipo `selecao`: valor fora de `opcoes` → erro
+- [x] Tipo `texto`: fora de `min`/`max` (tamanho da string) → erro
+- [x] Chave em `dados` sem correspondência em `campos_formulario` → ignorada, sem erro
+- [x] Gate check passa: `npm test` (arquivo `solicitacaoDados.test.ts`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥8 casos (um por regra acima, incluindo o caminho feliz)
 
 **Tests**: unit
 **Gate**: quick + build
@@ -178,11 +178,11 @@ não valida os campos dinâmicos (isso é T3, no service).
 - Skill: `frontend-design` (definido pelo usuário para tasks de UI)
 
 **Done when**:
-- [ ] Um input por `tipo` (texto/numero/data/selecao), controlado (`value`/`onChange` sobem pro form pai)
-- [ ] `obrigatorio` vira `required`; `min`/`max` viram atributos nativos quando `tipo` é `texto`/`numero`
-- [ ] `selecao` renderiza `<select>` com `opcoes`
-- [ ] Sem erros de TypeScript
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Um input por `tipo` (texto/numero/data/selecao), controlado (`value`/`onChange` sobem pro form pai)
+- [x] `obrigatorio` vira `required`; `min`/`max` viram atributos nativos quando `tipo` é `texto`/`numero`
+- [x] `selecao` renderiza `<select>` com `opcoes`
+- [x] Sem erros de TypeScript
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none (sem `@testing-library/*` no projeto — convenção existente)
 **Gate**: build
@@ -207,17 +207,17 @@ define `etapa_atual`/`prazo_sla`, persiste, grava `Log AUDITORIA`), `listarMinha
 - Skill: NONE
 
 **Done when**:
-- [ ] `ErroTipoFluxoNaoEncontrado`, `ErroNaoEncontrado`, `ErroAcessoNegado` exportados
-- [ ] `criar`: `tipo_fluxo_id` inexistente → `ErroTipoFluxoNaoEncontrado`; `dados` inválido (via
+- [x] `ErroTipoFluxoNaoEncontrado`, `ErroNaoEncontrado`, `ErroAcessoNegado` exportados
+- [x] `criar`: `tipo_fluxo_id` inexistente → `ErroTipoFluxoNaoEncontrado`; `dados` inválido (via
       `validarDados`) → não persiste, retorna erros por campo; sucesso → `status=PENDENTE`,
       `etapa_atual=etapas[0]`, `prazo_sla=now+48h`, grava `Log AUDITORIA`
-- [ ] `listarMinhas(solicitanteId)`: `where solicitante_id`, `orderBy criado_em desc`, inclui `tipoFluxo.nome`
-- [ ] `buscarDetalhePorId(id, solicitanteId)`: inexistente → `ErroNaoEncontrado`; de outro dono →
+- [x] `listarMinhas(solicitanteId)`: `where solicitante_id`, `orderBy criado_em desc`, inclui `tipoFluxo.nome`
+- [x] `buscarDetalhePorId(id, solicitanteId)`: inexistente → `ErroNaoEncontrado`; de outro dono →
       `ErroAcessoNegado`; do próprio dono → retorna detalhe completo
-- [ ] Falha de `logService.registrar` (mockada rejeitando) não impede `criar` de retornar sucesso
-- [ ] Gate check passa: `npm test` (arquivo `solicitacaoService.test.ts`)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
-- [ ] Test count: ≥10 casos (criar feliz/tipo-inexistente/dados-inválidos/log-falha, listarMinhas,
+- [x] Falha de `logService.registrar` (mockada rejeitando) não impede `criar` de retornar sucesso
+- [x] Gate check passa: `npm test` (arquivo `solicitacaoService.test.ts`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥10 casos (criar feliz/tipo-inexistente/dados-inválidos/log-falha, listarMinhas,
       buscarDetalhePorId feliz/não-encontrado/acesso-negado)
 
 **Tests**: unit
@@ -242,11 +242,11 @@ define `etapa_atual`/`prazo_sla`, persiste, grava `Log AUDITORIA`), `listarMinha
 - Skill: NONE
 
 **Done when**:
-- [ ] `GET`: sem sessão → 401; autenticado → 200 com lista de `listarMinhas`
-- [ ] `POST`: sem sessão → 401; corpo inválido (Zod) → 400 com `detalhes`; `ErroTipoFluxoNaoEncontrado` → 404;
+- [x] `GET`: sem sessão → 401; autenticado → 200 com lista de `listarMinhas`
+- [x] `POST`: sem sessão → 401; corpo inválido (Zod) → 400 com `detalhes`; `ErroTipoFluxoNaoEncontrado` → 404;
       sucesso → 201 com a `Solicitacao` criada
-- [ ] Nenhuma lógica de negócio na rota (delega tudo pro service, conforme `CLAUDE.md`)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Nenhuma lógica de negócio na rota (delega tudo pro service, conforme `CLAUDE.md`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none (sem teste de rota em nenhuma feature anterior — convenção existente)
 **Gate**: build
@@ -268,11 +268,11 @@ define `etapa_atual`/`prazo_sla`, persiste, grava `Log AUDITORIA`), `listarMinha
 - Skill: NONE
 
 **Done when**:
-- [ ] Sem sessão → 401
-- [ ] `id` inexistente → 404
-- [ ] `id` de outro solicitante → 403
-- [ ] `id` do próprio solicitante → 200 com detalhe
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Sem sessão → 401
+- [x] `id` inexistente → 404
+- [x] `id` de outro solicitante → 403
+- [x] `id` do próprio solicitante → 200 com detalhe
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -297,11 +297,11 @@ direta ao service em Server Component)
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] Sem sessão → `redirect('/login')`
-- [ ] Lista mostra tipo (`tipoFluxo.nome`), `status`, `criado_em`, indicador visual por status (SOL-14)
-- [ ] Lista vazia → mensagem explícita (SOL-15)
-- [ ] Botão/link "Nova Solicitação" → `/solicitacoes/nova`
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Sem sessão → `redirect('/login')`
+- [x] Lista mostra tipo (`tipoFluxo.nome`), `status`, `criado_em`, indicador visual por status (SOL-14)
+- [x] Lista vazia → mensagem explícita (SOL-15)
+- [x] Botão/link "Nova Solicitação" → `/solicitacoes/nova`
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -326,12 +326,12 @@ mínima, conforme design); sucesso → redireciona pra `/solicitacoes`.
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] Seletor lista `tiposDisponiveis` (prop vinda da página)
-- [ ] Selecionar tipo busca `campos_formulario` via `fetch` e renderiza um `CampoDinamico` por campo
-- [ ] Submit desabilitado durante o `fetch` do POST
-- [ ] Erro 400 do backend exibe mensagem por campo (usa `detalhes` da resposta)
-- [ ] Sucesso (201) → redireciona pra `/solicitacoes`
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Seletor lista `tiposDisponiveis` (prop vinda da página)
+- [x] Selecionar tipo busca `campos_formulario` via `fetch` e renderiza um `CampoDinamico` por campo
+- [x] Submit desabilitado durante o `fetch` do POST
+- [x] Erro 400 do backend exibe mensagem por campo (usa `detalhes` da resposta)
+- [x] Sucesso (201) → redireciona pra `/solicitacoes`
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -355,9 +355,9 @@ mínima, conforme design); sucesso → redireciona pra `/solicitacoes`.
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] Sem sessão → `redirect('/login')`
-- [ ] `tiposDisponiveis` vem de `tipoFluxoService.listar()`, passado como prop
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Sem sessão → `redirect('/login')`
+- [x] `tiposDisponiveis` vem de `tipoFluxoService.listar()`, passado como prop
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
@@ -382,11 +382,11 @@ conforme `campos_formulario` do `TipoFluxo`.
 - Skill: `frontend-design`
 
 **Done when**:
-- [ ] Sem sessão → `redirect('/login')`
-- [ ] `id` inexistente → `notFound()`
-- [ ] `id` de outro solicitante (`ErroAcessoNegado`) → mensagem "Você não tem acesso a esta solicitação"
-- [ ] `id` do próprio solicitante → exibe `dados` rotulados por `campos_formulario` (busca `TipoFluxo` via `tipoFluxoService.buscarPorId`)
-- [ ] Gate check passa: `npx prisma validate && npm run build`
+- [x] Sem sessão → `redirect('/login')`
+- [x] `id` inexistente → `notFound()`
+- [x] `id` de outro solicitante (`ErroAcessoNegado`) → mensagem "Você não tem acesso a esta solicitação"
+- [x] `id` do próprio solicitante → exibe `dados` rotulados por `campos_formulario` (busca `TipoFluxo` via `tipoFluxoService.buscarPorId`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
 
 **Tests**: none
 **Gate**: build
