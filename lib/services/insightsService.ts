@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma, Role } from "@/lib/generated/prisma/client";
 import { buscarPorId } from "@/lib/services/tipoFluxoService";
 import { gerarResumoInsights } from "@/lib/services/iaService";
+import * as equipeService from "@/lib/services/equipeService";
 import type { AuthenticatedUser } from "@/lib/services/authService";
 import type { InsightsFiltro } from "@/lib/validations/insight";
 
@@ -49,8 +50,10 @@ export function periodoParaIntervalo(
  * Resolve o escopo de visibilidade da agregação (INSIGHT-09).
  *
  * - `RH_ADMIN` -> `null` (sem filtro, agregação global).
- * - `GESTOR` -> `[usuario.id, ...idsDaEquipe]`. Sem subordinados, retorna
- *   `[usuario.id]` — não lança, não quebra (edge case do spec.md).
+ * - `GESTOR` -> `[usuario.id, ...idsDosMembros]`, considerando os membros de
+ *   todas as `Equipe`s geridas por ele (`equipeService.listarGeridasPor`).
+ *   Sem equipe gerida, retorna `[usuario.id]` — não lança, não quebra (edge
+ *   case do spec.md).
  */
 export async function resolverIdsVisiveis(
   usuario: AuthenticatedUser,
@@ -59,12 +62,14 @@ export async function resolverIdsVisiveis(
     return null;
   }
 
-  const equipe = await prisma.user.findMany({
-    where: { gestor_id: usuario.id },
+  const equipes = await equipeService.listarGeridasPor(usuario.id);
+
+  const membros = await prisma.user.findMany({
+    where: { equipe_id: { in: equipes.map((e) => e.id) } },
     select: { id: true },
   });
 
-  return [usuario.id, ...equipe.map((u) => u.id)];
+  return [usuario.id, ...membros.map((u) => u.id)];
 }
 
 type LinhaMes = { mes: Date; quantidade: bigint };
