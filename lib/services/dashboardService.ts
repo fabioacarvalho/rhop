@@ -170,8 +170,15 @@ export async function listarSolicitantesVisiveis(
     });
   }
 
+  const equipes = await equipeService.listarGeridasPor(usuario.id);
+
   return prisma.user.findMany({
-    where: { OR: [{ id: usuario.id }, { gestor_id: usuario.id }] },
+    where: {
+      OR: [
+        { id: usuario.id },
+        { equipe_id: { in: equipes.map((e) => e.id) } },
+      ],
+    },
     select: { id: true, nome: true },
     orderBy: { nome: "asc" },
   });

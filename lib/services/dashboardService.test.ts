@@ -298,27 +298,33 @@ describe("listarSolicitantesVisiveis", () => {
     expect(args?.where).toBeUndefined();
   });
 
-  it("GESTOR: retorna ele mesmo + equipe (OR gestor_id)", async () => {
+  it("GESTOR: retorna ele mesmo + membros das equipes geridas", async () => {
     mockUserFindMany.mockResolvedValue([]);
 
     await listarSolicitantesVisiveis(GESTOR);
 
+    expect(mockListarGeridasPor).toHaveBeenCalledWith(GESTOR.id);
     const where = mockUserFindMany.mock.calls[0][0]?.where as {
       OR?: unknown[];
     };
     expect(where.OR).toEqual([
       { id: GESTOR.id },
-      { gestor_id: GESTOR.id },
+      { equipe_id: { in: ["equipe-1"] } },
     ]);
   });
 
-  it("GESTOR sem equipe: retorna so ele mesmo (resultado do banco, mesma query)", async () => {
+  it("GESTOR sem equipe gerida: filtra so por ele mesmo (equipe_id: {in: []})", async () => {
+    mockListarGeridasPor.mockResolvedValueOnce([]);
     mockUserFindMany.mockResolvedValue([
       { id: GESTOR.id, nome: GESTOR.nome },
     ] as never);
 
     const resultado = await listarSolicitantesVisiveis(GESTOR);
 
+    const where = mockUserFindMany.mock.calls[0][0]?.where as {
+      OR?: unknown[];
+    };
+    expect(where.OR).toEqual([{ id: GESTOR.id }, { equipe_id: { in: [] } }]);
     expect(resultado).toEqual([{ id: GESTOR.id, nome: GESTOR.nome }]);
   });
 });
