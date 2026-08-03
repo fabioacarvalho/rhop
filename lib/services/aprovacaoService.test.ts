@@ -59,7 +59,6 @@ const GESTOR: AuthenticatedUser = {
   nome: "Marina",
   email: "marina@ex.com",
   role: Role.GESTOR,
-  gestor_id: null,
 };
 
 const GESTOR_OUTRO: AuthenticatedUser = {
@@ -67,7 +66,6 @@ const GESTOR_OUTRO: AuthenticatedUser = {
   nome: "Outro",
   email: "outro@ex.com",
   role: Role.GESTOR,
-  gestor_id: null,
 };
 
 const RH: AuthenticatedUser = {
@@ -75,7 +73,6 @@ const RH: AuthenticatedUser = {
   nome: "RH Admin",
   email: "rh@ex.com",
   role: Role.RH_ADMIN,
-  gestor_id: null,
 };
 
 function baseSolicitacao(overrides: Record<string, unknown> = {}) {
@@ -97,7 +94,7 @@ function baseSolicitacao(overrides: Record<string, unknown> = {}) {
       id: "user-1",
       nome: "Rafael Lima",
       email: "rafael@ex.com",
-      gestor_id: "gestor-1",
+      equipe: { gestor_id: "gestor-1" },
     },
     aprovacoes: [],
     ...overrides,
@@ -143,7 +140,7 @@ describe("listarPendentes", () => {
         where: {
           status: StatusSolicitacao.PENDENTE,
           etapa_atual: Role.GESTOR,
-          solicitante: { gestor_id: GESTOR.id },
+          solicitante: { equipe: { gestor_id: GESTOR.id } },
         },
       }),
     );
@@ -205,14 +202,14 @@ describe("decidir", () => {
     ).rejects.toBeInstanceOf(ErroNaoAutorizadoAprovacao);
   });
 
-  it("bloqueia quando solicitante nao tem gestor_id", async () => {
+  it("bloqueia quando solicitante nao tem equipe", async () => {
     mockFindUnique.mockResolvedValue(
       baseSolicitacao({
         solicitante: {
           id: "user-1",
           nome: "Rafael",
           email: "r@ex.com",
-          gestor_id: null,
+          equipe: null,
         },
       }) as never,
     );
@@ -400,7 +397,7 @@ describe("listarHistorico", () => {
     mockFindUnique.mockResolvedValue({
       id: "sol-1",
       solicitante_id: "user-1",
-      solicitante: { id: "user-1", gestor_id: "gestor-1" },
+      solicitante: { id: "user-1", equipe: { gestor_id: "gestor-1" } },
       aprovacoes: [
         { id: "a1", etapa: 1 },
         { id: "a2", etapa: 2 },
@@ -415,7 +412,7 @@ describe("listarHistorico", () => {
     mockFindUnique.mockResolvedValue({
       id: "sol-1",
       solicitante_id: "user-1",
-      solicitante: { id: "user-1", gestor_id: "gestor-1" },
+      solicitante: { id: "user-1", equipe: { gestor_id: "gestor-1" } },
       aprovacoes: [],
     } as never);
 

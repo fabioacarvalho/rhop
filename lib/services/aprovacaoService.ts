@@ -22,7 +22,7 @@ export class ErroNaoEncontrado extends Error {
 
 /**
  * Usuario autenticado nao e o aprovador elegivel da etapa atual
- * (papel errado, gestor errado, ou solicitante sem gestor_id) — 403.
+ * (papel errado, gestor errado, ou solicitante sem equipe) — 403.
  */
 export class ErroNaoAutorizadoAprovacao extends Error {
   constructor(
@@ -58,14 +58,19 @@ export interface AprovacaoPendenteCard {
 
 type SolicitacaoComRelacoes = Solicitacao & {
   tipoFluxo: { id: string; nome: string; etapas: unknown };
-  solicitante: { id: string; nome: string; email: string; gestor_id: string | null };
+  solicitante: {
+    id: string;
+    nome: string;
+    email: string;
+    equipe: { gestor_id: string } | null;
+  };
   aprovacoes: Aprovacao[];
 };
 
 /**
  * Lista solicitacoes pendentes para o aprovador autenticado (APR-01, APR-05).
  *
- * - GESTOR: `etapa_atual = GESTOR` e `solicitante.gestor_id = usuario.id`
+ * - GESTOR: `etapa_atual = GESTOR` e `solicitante.equipe.gestor_id = usuario.id`
  * - RH_ADMIN: `etapa_atual = RH_ADMIN`
  * - Garante stub de `Aprovacao` da etapa e tenta preencher `resumo_ia`
  *   (falha de IA → card com `resumo_ia: null`, fluxo segue).
@@ -82,7 +87,7 @@ export async function listarPendentes(
       ? {
           status: StatusSolicitacao.PENDENTE,
           etapa_atual: Role.GESTOR,
-          solicitante: { gestor_id: usuario.id },
+          solicitante: { equipe: { gestor_id: usuario.id } },
         }
       : {
           status: StatusSolicitacao.PENDENTE,
@@ -94,7 +99,12 @@ export async function listarPendentes(
     include: {
       tipoFluxo: { select: { id: true, nome: true, etapas: true } },
       solicitante: {
-        select: { id: true, nome: true, email: true, gestor_id: true },
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          equipe: { select: { gestor_id: true } },
+        },
       },
       aprovacoes: true,
     },
@@ -139,7 +149,12 @@ export async function decidir(
     include: {
       tipoFluxo: { select: { id: true, nome: true, etapas: true } },
       solicitante: {
-        select: { id: true, nome: true, email: true, gestor_id: true },
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          equipe: { select: { gestor_id: true } },
+        },
       },
       aprovacoes: true,
     },
@@ -271,7 +286,9 @@ export async function listarHistorico(
   const solicitacao = await prisma.solicitacao.findUnique({
     where: { id: solicitacaoId },
     include: {
-      solicitante: { select: { id: true, gestor_id: true } },
+      solicitante: {
+        select: { id: true, equipe: { select: { gestor_id: true } } },
+      },
       aprovacoes: { orderBy: { etapa: "asc" } },
     },
   });
@@ -284,7 +301,7 @@ export async function listarHistorico(
     usuario.role === Role.RH_ADMIN ||
     solicitacao.solicitante_id === usuario.id ||
     (usuario.role === Role.GESTOR &&
-      solicitacao.solicitante.gestor_id === usuario.id);
+      solicitacao.solicitante.equipe?.gestor_id === usuario.id);
 
   if (!visivel) {
     throw new ErroNaoAutorizadoAprovacao(
@@ -312,12 +329,12 @@ function assertPodeDecidir(
   }
 
   if (solicitacao.etapa_atual === Role.GESTOR) {
-    if (!solicitacao.solicitante.gestor_id) {
+    if (!solicitacao.solicitante.equipe) {
       throw new ErroNaoAutorizadoAprovacao(
-        "Solicitante sem gestor_id; nao ha aprovador elegivel.",
+        "Solicitante sem equipe; nao ha aprovador elegivel.",
       );
     }
-    if (solicitacao.solicitante.gestor_id !== usuario.id) {
+    if (solicitacao.solicitante.equipe.gestor_id !== usuario.id) {
       throw new ErroNaoAutorizadoAprovacao(
         "Usuario nao e o gestor do solicitante.",
       );
