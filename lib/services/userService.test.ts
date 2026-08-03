@@ -11,6 +11,9 @@ vi.mock("@/lib/prisma", () => ({
       count: vi.fn(),
       findMany: vi.fn(),
     },
+    equipe: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 
@@ -22,6 +25,11 @@ vi.mock("@/lib/services/resendService", () => ({
   resendService: {
     enviarEmail: vi.fn(),
   },
+}));
+
+vi.mock("@/lib/services/equipeService", () => ({
+  listarGeridasPor: vi.fn(),
+  contarGeridasAtivasPor: vi.fn(),
 }));
 
 const mockCreateUser = vi.fn();
@@ -41,6 +49,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma, Role, type User } from "@/lib/generated/prisma/client";
 import { registrar } from "@/lib/services/logService";
 import { resendService } from "@/lib/services/resendService";
+import * as equipeService from "@/lib/services/equipeService";
 import type { AuthenticatedUser } from "@/lib/services/authService";
 import {
   buscarPorId,
@@ -59,17 +68,22 @@ import {
 const mockFindUnique = vi.mocked(prisma.user.findUnique);
 const mockCreate = vi.mocked(prisma.user.create);
 const mockUpdate = vi.mocked(prisma.user.update);
-const mockCount = vi.mocked(prisma.user.count);
 const mockFindMany = vi.mocked(prisma.user.findMany);
+const mockEquipeFindUnique = vi.mocked(prisma.equipe.findUnique);
 const mockRegistrar = vi.mocked(registrar);
 const mockEnviarEmail = vi.mocked(resendService.enviarEmail);
+const mockListarGeridasPor = vi.mocked(equipeService.listarGeridasPor);
+const mockContarGeridasAtivasPor = vi.mocked(
+  equipeService.contarGeridasAtivasPor,
+);
+
+const EQUIPE_ATIVA = { id: "equipe-1", nome: "Equipe A", ativo: true };
 
 const RH_ADMIN: AuthenticatedUser = {
   id: "rh-1",
   nome: "RH Admin",
   email: "rh@empresa.com",
   role: Role.RH_ADMIN,
-  gestor_id: null,
 };
 
 const GESTOR: AuthenticatedUser = {
@@ -77,7 +91,6 @@ const GESTOR: AuthenticatedUser = {
   nome: "Gestor",
   email: "gestor@empresa.com",
   role: Role.GESTOR,
-  gestor_id: "rh-1",
 };
 
 function usuarioFake(overrides: Partial<User> = {}): User {
@@ -86,7 +99,7 @@ function usuarioFake(overrides: Partial<User> = {}): User {
     nome: "Fulano",
     email: "fulano@empresa.com",
     role: Role.SOLICITANTE,
-    gestor_id: "gestor-1",
+    equipe_id: "equipe-1",
     ativo: true,
     ...overrides,
   } as User;
@@ -96,12 +109,14 @@ beforeEach(() => {
   mockFindUnique.mockReset();
   mockCreate.mockReset();
   mockUpdate.mockReset();
-  mockCount.mockReset();
   mockFindMany.mockReset();
+  mockEquipeFindUnique.mockReset();
   mockRegistrar.mockReset().mockResolvedValue(undefined);
   mockEnviarEmail.mockReset().mockResolvedValue(true);
   mockCreateUser.mockReset();
   mockDeleteUser.mockReset();
+  mockListarGeridasPor.mockReset().mockResolvedValue([]);
+  mockContarGeridasAtivasPor.mockReset().mockResolvedValue(0);
 });
 
 /**
@@ -132,34 +147,34 @@ describe("userService.provisionar", () => {
 
     expect(erro).toBeInstanceOf(ErroValidacaoUsuario);
     expect((erro as Error).message).toMatch(/role invalido/i);
-    expect(mockFindUnique).not.toHaveBeenCalled();
+    expect(mockEquipeFindUnique).not.toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
-  it("rejeita gestor_id nulo quando role !== RH_ADMIN", async () => {
+  it("rejeita equipe_id nulo quando role === SOLICITANTE", async () => {
     const input: ProvisionarInput = {
       id: "user-2",
-      nome: "Solicitante Sem Gestor",
+      nome: "Solicitante Sem Equipe",
       email: "solicitante@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: null,
+      equipe_id: null,
     };
 
     const erro = await capturarErro(input);
 
     expect(erro).toBeInstanceOf(ErroValidacaoUsuario);
-    expect((erro as Error).message).toMatch(/gestor_id e obrigatorio/i);
-    expect(mockFindUnique).not.toHaveBeenCalled();
+    expect((erro as Error).message).toMatch(/equipe_id e obrigatorio/i);
+    expect(mockEquipeFindUnique).not.toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
-  it("aceita gestor_id nulo quando role === RH_ADMIN", async () => {
+  it("aceita equipe_id nulo quando role === RH_ADMIN", async () => {
     const input: ProvisionarInput = {
       id: "user-3",
       nome: "Admin RH",
       email: "admin@example.com",
       role: Role.RH_ADMIN,
-      gestor_id: null,
+      equipe_id: null,
     };
 
     mockCreate.mockResolvedValueOnce({
@@ -167,11 +182,11 @@ describe("userService.provisionar", () => {
       nome: "Admin RH",
       email: "admin@example.com",
       role: Role.RH_ADMIN,
-      gestor_id: null,
+      equipe_id: null,
     } as never);
 
     await expect(provisionar(input)).resolves.toMatchObject({ id: "user-3" });
-    expect(mockFindUnique).not.toHaveBeenCalled();
+    expect(mockEquipeFindUnique).not.toHaveBeenCalled();
     expect(mockCreate).toHaveBeenCalledTimes(1);
     expect(mockCreate).toHaveBeenCalledWith({
       data: {
@@ -179,53 +194,74 @@ describe("userService.provisionar", () => {
         nome: "Admin RH",
         email: "admin@example.com",
         role: Role.RH_ADMIN,
-        gestor_id: null,
+        equipe_id: null,
       },
     });
   });
 
-  it("rejeita gestor_id igual ao id do proprio usuario (auto-referencia)", async () => {
+  it("rejeita equipe_id quando role !== SOLICITANTE", async () => {
     const input: ProvisionarInput = {
       id: "user-4",
-      nome: "Auto Referencia",
-      email: "auto@example.com",
+      nome: "Gestor Com Equipe",
+      email: "gestor@example.com",
       role: Role.GESTOR,
-      gestor_id: "user-4",
+      equipe_id: "equipe-1",
     };
 
     const erro = await capturarErro(input);
 
     expect(erro).toBeInstanceOf(ErroValidacaoUsuario);
-    expect((erro as Error).message).toMatch(/auto-referencia/i);
-    expect(mockFindUnique).not.toHaveBeenCalled();
+    expect((erro as Error).message).toMatch(/nao e permitido/i);
+    expect(mockEquipeFindUnique).not.toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
-  it("rejeita gestor_id que nao corresponde a nenhum usuario existente", async () => {
-    mockFindUnique.mockResolvedValueOnce(null);
+  it("rejeita equipe_id que nao corresponde a nenhuma equipe existente", async () => {
+    mockEquipeFindUnique.mockResolvedValueOnce(null);
 
     const input: ProvisionarInput = {
       id: "user-5",
-      nome: "Sem Gestor Valido",
-      email: "sem-gestor@example.com",
+      nome: "Sem Equipe Valida",
+      email: "sem-equipe@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: "gestor-inexistente",
+      equipe_id: "equipe-inexistente",
     };
 
     const erro = await capturarErro(input);
 
     expect(erro).toBeInstanceOf(ErroValidacaoUsuario);
     expect((erro as Error).message).toMatch(
-      /nao corresponde a nenhum usuario existente/i,
+      /nao corresponde a nenhuma equipe existente/i,
     );
-    expect(mockFindUnique).toHaveBeenCalledWith({
-      where: { id: "gestor-inexistente" },
+    expect(mockEquipeFindUnique).toHaveBeenCalledWith({
+      where: { id: "equipe-inexistente" },
     });
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
+  it("rejeita equipe_id de equipe inativa", async () => {
+    mockEquipeFindUnique.mockResolvedValueOnce({
+      ...EQUIPE_ATIVA,
+      ativo: false,
+    } as never);
+
+    const input: ProvisionarInput = {
+      id: "user-5b",
+      nome: "Equipe Inativa",
+      email: "equipe-inativa@example.com",
+      role: Role.SOLICITANTE,
+      equipe_id: "equipe-1",
+    };
+
+    const erro = await capturarErro(input);
+
+    expect(erro).toBeInstanceOf(ErroValidacaoUsuario);
+    expect((erro as Error).message).toMatch(/equipe inativa/i);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
   it("traduz email duplicado (P2002) para ErroValidacaoUsuario legivel", async () => {
-    mockFindUnique.mockResolvedValueOnce({ id: "gestor-1" } as never);
+    mockEquipeFindUnique.mockResolvedValueOnce(EQUIPE_ATIVA as never);
     mockCreate.mockRejectedValueOnce(
       new Prisma.PrismaClientKnownRequestError(
         "Unique constraint failed on the fields: (`email`)",
@@ -242,7 +278,7 @@ describe("userService.provisionar", () => {
       nome: "Email Duplicado",
       email: "duplicado@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: "gestor-1",
+      equipe_id: "equipe-1",
     };
 
     const erro = await capturarErro(input);
@@ -254,12 +290,12 @@ describe("userService.provisionar", () => {
 });
 
 describe("userService.cadastrar", () => {
-  it("RH_ADMIN cria com role/gestor_id validos: cria Auth + User, envia email, grava AUDITORIA", async () => {
+  it("RH_ADMIN cria com role/equipe_id validos: cria Auth + User, envia email, grava AUDITORIA", async () => {
     mockCreateUser.mockResolvedValueOnce({
       data: { user: { id: "auth-novo" } },
       error: null,
     });
-    mockFindUnique.mockResolvedValueOnce({ id: "gestor-1" } as never); // gestor_id existe
+    mockEquipeFindUnique.mockResolvedValueOnce(EQUIPE_ATIVA as never);
     mockCreate.mockResolvedValueOnce(
       usuarioFake({ id: "auth-novo", role: Role.SOLICITANTE }) as never,
     );
@@ -269,7 +305,7 @@ describe("userService.cadastrar", () => {
         nome: "Novo Usuario",
         email: "novo@empresa.com",
         role: Role.SOLICITANTE,
-        gestor_id: "gestor-1",
+        equipe_id: "equipe-1",
       },
       RH_ADMIN,
     );
@@ -283,14 +319,15 @@ describe("userService.cadastrar", () => {
     );
   });
 
-  it("GESTOR forca role SOLICITANTE e gestor_id do proprio ator", async () => {
+  it("GESTOR cadastra SOLICITANTE numa equipe que ele gerencia", async () => {
+    mockListarGeridasPor.mockResolvedValueOnce([EQUIPE_ATIVA]);
     mockCreateUser.mockResolvedValueOnce({
       data: { user: { id: "auth-novo" } },
       error: null,
     });
-    mockFindUnique.mockResolvedValueOnce({ id: GESTOR.id } as never); // gestor_id (GESTOR.id) existe
+    mockEquipeFindUnique.mockResolvedValueOnce(EQUIPE_ATIVA as never);
     mockCreate.mockResolvedValueOnce(
-      usuarioFake({ id: "auth-novo", gestor_id: GESTOR.id }) as never,
+      usuarioFake({ id: "auth-novo", equipe_id: "equipe-1" }) as never,
     );
 
     await cadastrar(
@@ -298,23 +335,49 @@ describe("userService.cadastrar", () => {
         nome: "Subordinado",
         email: "subordinado@empresa.com",
         role: Role.SOLICITANTE,
-        gestor_id: "outro-id-qualquer",
+        equipe_id: "equipe-1",
       },
       GESTOR,
     );
 
     expect(mockCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ role: Role.SOLICITANTE, gestor_id: GESTOR.id }),
+      data: expect.objectContaining({
+        role: Role.SOLICITANTE,
+        equipe_id: "equipe-1",
+      }),
     });
   });
 
+  it("GESTOR tentando equipe que nao gerencia -> ErroPermissaoUsuario, nenhuma chamada ao Supabase Admin", async () => {
+    mockListarGeridasPor.mockResolvedValueOnce([
+      { id: "equipe-outra", nome: "Equipe Outra" },
+    ]);
+
+    await expect(
+      cadastrar(
+        {
+          nome: "Tentativa",
+          email: "tentativa@empresa.com",
+          role: Role.SOLICITANTE,
+          equipe_id: "equipe-1",
+        },
+        GESTOR,
+      ),
+    ).rejects.toBeInstanceOf(ErroPermissaoUsuario);
+
+    expect(mockCreateUser).not.toHaveBeenCalled();
+  });
+
   it("GESTOR tentando outro role -> ErroPermissaoUsuario, nenhuma chamada ao Supabase Admin", async () => {
+    mockListarGeridasPor.mockResolvedValueOnce([EQUIPE_ATIVA]);
+
     await expect(
       cadastrar(
         {
           nome: "Tentativa",
           email: "tentativa@empresa.com",
           role: Role.GESTOR,
+          equipe_id: "equipe-1",
         },
         GESTOR,
       ),
@@ -356,7 +419,7 @@ describe("userService.cadastrar", () => {
       error: null,
     });
     mockCreate.mockResolvedValueOnce(
-      usuarioFake({ id: "auth-novo", role: Role.RH_ADMIN, gestor_id: null }) as never,
+      usuarioFake({ id: "auth-novo", role: Role.RH_ADMIN, equipe_id: null }) as never,
     );
     mockEnviarEmail.mockResolvedValueOnce(false);
 
@@ -391,8 +454,9 @@ describe("userService.editar", () => {
 
   it("GESTOR sobre alvo fora do escopo -> ErroPermissaoUsuario, nenhum update", async () => {
     mockFindUnique.mockResolvedValueOnce(
-      usuarioFake({ id: "alvo-2", gestor_id: "outro-gestor" }) as never,
+      usuarioFake({ id: "alvo-2", equipe_id: "equipe-outra" }) as never,
     );
+    mockListarGeridasPor.mockResolvedValueOnce([EQUIPE_ATIVA]);
 
     await expect(
       editar("alvo-2", { nome: "X" }, GESTOR),
@@ -400,16 +464,32 @@ describe("userService.editar", () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it("troca de role de quem tem equipe para papel != GESTOR/RH_ADMIN -> ErroEdicaoBloqueadaUsuario, nenhum update", async () => {
+  it("troca de role de quem gerencia equipe(s) ativa(s) para SOLICITANTE -> ErroEdicaoBloqueadaUsuario, nenhum update", async () => {
     mockFindUnique.mockResolvedValueOnce(
-      usuarioFake({ id: "alvo-3", role: Role.GESTOR, gestor_id: "rh-1" }) as never,
+      usuarioFake({ id: "alvo-3", role: Role.GESTOR, equipe_id: null }) as never,
     );
-    mockCount.mockResolvedValueOnce(2);
+    mockContarGeridasAtivasPor.mockResolvedValueOnce(2);
 
     await expect(
       editar("alvo-3", { role: Role.SOLICITANTE }, RH_ADMIN),
     ).rejects.toBeInstanceOf(ErroEdicaoBloqueadaUsuario);
     expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("troca de role de SOLICITANTE para GESTOR limpa equipe_id automaticamente", async () => {
+    mockFindUnique.mockResolvedValueOnce(
+      usuarioFake({ id: "alvo-3b", role: Role.SOLICITANTE, equipe_id: "equipe-1" }) as never,
+    );
+    mockUpdate.mockResolvedValueOnce(
+      usuarioFake({ id: "alvo-3b", role: Role.GESTOR, equipe_id: null }) as never,
+    );
+
+    await editar("alvo-3b", { role: Role.GESTOR }, RH_ADMIN);
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "alvo-3b" },
+      data: { role: Role.GESTOR, equipe_id: null },
+    });
   });
 
   it("editar com id === ator.id -> ErroPermissaoUsuario, nenhuma escrita", async () => {
@@ -429,10 +509,11 @@ describe("userService.editar", () => {
     ).rejects.toBeInstanceOf(ErroNaoEncontradoUsuario);
   });
 
-  it("GESTOR enviando role/gestor_id -> ErroPermissaoUsuario", async () => {
+  it("GESTOR enviando role/equipe_id -> ErroPermissaoUsuario", async () => {
     mockFindUnique.mockResolvedValueOnce(
-      usuarioFake({ id: "alvo-4", gestor_id: GESTOR.id }) as never,
+      usuarioFake({ id: "alvo-4", equipe_id: "equipe-1" }) as never,
     );
+    mockListarGeridasPor.mockResolvedValueOnce([EQUIPE_ATIVA]);
 
     await expect(
       editar("alvo-4", { role: Role.GESTOR }, GESTOR),
@@ -461,8 +542,9 @@ describe("userService.definirStatus", () => {
 
   it("GESTOR reativa dentro do escopo -> update aplicado, AUDITORIA/REATIVACAO", async () => {
     mockFindUnique.mockResolvedValueOnce(
-      usuarioFake({ id: "alvo-6", gestor_id: GESTOR.id }) as never,
+      usuarioFake({ id: "alvo-6", equipe_id: "equipe-1" }) as never,
     );
+    mockListarGeridasPor.mockResolvedValueOnce([EQUIPE_ATIVA]);
     mockUpdate.mockResolvedValueOnce(
       usuarioFake({ id: "alvo-6", ativo: true }) as never,
     );
@@ -487,7 +569,7 @@ describe("userService.definirStatus", () => {
 describe("userService.listar", () => {
   it("RH_ADMIN recebe todos os usuarios", async () => {
     mockFindMany.mockResolvedValueOnce([
-      { ...usuarioFake({ id: "u1" }), gestor: { nome: "Gestor" } },
+      { ...usuarioFake({ id: "u1" }), equipe: { nome: "Equipe A" } },
     ] as never);
 
     const resultado = await listar(RH_ADMIN);
@@ -495,17 +577,24 @@ describe("userService.listar", () => {
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: {} }),
     );
-    expect(resultado[0].gestor_nome).toBe("Gestor");
+    expect(resultado[0].equipe_nome).toBe("Equipe A");
   });
 
-  it("GESTOR recebe so SOLICITANTE com gestor_id = ator.id", async () => {
+  it("GESTOR recebe so SOLICITANTE com equipe_id entre as equipes geridas", async () => {
+    mockListarGeridasPor.mockResolvedValueOnce([
+      { id: "equipe-1", nome: "Equipe A" },
+      { id: "equipe-2", nome: "Equipe B" },
+    ]);
     mockFindMany.mockResolvedValueOnce([]);
 
     await listar(GESTOR);
 
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { role: Role.SOLICITANTE, gestor_id: GESTOR.id },
+        where: {
+          role: Role.SOLICITANTE,
+          equipe_id: { in: ["equipe-1", "equipe-2"] },
+        },
       }),
     );
   });
@@ -514,8 +603,9 @@ describe("userService.listar", () => {
 describe("userService.buscarPorId", () => {
   it("fora do escopo do GESTOR -> ErroNaoEncontradoUsuario (nao revela existencia)", async () => {
     mockFindUnique.mockResolvedValueOnce(
-      usuarioFake({ id: "alvo-7", gestor_id: "outro-gestor" }) as never,
+      usuarioFake({ id: "alvo-7", equipe_id: "equipe-outra" }) as never,
     );
+    mockListarGeridasPor.mockResolvedValueOnce([EQUIPE_ATIVA]);
 
     await expect(buscarPorId("alvo-7", GESTOR)).rejects.toBeInstanceOf(
       ErroNaoEncontradoUsuario,
@@ -524,8 +614,9 @@ describe("userService.buscarPorId", () => {
 
   it("dentro do escopo do GESTOR -> retorna o usuario", async () => {
     mockFindUnique.mockResolvedValueOnce(
-      usuarioFake({ id: "alvo-8", gestor_id: GESTOR.id }) as never,
+      usuarioFake({ id: "alvo-8", equipe_id: "equipe-1" }) as never,
     );
+    mockListarGeridasPor.mockResolvedValueOnce([EQUIPE_ATIVA]);
 
     const resultado = await buscarPorId("alvo-8", GESTOR);
     expect(resultado.id).toBe("alvo-8");

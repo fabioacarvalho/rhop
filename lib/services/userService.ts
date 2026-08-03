@@ -4,6 +4,7 @@ import { Prisma, Role, type User } from "@/lib/generated/prisma/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { registrar } from "@/lib/services/logService";
 import { resendService } from "@/lib/services/resendService";
+import * as equipeService from "@/lib/services/equipeService";
 import type { AuthenticatedUser } from "@/lib/services/authService";
 import type {
   CadastrarUsuarioInput,
@@ -42,13 +43,14 @@ export class ErroPermissaoUsuario extends Error {
 }
 
 /**
- * Troca de `role` deixaria subordinados sem gestor capaz de gerir equipe —
+ * Troca de `role` deixaria equipe(s) sem gestor capaz de gerir (EQP,
+ * substitui a antiga contagem de subordinados diretos por `gestor_id`) —
  * rota converte em 409.
  */
 export class ErroEdicaoBloqueadaUsuario extends Error {
   constructor(quantidade: number) {
     super(
-      `Nao e possivel alterar o papel: ${quantidade} usuario(s) subordinado(s) ficariam sem gestor.`,
+      `Nao e possivel alterar o papel: ${quantidade} equipe(s) ficariam sem gestor.`,
     );
     this.name = "ErroEdicaoBloqueadaUsuario";
   }
@@ -59,31 +61,33 @@ const ROLES_VALIDOS = Object.values(Role) as string[];
 /**
  * Entrada de `provisionar` — `id` e o mesmo id do usuario no Supabase Auth
  * (auth.users.id), sem `@default` no schema (decisao travada em
- * `design.md`). `gestor_id` ausente e tratado como `null`.
+ * `design.md`). `equipe_id` ausente e tratado como `null` (so `SOLICITANTE`
+ * pertence a uma `Equipe` — EQP-13).
  */
 export interface ProvisionarInput {
   id: string;
   nome: string;
   email: string;
   role: Role | string;
-  gestor_id?: string | null;
+  equipe_id?: string | null;
 }
 
 /**
- * Validacao de hierarquia compartilhada por `provisionar` (create) e
- * `editar` (update) — extraida para nao duplicar a mesma arvore de decisao:
+ * Validacao de vinculo com `Equipe` compartilhada por `provisionar` (create)
+ * e `editar` (update) — extraida para nao duplicar a mesma arvore de
+ * decisao (EQP-10 a EQP-14):
  * 1. `role` precisa estar em `{ SOLICITANTE, GESTOR, RH_ADMIN }`.
- * 2. `gestor_id` nulo/ausente so e aceito quando `role === 'RH_ADMIN'`.
- * 3. `gestor_id === id` (auto-referencia) e rejeitado.
- * 4. `gestor_id` informado precisa referenciar um `User` existente.
+ * 2. `equipe_id` e obrigatorio quando `role === 'SOLICITANTE'`.
+ * 3. `equipe_id` e proibido para qualquer outro `role` (`GESTOR`/`RH_ADMIN`
+ *    nao pertencem ao modelo de equipes como membros — decisao travada em
+ *    `context.md`).
+ * 4. `equipe_id` informado precisa referenciar uma `Equipe` existente e
+ *    `ativo = true`.
  */
-async function validarHierarquia(input: {
-  id: string;
-  role: Role | string;
-  gestor_id: string | null;
-}): Promise<Role> {
-  const { id, role, gestor_id } = input;
-
+async function validarVinculoEquipe(
+  role: Role | string,
+  equipe_id: string | null,
+): Promise<Role> {
   if (!ROLES_VALIDOS.includes(role as string)) {
     throw new ErroValidacaoUsuario(
       `role invalido "${String(role)}". Esperado um dos valores: ${ROLES_VALIDOS.join(", ")}.`,
@@ -92,25 +96,31 @@ async function validarHierarquia(input: {
 
   const roleValidado = role as Role;
 
-  if (gestor_id === null && roleValidado !== Role.RH_ADMIN) {
+  if (roleValidado !== Role.SOLICITANTE) {
+    if (equipe_id) {
+      throw new ErroValidacaoUsuario(
+        `equipe_id nao e permitido para role "${roleValidado}" — apenas SOLICITANTE pertence a uma equipe.`,
+      );
+    }
+    return roleValidado;
+  }
+
+  if (!equipe_id) {
     throw new ErroValidacaoUsuario(
-      `gestor_id e obrigatorio para role "${roleValidado}" — apenas RH_ADMIN pode ter gestor_id nulo.`,
+      `equipe_id e obrigatorio para role "${roleValidado}".`,
     );
   }
 
-  if (gestor_id !== null) {
-    if (gestor_id === id) {
-      throw new ErroValidacaoUsuario(
-        "gestor_id nao pode ser igual ao id do proprio usuario (auto-referencia).",
-      );
-    }
-
-    const gestor = await prisma.user.findUnique({ where: { id: gestor_id } });
-    if (!gestor) {
-      throw new ErroValidacaoUsuario(
-        `gestor_id "${gestor_id}" nao corresponde a nenhum usuario existente.`,
-      );
-    }
+  const equipe = await prisma.equipe.findUnique({ where: { id: equipe_id } });
+  if (!equipe) {
+    throw new ErroValidacaoUsuario(
+      `equipe_id "${equipe_id}" nao corresponde a nenhuma equipe existente.`,
+    );
+  }
+  if (!equipe.ativo) {
+    throw new ErroValidacaoUsuario(
+      `equipe_id "${equipe_id}" corresponde a uma equipe inativa.`,
+    );
   }
 
   return roleValidado;
@@ -122,12 +132,8 @@ async function validarHierarquia(input: {
  * `cadastrar` (USR-01).
  */
 export async function provisionar(input: ProvisionarInput): Promise<User> {
-  const { id, nome, email, role, gestor_id } = input;
-  const roleValidado = await validarHierarquia({
-    id,
-    role,
-    gestor_id: gestor_id ?? null,
-  });
+  const { id, nome, email, role, equipe_id } = input;
+  const roleValidado = await validarVinculoEquipe(role, equipe_id ?? null);
 
   try {
     return await prisma.user.create({
@@ -136,7 +142,7 @@ export async function provisionar(input: ProvisionarInput): Promise<User> {
         nome,
         email,
         role: roleValidado,
-        gestor_id: gestor_id ?? null,
+        equipe_id: equipe_id ?? null,
       },
     });
   } catch (error) {
@@ -154,38 +160,48 @@ interface AlvoEscopo {
   /** Ausente em `cadastrar` — o alvo ainda nao existe. */
   id?: string;
   role: Role;
-  gestor_id: string | null;
+  equipe_id: string | null;
 }
 
 /**
- * `RH_ADMIN` sempre pode agir; `GESTOR` so sobre `SOLICITANTE` da propria
- * equipe (`gestor_id === ator.id`); qualquer outro papel nunca esta no
- * escopo (bloqueado antes, em `requireUser`).
+ * `RH_ADMIN` sempre pode agir; `GESTOR` so sobre `SOLICITANTE` de uma
+ * `Equipe` que ele mesmo gerencia (EQP-11, EQP-16 a EQP-19 — 1 Gestor pode
+ * gerenciar N `Equipe`s); qualquer outro papel nunca esta no escopo
+ * (bloqueado antes, em `requireUser`).
  */
-function estaNoEscopo(ator: AuthenticatedUser, alvo: AlvoEscopo): boolean {
+async function estaNoEscopo(
+  ator: AuthenticatedUser,
+  alvo: AlvoEscopo,
+): Promise<boolean> {
   if (ator.role === Role.RH_ADMIN) {
     return true;
   }
   if (ator.role === Role.GESTOR) {
-    return alvo.role === Role.SOLICITANTE && alvo.gestor_id === ator.id;
+    if (alvo.role !== Role.SOLICITANTE || !alvo.equipe_id) {
+      return false;
+    }
+    const equipesGeridas = await equipeService.listarGeridasPor(ator.id);
+    return equipesGeridas.some((equipe) => equipe.id === alvo.equipe_id);
   }
   return false;
 }
 
 /**
- * Barreira unica entre "Gestor gerencia a propria equipe" e "Gestor
- * gerencia a base inteira" (USR-06 a USR-09, USR-16 a USR-19, USR-21,
- * USR-22, USR-25) — usada por `editar`/`definirStatus` (alvo ja existe).
- * Autoacao e bloqueada para qualquer papel, antes mesmo da checagem de
- * escopo.
+ * Barreira unica entre "Gestor gerencia as propria equipes" e "Gestor
+ * gerencia a base inteira" (EQP-11, EQP-16 a EQP-19, edicao/desativacao) —
+ * usada por `editar`/`definirStatus` (alvo ja existe). Autoacao e bloqueada
+ * para qualquer papel, antes mesmo da checagem de escopo.
  */
-function assertEscopoGestao(ator: AuthenticatedUser, alvo: AlvoEscopo): void {
+async function assertEscopoGestao(
+  ator: AuthenticatedUser,
+  alvo: AlvoEscopo,
+): Promise<void> {
   if (alvo.id !== undefined && alvo.id === ator.id) {
     throw new ErroPermissaoUsuario(
       "Voce nao pode realizar esta acao sobre a propria conta.",
     );
   }
-  if (!estaNoEscopo(ator, alvo)) {
+  if (!(await estaNoEscopo(ator, alvo))) {
     throw new ErroPermissaoUsuario();
   }
 }
@@ -206,18 +222,22 @@ export async function cadastrar(
   criador: AuthenticatedUser,
 ): Promise<{ usuario: User; emailEnviado: boolean }> {
   let role: Role;
-  let gestorId: string | null;
+  let equipeId: string | null;
 
   if (criador.role === Role.GESTOR) {
-    // Alvo ainda nao existe: a checagem roda sobre o role submetido; o
-    // gestor_id efetivo e sempre forcado para o proprio criador, ignorando
-    // qualquer valor enviado (USR-07, USR-08).
-    assertEscopoGestao(criador, { role: dados.role, gestor_id: criador.id });
+    // Alvo ainda nao existe: a checagem roda sobre o role/equipe_id
+    // submetidos — a equipe precisa ser uma das que o proprio Gestor
+    // gerencia (EQP-11); nao ha "forcar" um unico valor porque 1 Gestor
+    // pode gerenciar N Equipes, diferente do antigo gestor_id 1:1.
+    await assertEscopoGestao(criador, {
+      role: dados.role,
+      equipe_id: dados.equipe_id ?? null,
+    });
     role = Role.SOLICITANTE;
-    gestorId = criador.id;
+    equipeId = dados.equipe_id ?? null;
   } else if (criador.role === Role.RH_ADMIN) {
     role = dados.role;
-    gestorId = dados.gestor_id ?? null;
+    equipeId = dados.equipe_id ?? null;
   } else {
     throw new ErroPermissaoUsuario();
   }
@@ -246,7 +266,7 @@ export async function cadastrar(
       nome: dados.nome,
       email: dados.email,
       role,
-      gestor_id: gestorId,
+      equipe_id: equipeId,
     });
   } catch (erro) {
     // Compensacao (USR-11): sem isso, uma conta orfa fica no Supabase Auth.
@@ -273,10 +293,12 @@ export async function cadastrar(
 }
 
 /**
- * Edita `nome`/`role`/`gestor_id` de um `User` (USR-16 a USR-20): valida
- * escopo do `editor` -> Gestor nunca pode mandar `role`/`gestor_id`
- * (USR-18) -> bloqueio por equipe dependente (USR-20) -> revalida
- * hierarquia se `role`/`gestor_id` mudarem -> grava `AUDITORIA`.
+ * Edita `nome`/`role`/`equipe_id` de um `User` (EQP-10 a EQP-14): valida
+ * escopo do `editor` -> Gestor nunca pode mandar `role`/`equipe_id` (so
+ * `nome`, mesma postura de `cadastro-usuarios`) -> bloqueio por equipe(s)
+ * dependente(s) -> limpa `equipe_id` se o novo `role` nao for `SOLICITANTE`
+ * -> revalida vinculo com `Equipe` se `role`/`equipe_id` mudarem -> grava
+ * `AUDITORIA`.
  */
 export async function editar(
   id: string,
@@ -288,34 +310,47 @@ export async function editar(
     throw new ErroNaoEncontradoUsuario();
   }
 
-  assertEscopoGestao(editor, {
+  await assertEscopoGestao(editor, {
     id: alvo.id,
     role: alvo.role,
-    gestor_id: alvo.gestor_id,
+    equipe_id: alvo.equipe_id,
   });
 
   if (
     editor.role === Role.GESTOR &&
-    (dados.role !== undefined || dados.gestor_id !== undefined)
+    (dados.role !== undefined || dados.equipe_id !== undefined)
   ) {
     throw new ErroPermissaoUsuario(
-      "Gestor nao pode alterar role ou gestor_id de um usuario.",
+      "Gestor nao pode alterar role ou equipe_id de um usuario.",
     );
   }
 
-  if (dados.role !== undefined && dados.role === Role.SOLICITANTE) {
-    const subordinados = await prisma.user.count({ where: { gestor_id: id } });
-    if (subordinados > 0) {
-      throw new ErroEdicaoBloqueadaUsuario(subordinados);
+  // Trocar o role de quem ainda gerencia Equipe(s) ativa(s) pra um papel
+  // sem capacidade de gerir equipe deixaria essas Equipes sem gestor (EQP,
+  // substitui a antiga contagem de subordinados diretos via gestor_id).
+  if (
+    dados.role !== undefined &&
+    dados.role !== Role.GESTOR &&
+    dados.role !== Role.RH_ADMIN
+  ) {
+    const equipesGeridas = await equipeService.contarGeridasAtivasPor(id);
+    if (equipesGeridas > 0) {
+      throw new ErroEdicaoBloqueadaUsuario(equipesGeridas);
     }
   }
 
   const novoRole = dados.role ?? alvo.role;
-  const novoGestorId =
-    dados.gestor_id !== undefined ? dados.gestor_id : alvo.gestor_id;
+  // Role novo != SOLICITANTE nunca tem equipe_id (EQP-13/EQP-14) — limpa
+  // automaticamente mesmo que dados.equipe_id nao tenha sido enviado.
+  const novoEquipeId =
+    novoRole !== Role.SOLICITANTE
+      ? null
+      : dados.equipe_id !== undefined
+        ? dados.equipe_id
+        : alvo.equipe_id;
 
-  if (dados.role !== undefined || dados.gestor_id !== undefined) {
-    await validarHierarquia({ id, role: novoRole, gestor_id: novoGestorId });
+  if (dados.role !== undefined || dados.equipe_id !== undefined) {
+    await validarVinculoEquipe(novoRole, novoEquipeId);
   }
 
   const usuario = await prisma.user.update({
@@ -323,7 +358,9 @@ export async function editar(
     data: {
       ...(dados.nome !== undefined && { nome: dados.nome }),
       ...(dados.role !== undefined && { role: novoRole }),
-      ...(dados.gestor_id !== undefined && { gestor_id: novoGestorId }),
+      ...((dados.role !== undefined || dados.equipe_id !== undefined) && {
+        equipe_id: novoEquipeId,
+      }),
     },
   });
 
@@ -352,10 +389,10 @@ export async function definirStatus(
     throw new ErroNaoEncontradoUsuario();
   }
 
-  assertEscopoGestao(ator, {
+  await assertEscopoGestao(ator, {
     id: alvo.id,
     role: alvo.role,
-    gestor_id: alvo.gestor_id,
+    equipe_id: alvo.equipe_id,
   });
 
   const usuario = await prisma.user.update({ where: { id }, data: { ativo } });
@@ -371,30 +408,39 @@ export async function definirStatus(
   return usuario;
 }
 
-/** Item de `listar()` — inclui o nome do gestor ja resolvido (USR-13/14). */
+/** Item de `listar()` — inclui o nome da equipe ja resolvido (EQP-17). */
 export interface UsuarioResumo {
   id: string;
   nome: string;
   email: string;
   role: Role;
-  gestor_id: string | null;
-  gestor_nome: string | null;
+  equipe_id: string | null;
+  equipe_nome: string | null;
   ativo: boolean;
 }
 
 /**
- * Lista usuarios visiveis ao `ator` (USR-13, USR-14): `RH_ADMIN` ve todos;
- * `GESTOR` ve so `SOLICITANTE` com `gestor_id = ator.id`.
+ * Lista usuarios visiveis ao `ator` (EQP-17): `RH_ADMIN` ve todos; `GESTOR`
+ * ve so `SOLICITANTE` cuja `equipe_id` pertence a alguma `Equipe` que ele
+ * gerencia (1 Gestor pode gerenciar N Equipes — diferente do antigo
+ * `gestor_id` 1:1).
  */
 export async function listar(ator: AuthenticatedUser): Promise<UsuarioResumo[]> {
-  const where: Prisma.UserWhereInput =
-    ator.role === Role.RH_ADMIN
-      ? {}
-      : { role: Role.SOLICITANTE, gestor_id: ator.id };
+  let where: Prisma.UserWhereInput;
+
+  if (ator.role === Role.RH_ADMIN) {
+    where = {};
+  } else {
+    const equipesGeridas = await equipeService.listarGeridasPor(ator.id);
+    where = {
+      role: Role.SOLICITANTE,
+      equipe_id: { in: equipesGeridas.map((equipe) => equipe.id) },
+    };
+  }
 
   const usuarios = await prisma.user.findMany({
     where,
-    include: { gestor: { select: { nome: true } } },
+    include: { equipe: { select: { nome: true } } },
     orderBy: { nome: "asc" },
   });
 
@@ -403,20 +449,20 @@ export async function listar(ator: AuthenticatedUser): Promise<UsuarioResumo[]> 
     nome: usuario.nome,
     email: usuario.email,
     role: usuario.role,
-    gestor_id: usuario.gestor_id,
-    gestor_nome: usuario.gestor?.nome ?? null,
+    equipe_id: usuario.equipe_id,
+    equipe_nome: usuario.equipe?.nome ?? null,
     ativo: usuario.ativo,
   }));
 }
 
-/** Item de `listarElegiveisComoGestor()` — usado para popular o `<select>` de `gestor_id`. */
+/** Item de `listarElegiveisComoGestor()` — usado para popular o `<select>` de gestor responsavel de uma `Equipe`. */
 export interface UsuarioElegivelGestor {
   id: string;
   nome: string;
   role: Role;
 }
 
-/** Usuarios `GESTOR`/`RH_ADMIN` ativos, elegiveis para receber subordinados. */
+/** Usuarios `GESTOR`/`RH_ADMIN` ativos, elegiveis para gerir uma `Equipe`. */
 export async function listarElegiveisComoGestor(): Promise<
   UsuarioElegivelGestor[]
 > {
@@ -442,7 +488,10 @@ export async function buscarPorId(
   }
 
   if (
-    !estaNoEscopo(ator, { role: usuario.role, gestor_id: usuario.gestor_id })
+    !(await estaNoEscopo(ator, {
+      role: usuario.role,
+      equipe_id: usuario.equipe_id,
+    }))
   ) {
     throw new ErroNaoEncontradoUsuario();
   }
