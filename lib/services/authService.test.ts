@@ -65,7 +65,6 @@ describe("authService.getSessionUser", () => {
       nome: "Fulano",
       email: "fulano@example.com",
       role: Role.GESTOR,
-      gestor_id: "gestor-raiz",
     } as never);
 
     const result = await getSessionUser();
@@ -114,7 +113,6 @@ describe("authService.getSessionUser", () => {
       nome: "Inativo",
       email: "inativo@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: "gestor-1",
       ativo: false,
     } as never);
 
@@ -145,7 +143,6 @@ describe("authService.getSessionUser", () => {
       nome: "Ativo",
       email: "ativo@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: "gestor-1",
       ativo: true,
     } as never);
 
@@ -214,7 +211,6 @@ describe("authService.requireUser", () => {
       nome: "Solicitante",
       email: "solicitante@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: "gestor-1",
     } as never);
 
     const erroAutorizacao = await requireUser([Role.RH_ADMIN, Role.GESTOR]).catch(

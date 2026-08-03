@@ -35,8 +35,9 @@ Toda lógica de negócio nova entra em um service. Toda API route delega pro ser
 
 ## Regras de negócio que não podem ser violadas
 
-- **Visibilidade:** solicitante só vê as próprias solicitações; gestor vê as próprias + as da equipe (usuários com `gestor_id` apontando para ele); RH_Admin vê tudo. Toda query de listagem precisa respeitar isso — nunca listar sem filtrar por papel do usuário autenticado.
-- **Autorização de aprovação:** só quem é o aprovador da etapa atual (papel bate com `aprovador_role` da etapa e, se for GESTOR, é o gestor do solicitante) pode aprovar/rejeitar. Bloquear no backend, não só escondendo o botão no frontend.
+- **Visibilidade:** solicitante só vê as próprias solicitações; gestor vê as próprias + as dos usuários cuja `Equipe` tem `gestor_id` igual ao dele (um gestor pode ser responsável por mais de uma `Equipe`); RH_Admin vê tudo. Toda query de listagem precisa respeitar isso — nunca listar sem filtrar por papel do usuário autenticado.
+- **Hierarquia via `Equipe`:** `SOLICITANTE` pertence a uma `Equipe` (`User.equipe_id`); `Equipe.gestor_id` define o responsável por ela. `GESTOR`/`RH_ADMIN` nunca têm `equipe_id` — não pertencem ao modelo de equipes como membros. Gestão de equipes é RH_Admin-only (`/equipes`).
+- **Autorização de aprovação:** só quem é o aprovador da etapa atual (papel bate com `aprovador_role` da etapa e, se for GESTOR, é o gestor responsável pela `Equipe` do solicitante) pode aprovar/rejeitar. Bloquear no backend, não só escondendo o botão no frontend.
 - **IA nunca pode travar o fluxo:** se a chamada à OpenAI falhar (timeout, erro, rate limit), a solicitação segue seu curso normalmente sem `resumo_ia`, e o erro é gravado em `Log` (tipo `ERRO`). Nunca deixar uma falha de IA impedir a criação/avanço de uma `Solicitacao`.
 - **Toda transição de status e toda decisão de aprovação grava um `Log` tipo `AUDITORIA`.** Toda falha de IA ou de notificação grava um `Log` tipo `ERRO`.
 
