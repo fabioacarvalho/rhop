@@ -1,0 +1,472 @@
+.page {
+  padding: 28px 32px 60px;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-family: var(--font-fraunces), serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--azul-900);
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  margin-top: 4px;
+}
+
+.restrito {
+  padding: 2rem;
+}
+
+.restrito h1 {
+  font-family: var(--font-fraunces), serif;
+  color: var(--azul-900);
+  margin-bottom: 0.5rem;
+}
+
+.restrito p {
+  color: var(--ink-soft);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--azul-500);
+  margin-bottom: 14px;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.05s ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnLg {
+  padding: 11px 22px;
+  font-size: 14px;
+}
+
+.btnPrimary {
+  background: var(--amarelo-600);
+  color: var(--azul-900);
+}
+
+.btnPrimary:hover {
+  background: var(--amarelo-400);
+}
+
+.btnGhost {
+  background: transparent;
+  color: var(--azul-700);
+  border: 1.5px solid var(--linha);
+  padding: 6px 14px;
+  font-size: 12.5px;
+}
+
+.btnGhost:hover {
+  border-color: var(--azul-500);
+}
+
+/* ===== Tabela (Minhas Solicitações) ===== */
+
+.empty {
+  background: var(--paper-raised);
+  border: 1px dashed var(--linha);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--linha);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.cardPad {
+  padding: 20px 22px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+  padding: 14px 14px 10px;
+  border-bottom: 1.5px solid var(--linha);
+}
+
+.table tbody td {
+  padding: 14px;
+  border-bottom: 1px solid var(--linha);
+  vertical-align: middle;
+  font-size: 13.5px;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.proto {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  color: var(--azul-700);
+  font-weight: 600;
+}
+
+.cellSub {
+  color: var(--ink-soft);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.chipTipo {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--azul-700);
+  background: var(--azul-100);
+  padding: 3px 9px;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.slaAtraso {
+  color: var(--laranja);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 10px 5px 9px;
+  border-radius: 5px;
+  border: 1.5px dashed currentColor;
+  transform: rotate(-1.4deg);
+  white-space: nowrap;
+}
+
+.stamp::before {
+  content: "●";
+  font-size: 7px;
+}
+
+.stampPendente {
+  color: var(--azul-700);
+  background: var(--azul-100);
+}
+
+.stampAprovada {
+  color: var(--verde);
+  background: var(--verde-bg);
+}
+
+.stampRejeitada {
+  color: var(--vermelho);
+  background: var(--vermelho-bg);
+}
+
+/* ===== Nova Solicitação ===== */
+
+.stack16 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.eyebrow {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.flowGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.flowTypeCard {
+  background: var(--paper-raised);
+  border: 1.5px solid var(--linha);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color 0.1s ease;
+}
+
+.flowTypeCard:hover {
+  border-color: var(--azul-500);
+}
+
+.flowTypeCard.selected {
+  border-color: var(--amarelo-600);
+  box-shadow: 0 0 0 3px var(--amarelo-100);
+}
+
+.flowIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--azul-100);
+  color: var(--azul-700);
+  font-family: var(--font-fraunces), serif;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.flowTypeCard.selected .flowIcon {
+  background: var(--amarelo-600);
+  color: var(--azul-900);
+}
+
+.flowNome {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 30px,
+    var(--linha) 31px
+  );
+  background-position: 0 4px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.fieldLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.fieldGrid .field {
+  margin-bottom: 0;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border: 1.5px solid var(--linha);
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  font-family: var(--font-inter), sans-serif;
+  color: var(--ink);
+  background: #fff;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--azul-500);
+  box-shadow: 0 0 0 3px var(--azul-100);
+}
+
+.rowBetween {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stepsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stepPill {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--azul-700);
+  background: var(--azul-100);
+  border: 1px solid var(--azul-200);
+  padding: 5px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.stepArrow {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.formError {
+  color: var(--vermelho);
+  font-size: 12.5px;
+  margin-right: auto;
+}
+
+.hint {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+/* ===== Detalhe ===== */
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.detailField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detailLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.detailValue {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.sectionDivider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 22px 0 14px;
+}
+
+.sectionDivider::before,
+.sectionDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--linha);
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 20px 16px 48px;
+  }
+
+  .formFooter {
+    justify-content: stretch;
+  }
+
+  .formFooter .btn {
+    flex: 1;
+  }
+
+  .formError {
+    margin-right: 0;
+    width: 100%;
+  }
+}
