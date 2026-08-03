@@ -53,7 +53,7 @@ beforeEach(() => {
 });
 
 describe("authService.getSessionUser", () => {
-  it("sessao valida + User existente no Prisma -> retorna objeto completo (inclui gestor_id)", async () => {
+  it("sessao valida + User existente no Prisma -> retorna objeto completo (sem gestor_id)", async () => {
     enfileirarSupabaseAuth(
       vi.fn().mockResolvedValueOnce({
         data: { user: { id: "user-1", email: "fulano@example.com" } },
@@ -75,7 +75,6 @@ describe("authService.getSessionUser", () => {
       nome: "Fulano",
       email: "fulano@example.com",
       role: Role.GESTOR,
-      gestor_id: "gestor-raiz",
     });
     expect(mockFindUnique).toHaveBeenCalledWith({ where: { id: "user-1" } });
     expect(mockRegistrar).not.toHaveBeenCalled();
@@ -157,7 +156,6 @@ describe("authService.getSessionUser", () => {
       nome: "Ativo",
       email: "ativo@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: "gestor-1",
     });
     expect(mockRegistrar).not.toHaveBeenCalled();
   });
