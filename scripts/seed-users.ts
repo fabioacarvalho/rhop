@@ -1,12 +1,18 @@
 /**
  * scripts/seed-users.ts
  *
- * T13 de `.specs/features/autenticacao-usuarios/tasks.md`.
+ * T13 de `.specs/features/autenticacao-usuarios/tasks.md` (adaptado na
+ * T15 de `.specs/features/gestao-equipes/tasks.md` para o modelo de
+ * `Equipe`: `SOLICITANTE` agora se vincula a uma `Equipe`, nao mais
+ * diretamente a um `GESTOR` via `gestor_id`).
  *
  * Cria usuarios de teste no Supabase Auth (`admin.createUser`, com a
  * service role key) e o `User` correspondente no Prisma via
- * `userService.provisionar`, na ordem certa para resolver a hierarquia
- * (quem nao tem `gestor_email` primeiro — ver `USUARIOS` abaixo).
+ * `userService.provisionar`, em 3 fases (ver secoes abaixo):
+ *   1. `GESTORES_E_ADMIN` — RH_ADMIN e GESTOR, sem `equipe_id`.
+ *   2. `EQUIPES` — cria as `Equipe`s de exemplo, cada uma com `gestor_id`
+ *      apontando para um `GESTOR` da fase 1.
+ *   3. `SOLICITANTES` — vinculados a uma `Equipe` da fase 2 via `equipe_id`.
  *
  * Uso:
  *   npm run seed
@@ -14,11 +20,13 @@
  * Idempotencia:
  * - Se o e-mail ja existir no Supabase Auth, a criacao e' pulada e o `id`
  *   existente e' localizado via `admin.listUsers()` (necessario para
- *   resolver o `gestor_id` de quem depende desse usuario).
+ *   resolver o `gestor_id` da `Equipe` que depende desse usuario).
  * - Se o `User` correspondente ja existir no Prisma (mesmo `id` ou mesmo
  *   `email`), `userService.provisionar` traduz o conflito (`P2002`) em
  *   `ErroValidacaoUsuario`, que este script trata como "ja existe" em vez
  *   de quebrar a execucao.
+ * - Se a `Equipe` (mesmo `nome`, que e' `@unique`) ja existir, a criacao e'
+ *   pulada e o `id` existente e' reaproveitado via `findUnique`.
  *
  * ATENCAO: este script grava usuarios REAIS no projeto Supabase configurado
  * em `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` (`.env`). Nao
@@ -28,33 +36,35 @@
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@/lib/generated/prisma/client";
+import { Prisma, Role } from "@/lib/generated/prisma/client";
 import { ErroValidacaoUsuario, provisionar } from "@/lib/services/userService";
 
 // ---------------------------------------------------------------------------
-// Lista de usuarios de seed — editar aqui para adicionar/remover usuarios.
+// Dados de seed — editar aqui para adicionar/remover usuarios ou equipes.
 //
-// Regras (ver userService.provisionar):
-// - Apenas RH_ADMIN pode ficar sem `gestor_email`.
-// - `gestor_email` precisa apontar para um usuario que aparece ANTES na
-//   lista (o script resolve `gestor_email -> gestor_id` na ordem de
-//   execucao, sem consultar o banco).
+// Regras (ver userService.provisionar / equipeService):
+// - Apenas RH_ADMIN pode ficar sem `equipe_id` E sem gerir nenhuma `Equipe`.
+// - `GESTOR`/`RH_ADMIN` nunca tem `equipe_id` (so `SOLICITANTE` pertence a
+//   uma `Equipe`).
+// - Toda `Equipe` em `EQUIPES` precisa referenciar (`gestor_email`) um
+//   usuario que aparece em `GESTORES_E_ADMIN` (role GESTOR ou RH_ADMIN).
+// - Todo `SOLICITANTE` em `SOLICITANTES` precisa referenciar (`equipe_nome`)
+//   uma `Equipe` que aparece em `EQUIPES`.
 //
 // Senha de teste unica para todos os usuarios (NAO e' credencial de
 // producao, apenas seed de dev): "Teste@123"
 // ---------------------------------------------------------------------------
 const SENHA_TESTE = "Teste@123";
 
-interface UsuarioSeed {
+interface UsuarioSeedSemEquipe {
   nome: string;
   email: string;
   senha_temporaria: string;
-  role: Role;
-  /** E-mail do gestor, deve aparecer antes deste item na lista. Ausente = sem gestor (só RH_ADMIN). */
-  gestor_email?: string;
+  role: typeof Role.RH_ADMIN | typeof Role.GESTOR;
 }
 
-const USUARIOS: UsuarioSeed[] = [
+/** GESTORes e o RH_ADMIN — nenhum dos dois tem `equipe_id`. */
+const GESTORES_E_ADMIN: UsuarioSeedSemEquipe[] = [
   {
     nome: "RH Admin",
     email: "rh.admin@01tec.com.br",
@@ -66,14 +76,38 @@ const USUARIOS: UsuarioSeed[] = [
     email: "gestor@01tec.com.br",
     senha_temporaria: SENHA_TESTE,
     role: Role.GESTOR,
-    gestor_email: "rh.admin@01tec.com.br",
   },
+];
+
+interface EquipeSeed {
+  nome: string;
+  /** E-mail do gestor responsavel — precisa aparecer em `GESTORES_E_ADMIN`. */
+  gestor_email: string;
+}
+
+/** Equipes de exemplo, cada uma gerida por um dos usuarios de `GESTORES_E_ADMIN`. */
+const EQUIPES: EquipeSeed[] = [
+  {
+    nome: "Equipe de Teste",
+    gestor_email: "gestor@01tec.com.br",
+  },
+];
+
+interface UsuarioSeedComEquipe {
+  nome: string;
+  email: string;
+  senha_temporaria: string;
+  /** Nome da `Equipe` a qual este SOLICITANTE pertence — precisa aparecer em `EQUIPES`. */
+  equipe_nome: string;
+}
+
+/** SOLICITANTEs — todos vinculados a uma `Equipe` de `EQUIPES`. */
+const SOLICITANTES: UsuarioSeedComEquipe[] = [
   {
     nome: "Solicitante Teste",
     email: "solicitante@01tec.com.br",
     senha_temporaria: SENHA_TESTE,
-    role: Role.SOLICITANTE,
-    gestor_email: "gestor@01tec.com.br",
+    equipe_nome: "Equipe de Teste",
   },
 ];
 
@@ -84,6 +118,8 @@ interface Resumo {
   jaExistentesAuth: number;
   provisionados: number;
   jaExistentesUser: number;
+  equipesCriadas: number;
+  equipesJaExistentes: number;
   erros: number;
 }
 
@@ -150,18 +186,28 @@ async function main() {
   }
 
   const idPorEmail = new Map<string, string>();
+  const idEquipePorNome = new Map<string, string>();
   const resumo: Resumo = {
     criadosAuth: 0,
     jaExistentesAuth: 0,
     provisionados: 0,
     jaExistentesUser: 0,
+    equipesCriadas: 0,
+    equipesJaExistentes: 0,
     erros: 0,
   };
 
-  console.log(`Iniciando seed de ${USUARIOS.length} usuario(s)...\n`);
-
-  for (const usuario of USUARIOS) {
-    console.log(`- ${usuario.email} (${usuario.role})`);
+  /**
+   * Cria (ou reaproveita) um usuario no Supabase Auth e provisiona o `User`
+   * correspondente no Prisma. Compartilhado pelas fases 1 (`GESTORES_E_ADMIN`,
+   * sem `equipe_id`) e 3 (`SOLICITANTES`, com `equipe_id` resolvido).
+   */
+  async function provisionarUsuarioSeed(
+    usuario: { nome: string; email: string; senha_temporaria: string },
+    role: Role,
+    equipeId: string | null,
+  ): Promise<void> {
+    console.log(`- ${usuario.email} (${role})`);
 
     let authUserId: string;
 
@@ -175,7 +221,7 @@ async function main() {
       if (!isEmailJaExistente(error)) {
         console.error(`  Falha ao criar no Supabase Auth: ${error.message}`);
         resumo.erros += 1;
-        continue;
+        return;
       }
 
       console.log("  Ja existe no Supabase Auth, pulando criacao...");
@@ -187,7 +233,7 @@ async function main() {
           `  Nao foi possivel localizar o id existente de "${usuario.email}" via listUsers() — pulando usuario.`,
         );
         resumo.erros += 1;
-        continue;
+        return;
       }
       authUserId = existente.id;
     } else if (data.user) {
@@ -197,31 +243,18 @@ async function main() {
     } else {
       console.error(`  createUser nao retornou usuario nem erro para "${usuario.email}" — pulando.`);
       resumo.erros += 1;
-      continue;
+      return;
     }
 
     idPorEmail.set(usuario.email, authUserId);
-
-    let gestorId: string | null = null;
-    if (usuario.gestor_email) {
-      const gestorEncontrado = idPorEmail.get(usuario.gestor_email);
-      if (!gestorEncontrado) {
-        console.error(
-          `  gestor_email "${usuario.gestor_email}" ainda nao foi processado nesta execucao — verifique a ordem da lista USUARIOS. Pulando provisionamento do User.`,
-        );
-        resumo.erros += 1;
-        continue;
-      }
-      gestorId = gestorEncontrado;
-    }
 
     try {
       await provisionar({
         id: authUserId,
         nome: usuario.nome,
         email: usuario.email,
-        role: usuario.role,
-        gestor_id: gestorId,
+        role,
+        equipe_id: equipeId,
       });
       console.log("  User provisionado no banco (Prisma).");
       resumo.provisionados += 1;
@@ -236,11 +269,74 @@ async function main() {
     }
   }
 
+  console.log(`Fase 1/3: provisionando ${GESTORES_E_ADMIN.length} GESTOR(es)/RH_ADMIN...\n`);
+  for (const usuario of GESTORES_E_ADMIN) {
+    await provisionarUsuarioSeed(usuario, usuario.role, null);
+  }
+
+  console.log(`\nFase 2/3: criando ${EQUIPES.length} equipe(s)...\n`);
+  for (const equipe of EQUIPES) {
+    console.log(`- ${equipe.nome} (gestor: ${equipe.gestor_email})`);
+
+    const gestorId = idPorEmail.get(equipe.gestor_email);
+    if (!gestorId) {
+      console.error(
+        `  gestor_email "${equipe.gestor_email}" ainda nao foi processado na Fase 1 — verifique GESTORES_E_ADMIN. Pulando equipe.`,
+      );
+      resumo.erros += 1;
+      continue;
+    }
+
+    try {
+      const criada = await prisma.equipe.create({
+        data: { nome: equipe.nome, gestor_id: gestorId },
+      });
+      idEquipePorNome.set(equipe.nome, criada.id);
+      console.log(`  Equipe criada (id: ${criada.id}).`);
+      resumo.equipesCriadas += 1;
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        const existente = await prisma.equipe.findUnique({
+          where: { nome: equipe.nome },
+        });
+        if (existente) {
+          idEquipePorNome.set(equipe.nome, existente.id);
+          console.log(`  Equipe ja existia (id: ${existente.id}), reaproveitando.`);
+          resumo.equipesJaExistentes += 1;
+        } else {
+          console.error(`  Conflito ao criar equipe "${equipe.nome}", mas nao foi possivel localiza-la.`);
+          resumo.erros += 1;
+        }
+      } else {
+        console.error(`  Falha ao criar equipe "${equipe.nome}": ${(err as Error).message}`);
+        resumo.erros += 1;
+      }
+    }
+  }
+
+  console.log(`\nFase 3/3: provisionando ${SOLICITANTES.length} SOLICITANTE(s)...\n`);
+  for (const usuario of SOLICITANTES) {
+    const equipeId = idEquipePorNome.get(usuario.equipe_nome);
+    if (!equipeId) {
+      console.error(
+        `  equipe_nome "${usuario.equipe_nome}" ainda nao foi criada na Fase 2 — verifique EQUIPES. Pulando provisionamento de "${usuario.email}".`,
+      );
+      resumo.erros += 1;
+      continue;
+    }
+    await provisionarUsuarioSeed(usuario, Role.SOLICITANTE, equipeId);
+  }
+
   console.log("\nResumo do seed:");
   console.log(`  Criados no Supabase Auth:        ${resumo.criadosAuth}`);
   console.log(`  Ja existentes no Auth (reaproveitados): ${resumo.jaExistentesAuth}`);
   console.log(`  Provisionados no banco (Prisma):  ${resumo.provisionados}`);
   console.log(`  Ja existentes no banco (pulados): ${resumo.jaExistentesUser}`);
+  console.log(`  Equipes criadas:                  ${resumo.equipesCriadas}`);
+  console.log(`  Equipes ja existentes (reaproveitadas): ${resumo.equipesJaExistentes}`);
   console.log(`  Erros:                            ${resumo.erros}`);
 
   if (resumo.erros > 0) {
