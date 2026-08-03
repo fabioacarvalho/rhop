@@ -7,9 +7,9 @@ import {
 } from "@/lib/services/authService";
 import {
   buscarPorId,
-  listarElegiveisComoGestor,
   ErroNaoEncontradoUsuario,
 } from "@/lib/services/userService";
+import { listarAtivasParaSelecao } from "@/lib/services/equipeService";
 import { Role } from "@/lib/generated/prisma/client";
 import UsuarioForm from "../../_components/UsuarioForm";
 import styles from "../../usuarios.module.css";
@@ -64,8 +64,8 @@ export default async function Page({ params }: PageProps) {
   }
 
   const ehRhAdmin = usuario.role === Role.RH_ADMIN;
-  const gestoresElegiveis = ehRhAdmin
-    ? await listarElegiveisComoGestor()
+  const equipesDisponiveis = ehRhAdmin
+    ? await listarAtivasParaSelecao()
     : undefined;
 
   return (
@@ -83,13 +83,13 @@ export default async function Page({ params }: PageProps) {
       <UsuarioForm
         modo="editar"
         atorRole={usuario.role}
-        gestoresElegiveis={gestoresElegiveis}
+        equipesDisponiveis={equipesDisponiveis}
         usuarioInicial={{
           id: alvo.id,
           nome: alvo.nome,
           email: alvo.email,
           role: alvo.role,
-          gestor_id: alvo.gestor_id,
+          equipe_id: alvo.equipe_id,
         }}
       />
     </main>

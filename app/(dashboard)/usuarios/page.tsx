@@ -81,7 +81,7 @@ export default async function Page() {
                 <th>Nome</th>
                 <th>E-mail</th>
                 <th>Papel</th>
-                <th>Gestor</th>
+                <th>Equipe</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
@@ -96,7 +96,7 @@ export default async function Page() {
                       {ROTULO_PAPEL[item.role]}
                     </span>
                   </td>
-                  <td>{item.gestor_nome ?? "—"}</td>
+                  <td>{item.equipe_nome ?? "—"}</td>
                   <td>
                     <span
                       className={`${styles.stamp} ${

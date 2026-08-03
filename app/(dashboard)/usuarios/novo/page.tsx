@@ -5,7 +5,10 @@ import {
   ErroNaoAutenticado,
   ErroNaoAutorizado,
 } from "@/lib/services/authService";
-import { listarElegiveisComoGestor } from "@/lib/services/userService";
+import {
+  listarAtivasParaSelecao,
+  listarGeridasPor,
+} from "@/lib/services/equipeService";
 import { Role } from "@/lib/generated/prisma/client";
 import UsuarioForm from "../_components/UsuarioForm";
 import styles from "../usuarios.module.css";
@@ -13,9 +16,10 @@ import styles from "../usuarios.module.css";
 /**
  * Tela de criação de `User` (USR-01, USR-07) — Server Component.
  *
- * Mesmo padrão de gate de acesso das demais telas desta feature. Só carrega
- * `listarElegiveisComoGestor()` quando o ator é `RH_ADMIN` — Gestor não
- * escolhe gestor/papel (fixos no backend), então não precisa dessa lista.
+ * Mesmo padrão de gate de acesso das demais telas desta feature. `RH_ADMIN`
+ * recebe todas as `Equipe` ativas para o `<select>`; `GESTOR` recebe só as
+ * que ele mesmo gerencia (1 Gestor pode gerenciar N Equipes) — em ambos os
+ * casos o ator escolhe explicitamente a equipe do novo `SOLICITANTE`.
  */
 export default async function Page() {
   let usuario;
@@ -37,9 +41,9 @@ export default async function Page() {
   }
 
   const ehRhAdmin = usuario.role === Role.RH_ADMIN;
-  const gestoresElegiveis = ehRhAdmin
-    ? await listarElegiveisComoGestor()
-    : undefined;
+  const equipesDisponiveis = ehRhAdmin
+    ? await listarAtivasParaSelecao()
+    : await listarGeridasPor(usuario.id);
 
   return (
     <main className={styles.page}>
@@ -51,8 +55,8 @@ export default async function Page() {
           <h1 className={styles.title}>Novo usuário</h1>
           <p className={styles.subtitle}>
             {ehRhAdmin
-              ? "Defina nome, e-mail, papel e gestor."
-              : "Defina nome e e-mail do novo colaborador da sua equipe."}
+              ? "Defina nome, e-mail, papel e equipe."
+              : "Defina nome, e-mail e a equipe do novo colaborador."}
           </p>
         </div>
       </header>
@@ -60,7 +64,7 @@ export default async function Page() {
       <UsuarioForm
         modo="criar"
         atorRole={usuario.role}
-        gestoresElegiveis={gestoresElegiveis}
+        equipesDisponiveis={equipesDisponiveis}
       />
     </main>
   );

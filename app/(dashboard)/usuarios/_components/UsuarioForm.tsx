@@ -12,10 +12,9 @@ const ROTULO_PAPEL: Record<Role, string> = {
   RH_ADMIN: "RH_Admin",
 };
 
-interface GestorElegivel {
+interface EquipeOpcao {
   id: string;
   nome: string;
-  role: Role;
 }
 
 interface UsuarioInicial {
@@ -23,14 +22,18 @@ interface UsuarioInicial {
   nome: string;
   email: string;
   role: Role;
-  gestor_id: string | null;
+  equipe_id: string | null;
 }
 
 interface UsuarioFormProps {
   modo: "criar" | "editar";
   atorRole: Role;
-  /** Só passado quando `atorRole === RH_ADMIN`. */
-  gestoresElegiveis?: GestorElegivel[];
+  /**
+   * Passada quando `atorRole === RH_ADMIN` (todas as equipes ativas) ou
+   * quando `atorRole === GESTOR && modo === 'criar'` (só as equipes que ele
+   * gerencia). Não usada quando Gestor edita (só `nome` é editável).
+   */
+  equipesDisponiveis?: EquipeOpcao[];
   /** Só passado quando `modo === 'editar'`. */
   usuarioInicial?: UsuarioInicial;
 }
@@ -53,7 +56,7 @@ interface RespostaErro {
 export default function UsuarioForm({
   modo,
   atorRole,
-  gestoresElegiveis,
+  equipesDisponiveis,
   usuarioInicial,
 }: UsuarioFormProps) {
   const router = useRouter();
@@ -62,8 +65,11 @@ export default function UsuarioForm({
   const [nome, setNome] = useState(usuarioInicial?.nome ?? "");
   const [email, setEmail] = useState(usuarioInicial?.email ?? "");
   const [role, setRole] = useState<Role>(usuarioInicial?.role ?? Role.SOLICITANTE);
-  const [gestorId, setGestorId] = useState<string>(
-    usuarioInicial?.gestor_id ?? ""
+  const [equipeId, setEquipeId] = useState<string>(
+    usuarioInicial?.equipe_id ??
+      (modo === "criar" && !ehRhAdmin && equipesDisponiveis?.length === 1
+        ? equipesDisponiveis[0].id
+        : "")
   );
 
   const [erroValidacao, setErroValidacao] = useState<string | null>(null);
@@ -81,8 +87,9 @@ export default function UsuarioForm({
       setErroValidacao("Informe o e-mail do usuário.");
       return;
     }
-    if (ehRhAdmin && role !== Role.RH_ADMIN && gestorId.length === 0) {
-      setErroValidacao("Selecione um gestor para este papel.");
+    const roleEfetivo = ehRhAdmin ? role : Role.SOLICITANTE;
+    if (roleEfetivo === Role.SOLICITANTE && equipeId.length === 0) {
+      setErroValidacao("Selecione uma equipe.");
       return;
     }
 
@@ -103,14 +110,14 @@ export default function UsuarioForm({
               nome,
               email,
               role,
-              gestor_id: role === Role.RH_ADMIN ? null : gestorId,
+              equipe_id: role === Role.SOLICITANTE ? equipeId : null,
             }
-          : { nome, email, role: Role.SOLICITANTE };
+          : { nome, email, role: Role.SOLICITANTE, equipe_id: equipeId };
       } else {
         url = `/api/usuarios/${usuarioInicial?.id}`;
         method = "PUT";
         corpo = ehRhAdmin
-          ? { nome, role, gestor_id: role === Role.RH_ADMIN ? null : gestorId }
+          ? { nome, role, equipe_id: role === Role.SOLICITANTE ? equipeId : null }
           : { nome };
       }
 
@@ -191,27 +198,48 @@ export default function UsuarioForm({
             </select>
           </div>
 
-          {role !== Role.RH_ADMIN && (
+          {role === Role.SOLICITANTE && (
             <div className={styles.field}>
-              <label htmlFor="gestor" className={styles.fieldLabel}>
-                Gestor
+              <label htmlFor="equipe" className={styles.fieldLabel}>
+                Equipe
               </label>
               <select
-                id="gestor"
+                id="equipe"
                 className={styles.select}
-                value={gestorId}
-                onChange={(e) => setGestorId(e.target.value)}
+                value={equipeId}
+                onChange={(e) => setEquipeId(e.target.value)}
               >
-                <option value="">Selecione um gestor</option>
-                {(gestoresElegiveis ?? []).map((gestor) => (
-                  <option key={gestor.id} value={gestor.id}>
-                    {gestor.nome} ({ROTULO_PAPEL[gestor.role]})
+                <option value="">Selecione uma equipe</option>
+                {(equipesDisponiveis ?? []).map((equipe) => (
+                  <option key={equipe.id} value={equipe.id}>
+                    {equipe.nome}
                   </option>
                 ))}
               </select>
             </div>
           )}
         </>
+      )}
+
+      {modo === "criar" && !ehRhAdmin && (
+        <div className={styles.field}>
+          <label htmlFor="equipe" className={styles.fieldLabel}>
+            Equipe
+          </label>
+          <select
+            id="equipe"
+            className={styles.select}
+            value={equipeId}
+            onChange={(e) => setEquipeId(e.target.value)}
+          >
+            <option value="">Selecione uma equipe</option>
+            {(equipesDisponiveis ?? []).map((equipe) => (
+              <option key={equipe.id} value={equipe.id}>
+                {equipe.nome}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
       <div className={styles.formFooter}>
