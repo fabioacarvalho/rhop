@@ -62,6 +62,7 @@ import {
   ErroValidacaoUsuario,
   listar,
   provisionar,
+  provisionarViaGoogle,
   type ProvisionarInput,
 } from "./userService";
 
@@ -628,5 +629,71 @@ describe("userService.buscarPorId", () => {
     await expect(buscarPorId("inexistente", RH_ADMIN)).rejects.toBeInstanceOf(
       ErroNaoEncontradoUsuario,
     );
+  });
+});
+
+describe("userService.provisionarViaGoogle", () => {
+  const INPUT = {
+    id: "google-user-1",
+    nome: "Fulano Google",
+    email: "fulano@01tec.com.br",
+    equipe_id: "equipe-1",
+  };
+
+  it("User inexistente + equipe_id valido/ativo -> cria via provisionar e grava Log AUDITORIA CRIACAO_AUTO_GOOGLE", async () => {
+    mockFindUnique.mockResolvedValueOnce(null); // checagem de idempotencia
+    mockEquipeFindUnique.mockResolvedValueOnce(EQUIPE_ATIVA as never); // validarVinculoEquipe
+    mockCreate.mockResolvedValueOnce(usuarioFake({ id: INPUT.id }) as never);
+
+    const resultado = await provisionarViaGoogle(INPUT);
+
+    expect(resultado.id).toBe(INPUT.id);
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockRegistrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tipo: "AUDITORIA",
+        entidade: "User",
+        entidade_id: INPUT.id,
+        acao: "CRIACAO_AUTO_GOOGLE",
+        usuario_id: null,
+      }),
+    );
+  });
+
+  it("User ja existente (mesmo id) -> retorna o registro existente, sem chamar provisionar/registrar de novo", async () => {
+    mockFindUnique.mockResolvedValueOnce(usuarioFake({ id: INPUT.id }) as never);
+
+    const resultado = await provisionarViaGoogle(INPUT);
+
+    expect(resultado.id).toBe(INPUT.id);
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockRegistrar).not.toHaveBeenCalled();
+  });
+
+  it("equipe_id invalido/inativo -> propaga ErroValidacaoUsuario de provisionar, sem tratamento especial", async () => {
+    mockFindUnique.mockResolvedValueOnce(null); // checagem de idempotencia
+    mockEquipeFindUnique.mockResolvedValueOnce(null); // validarVinculoEquipe: equipe nao existe
+    mockFindUnique.mockResolvedValueOnce(null); // re-checagem apos ErroValidacaoUsuario: ninguem criou
+
+    await expect(provisionarViaGoogle(INPUT)).rejects.toBeInstanceOf(
+      ErroValidacaoUsuario,
+    );
+  });
+
+  it("simulacao de corrida: provisionar lanca ErroValidacaoUsuario (e-mail duplicado) e o segundo findUnique encontra o registro -> retorna em vez de lancar", async () => {
+    mockFindUnique.mockResolvedValueOnce(null); // checagem de idempotencia
+    mockEquipeFindUnique.mockResolvedValueOnce(EQUIPE_ATIVA as never); // validarVinculoEquipe
+    mockCreate.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("email ja existe", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+    mockFindUnique.mockResolvedValueOnce(usuarioFake({ id: INPUT.id }) as never); // a outra requisicao venceu a corrida
+
+    const resultado = await provisionarViaGoogle(INPUT);
+
+    expect(resultado.id).toBe(INPUT.id);
+    expect(mockRegistrar).not.toHaveBeenCalled();
   });
 });
