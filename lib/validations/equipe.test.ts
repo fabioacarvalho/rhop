@@ -7,7 +7,11 @@ import {
 
 function equipeValida(overrides: Partial<EquipeInput> = {}): EquipeInput {
   return {
+<<<<<<< HEAD
     nome: "Equipe Comercial",
+=======
+    nome: "Equipe de Vendas",
+>>>>>>> 9e603c9 (specs;)
     gestor_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ...overrides,
   };
@@ -19,9 +23,15 @@ describe("equipeInputSchema", () => {
   });
 
   it("rejeita nome vazio", () => {
+<<<<<<< HEAD
     expect(equipeInputSchema.safeParse(equipeValida({ nome: "" })).success).toBe(
       false
     );
+=======
+    expect(
+      equipeInputSchema.safeParse(equipeValida({ nome: "" })).success
+    ).toBe(false);
+>>>>>>> 9e603c9 (specs;)
   });
 
   it("rejeita nome só com espaços", () => {
@@ -41,6 +51,17 @@ describe("equipeInputSchema", () => {
         .success
     ).toBe(false);
   });
+<<<<<<< HEAD
+=======
+
+  it("aceita gestor_id UUID válido", () => {
+    expect(
+      equipeInputSchema.safeParse(
+        equipeValida({ gestor_id: "550e8400-e29b-41d4-a716-446655440000" })
+      ).success
+    ).toBe(true);
+  });
+>>>>>>> 9e603c9 (specs;)
 });
 
 describe("definirStatusEquipeInputSchema", () => {

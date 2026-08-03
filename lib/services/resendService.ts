@@ -21,7 +21,7 @@ export const resendService = {
 
     try {
       const { error } = await resend.emails.send({
-        from: 'RHOP Notificações <onboarding@resend.dev>', // Usando domínio de teste do Resend MVP
+        from: 'FluxoRH <naoresponda@01tec.com.br>', // Requer dominio 01tec.com.br verificado em resend.com/domains
         to: [input.to],
         subject: input.subject,
         text: input.text,

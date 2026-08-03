@@ -14,7 +14,7 @@
 | Throttle de cobrança 1x/dia | Campo `ultima_cobranca_em DateTime?` em `Solicitacao`, controlado por `slaService`. Só dispara novo evento se `null` ou se passaram ≥ 24h desde o valor. Defesa em profundidade: `notificacaoService` já faz throttle próprio por `Notificacao` do dia. | `context.md` (Agent's Discretion) |
 | Semântica do `prazo_sla` (Q#3) | `prazo_sla` é o **deadline absoluto da etapa atual** (`DateTime`). O job compara `now > prazo_sla`. Contrato cross-feature: ao avançar etapa, `aprovacoes` deve (1) setar `prazo_sla = now + SLA_HORAS` e (2) limpar `atrasada_em` e `ultima_cobranca_em`. Hoje `aprovacaoService.decidir` **não** reinicia o prazo — ver Riscos. | Aberto no spec; fechado aqui |
 | `prazo_sla` nulo (Q#4) | Schema atual exige `prazo_sla DateTime` (não-nullable). Job ignora defensivamente qualquer registro sem prazo. Sem default no job. | Spec + schema `solicitacoes` |
-| Cron | **Vercel Cron** → `GET /api/cron/sla-check` com `Authorization: Bearer ${CRON_SECRET}`. Sem `node-cron` (deploy é Vercel; processo serverless não mantém scheduler in-process). | Design doc §8 + stack |
+| Cron | **Vercel Cron** → `GET /api/cron/sla-check` com `Authorization: Bearer ${CRON_SECRET}`. Sem `node-cron` (deploy é Vercel; processo serverless não mantém scheduler in-process). Frequência 1x/dia (`0 3 * * *`) — plano Vercel Hobby não libera cron com frequência maior que diária. | Design doc §8 + stack |
 | `usuario_id` nos Logs do job | `null` (ação de sistema). `Log.usuario_id` já é opcional. | `auditoria-logs` |
 | Aprovador RH_ADMIN | Etapa `GESTOR` → `solicitante.gestor_id` (um destinatário). Etapa `RH_ADMIN` → **todos** os `User` com `role = RH_ADMIN` (cobrança por destinatário). Lista vazia / `gestor_id` nulo → não dispara, `Log ERRO`, segue. | Agent's Discretion |
 
@@ -178,13 +178,13 @@ model Solicitacao {
   "crons": [
     {
       "path": "/api/cron/sla-check",
-      "schedule": "0 * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }
 ```
 
-- Horário: 1x/hora — compatível com throttle 1x/dia da cobrança e com “em até um ciclo após a expiração”.
+- Horário: 1x/dia (3h) — plano Vercel Hobby não permite cron com frequência maior que diária. Compatível com throttle 1x/dia da cobrança; latência de detecção de atraso sobe de "até 1h" para "até 1 dia".
 - Env: `CRON_SECRET` no Vercel e em `.env.local` (nunca commitado).
 
 ---

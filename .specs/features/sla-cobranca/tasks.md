@@ -184,7 +184,7 @@ npm run test -- app/api/cron/sla-check/route.test.ts
 
 ### T5: Agendar cron no Vercel + gate full
 
-**What**: Criar/atualizar `vercel.json` com cron horário em `/api/cron/sla-check`. Documentar `CRON_SECRET` em comentário curto no route ou README de env existente (sem commit de secret). Rodar gate full.
+**What**: Criar/atualizar `vercel.json` com cron diário (`0 3 * * *`) em `/api/cron/sla-check` — plano Vercel Hobby não libera frequência maior. Documentar `CRON_SECRET` em comentário curto no route ou README de env existente (sem commit de secret). Rodar gate full.
 **Where**: `vercel.json`
 **Depends on**: T4
 **Reuses**: design § vercel.json
@@ -195,14 +195,14 @@ npm run test -- app/api/cron/sla-check/route.test.ts
 - Skill: NONE
 
 **Done when**:
-- [x] `vercel.json` contém cron `0 * * * *` → `/api/cron/sla-check`
+- [x] `vercel.json` contém cron `0 3 * * *` → `/api/cron/sla-check`
 - [x] Gate check passa: `npm run build && npx prisma validate && npm run test`
 - [x] Test count: suite completa passa (sem deleção silenciosa vs. baseline da branch)
 
 **Tests**: none
 **Gate**: full
 
-**Commit**: `feat(sla): agenda Vercel Cron horário para sla-check`
+**Commit**: `feat(sla): agenda Vercel Cron diário para sla-check`
 
 ---
 
