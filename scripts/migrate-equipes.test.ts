@@ -110,7 +110,9 @@ describe("migrarGestor", () => {
       criada: true,
       usuariosMigrados: 3,
     });
-    expect(mockUserCount).toHaveBeenCalledWith({ where: { gestor_id: "gestor-1" } });
+    expect(mockUserCount).toHaveBeenCalledWith({
+      where: { gestor_id: "gestor-1", role: Role.SOLICITANTE },
+    });
     expect(mockEquipeFindUnique).toHaveBeenCalledWith({
       where: { nome: "Equipe de Gestor Um" },
     });
@@ -119,7 +121,7 @@ describe("migrarGestor", () => {
       data: { nome: "Equipe de Gestor Um", gestor_id: "gestor-1" },
     });
     expect(mockUserUpdateMany).toHaveBeenCalledWith({
-      where: { gestor_id: "gestor-1" },
+      where: { gestor_id: "gestor-1", role: Role.SOLICITANTE },
       data: { equipe_id: "equipe-1" },
     });
   });
@@ -153,7 +155,7 @@ describe("migrarGestor", () => {
     });
     expect(mockEquipeCreate).not.toHaveBeenCalled();
     expect(mockUserUpdateMany).toHaveBeenCalledWith({
-      where: { gestor_id: "gestor-1" },
+      where: { gestor_id: "gestor-1", role: Role.SOLICITANTE },
       data: { equipe_id: "equipe-1" },
     });
   });
@@ -249,6 +251,18 @@ describe("identificarInconsistencias", () => {
     const orfao = usuarioFake({ id: "user-orfao", gestor_id: "id-inexistente" });
 
     mockUserFindMany.mockResolvedValueOnce([orfao]);
+
+    const resultado = await identificarInconsistencias();
+
+    expect(resultado).toEqual([]);
+    expect(mockRegistrar).not.toHaveBeenCalled();
+  });
+
+  it("GESTOR cujo gestor_id antigo aponta pra RH_ADMIN (hierarquia de pessoal valida no modelo antigo) -> nao e inconsistencia", async () => {
+    const rhAdmin = usuarioFake({ id: "rh-1", role: Role.RH_ADMIN, gestor_id: null });
+    const gestorReportandoParaRh = gestorFake({ id: "gestor-1", gestor_id: "rh-1" });
+
+    mockUserFindMany.mockResolvedValueOnce([rhAdmin, gestorReportandoParaRh]);
 
     const resultado = await identificarInconsistencias();
 

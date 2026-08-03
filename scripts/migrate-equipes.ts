@@ -32,15 +32,24 @@
  *   colateral.
  *
  * Inconsistencias:
- * - Antes do loop principal, identifica `User` com `gestor_id` preenchido
- *   apontando para outro `User` que EXISTE mas NAO tem `role GESTOR`
- *   (hierarquia legada corrompida). Cada um grava `Log` tipo `ERRO`
- *   (`acao: 'GESTOR_ID_INCONSISTENTE'`) e fica de fora da migracao
- *   automatica de `equipe_id` — isso acontece naturalmente, sem filtro
- *   explicito: o `gestor_id` desses usuarios nunca bate com o `id` de
- *   nenhum `GESTOR` processado no loop principal (`migrarGestor` so migra
- *   quem tem `gestor_id === gestor.id`, e `gestor.id` e sempre um `GESTOR`
- *   valido, por vir do `findMany({ where: { role: 'GESTOR' } })`).
+ * - Antes do loop principal, identifica `User` `role SOLICITANTE` com
+ *   `gestor_id` preenchido apontando para outro `User` que EXISTE mas NAO
+ *   tem `role GESTOR` (hierarquia legada corrompida). Cada um grava `Log`
+ *   tipo `ERRO` (`acao: 'GESTOR_ID_INCONSISTENTE'`) e fica de fora da
+ *   migracao automatica de `equipe_id`.
+ *
+ * IMPORTANTE — so `SOLICITANTE` migra `equipe_id`:
+ * - No modelo antigo, `gestor_id` existia em qualquer `User` (inclusive
+ *   `GESTOR` reportando para outro `GESTOR`/`RH_ADMIN` — hierarquia de
+ *   pessoal, nao de aprovacao). No modelo novo, `equipe_id` e exclusivo de
+ *   `SOLICITANTE` (`GESTOR`/`RH_ADMIN` nunca tem equipe_id — EQP-13). Por
+ *   isso `migrarGestor`/`identificarInconsistencias` filtram
+ *   `role: 'SOLICITANTE'` explicitamente em vez de migrar qualquer `User`
+ *   cujo `gestor_id` bate — sem esse filtro, um `GESTOR` que reportava a
+ *   outro `GESTOR` no modelo antigo ganharia `equipe_id` por engano,
+ *   violando a invariante do modelo novo (confirmado contra dados reais
+ *   desta sessao: "Gestor de Equipe" tinha "Marina Costa", role GESTOR,
+ *   como um dos seus antigos subordinados via `gestor_id`).
  */
 import "dotenv/config";
 import { prisma } from "@/lib/prisma";
@@ -57,11 +66,16 @@ export interface InconsistenciaGestorId {
 }
 
 /**
- * Identifica `User` cujo `gestor_id` aponta para outro `User` existente que
- * NAO tem `role GESTOR`. Para cada um: grava `Log` tipo `ERRO`
- * (`acao: 'GESTOR_ID_INCONSISTENTE'`, `detalhes: { gestor_id }`) e loga no
- * console. Retorna a lista de inconsistencias encontradas (usada apenas
- * para o resumo final).
+ * Identifica `User` `role SOLICITANTE` cujo `gestor_id` aponta para outro
+ * `User` existente que NAO tem `role GESTOR`. Para cada um: grava `Log`
+ * tipo `ERRO` (`acao: 'GESTOR_ID_INCONSISTENTE'`, `detalhes: { gestor_id }`)
+ * e loga no console. Retorna a lista de inconsistencias encontradas (usada
+ * apenas para o resumo final).
+ *
+ * Restrito a `SOLICITANTE` (ver nota no topo do arquivo) — um `GESTOR`
+ * cujo `gestor_id` antigo apontava pra outro `GESTOR`/`RH_ADMIN` (hierarquia
+ * de pessoal do modelo antigo) NAO e uma inconsistencia, e nunca vai ganhar
+ * `equipe_id` de qualquer forma.
  *
  * Nao cobre `gestor_id` orfao (apontando para um `id` que nao existe mais)
  * — esse e um caso diferente do descrito na task (que fala especificamente
@@ -74,7 +88,7 @@ export async function identificarInconsistencias(): Promise<InconsistenciaGestor
   const inconsistencias: InconsistenciaGestorId[] = [];
 
   for (const usuario of usuarios) {
-    if (!usuario.gestor_id) continue;
+    if (usuario.role !== Role.SOLICITANTE || !usuario.gestor_id) continue;
 
     const gestor = porId.get(usuario.gestor_id);
     if (!gestor || gestor.role === Role.GESTOR) continue;
@@ -110,21 +124,22 @@ export interface ResultadoMigracaoGestor {
 }
 
 /**
- * Migra um unico `User` com `role GESTOR` para o modelo de `Equipe`:
- * conta subordinados (`gestor_id === gestor.id`) -> se `0`, pula (retorna
- * `null`, nenhuma `Equipe` vazia e criada) -> senao, cria ou reusa 1
- * `Equipe` com `nome: "Equipe de ${gestor.nome}"` -> migra os subordinados
- * via `updateMany` -> loga quantos foram migrados.
+ * Migra um unico `User` com `role GESTOR` para o modelo de `Equipe`: conta
+ * subordinados `role SOLICITANTE` (`gestor_id === gestor.id` — ver nota no
+ * topo do arquivo sobre por que so `SOLICITANTE` conta aqui) -> se `0`,
+ * pula (retorna `null`, nenhuma `Equipe` vazia e criada) -> senao, cria ou
+ * reusa 1 `Equipe` com `nome: "Equipe de ${gestor.nome}"` -> migra os
+ * subordinados via `updateMany` -> loga quantos foram migrados.
  */
 export async function migrarGestor(
   gestor: User,
 ): Promise<ResultadoMigracaoGestor | null> {
   const totalSubordinados = await prisma.user.count({
-    where: { gestor_id: gestor.id },
+    where: { gestor_id: gestor.id, role: Role.SOLICITANTE },
   });
 
   if (totalSubordinados === 0) {
-    console.log(`- ${gestor.nome} (${gestor.email}): sem subordinados, pulando.`);
+    console.log(`- ${gestor.nome} (${gestor.email}): sem subordinados SOLICITANTE, pulando.`);
     return null;
   }
 
@@ -140,7 +155,7 @@ export async function migrarGestor(
   }
 
   const { count: usuariosMigrados } = await prisma.user.updateMany({
-    where: { gestor_id: gestor.id },
+    where: { gestor_id: gestor.id, role: Role.SOLICITANTE },
     data: { equipe_id: equipe.id },
   });
 
