@@ -5,15 +5,13 @@ import { Role } from "@/lib/generated/prisma/client";
 
 /**
  * Identidade de negocio resolvida a partir da sessao Supabase + `User` do
- * Prisma (AUTH-06, AUTH-18 — inclui `gestor_id` para as regras de
- * visibilidade/autorizacao consumidas por outras features).
+ * Prisma (AUTH-06, AUTH-18).
  */
 export interface AuthenticatedUser {
   id: string;
   nome: string;
   email: string;
   role: Role;
-  gestor_id: string | null;
 }
 
 /**
@@ -46,7 +44,7 @@ export class ErroNaoAutorizado extends Error {
  *   e grava `Log` tipo `ERRO` via `logService.registrar` antes de retornar
  *   (AUTH-07). A falha nunca trava o fluxo do chamador: `logService.registrar`
  *   ja contem qualquer erro de persistencia internamente.
- * - Sessao valida + `User` existente -> `{ id, nome, email, role, gestor_id }`.
+ * - Sessao valida + `User` existente -> `{ id, nome, email, role }`.
  */
 export async function getSessionUser(): Promise<AuthenticatedUser | null> {
   const supabase = await createServerClient();
@@ -94,7 +92,6 @@ export async function getSessionUser(): Promise<AuthenticatedUser | null> {
     nome: user.nome,
     email: user.email,
     role: user.role,
-    gestor_id: user.gestor_id,
   };
 }
 

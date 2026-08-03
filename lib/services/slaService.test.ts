@@ -50,7 +50,7 @@ function candidata(overrides: Record<string, unknown> = {}) {
     atrasada_em: null,
     ultima_cobranca_em: null,
     criado_em: new Date("2026-06-01T00:00:00Z"),
-    solicitante: { gestor_id: "gestor-1" },
+    solicitante: { equipe: { gestor_id: "gestor-1" } },
     ...overrides,
   };
 }
@@ -69,18 +69,18 @@ beforeEach(() => {
 });
 
 describe("resolveAprovadores", () => {
-  it("GESTOR com gestor_id retorna o gestor", async () => {
+  it("GESTOR com equipe retorna o gestor responsavel pela equipe", async () => {
     const ids = await resolveAprovadores({
       etapa_atual: Role.GESTOR,
-      solicitante: { gestor_id: "gestor-1" },
+      solicitante: { equipe: { gestor_id: "gestor-1" } },
     } as never);
     expect(ids).toEqual(["gestor-1"]);
   });
 
-  it("GESTOR sem gestor_id retorna vazio", async () => {
+  it("GESTOR sem equipe retorna vazio", async () => {
     const ids = await resolveAprovadores({
       etapa_atual: Role.GESTOR,
-      solicitante: { gestor_id: null },
+      solicitante: { equipe: null },
     } as never);
     expect(ids).toEqual([]);
   });
@@ -92,7 +92,7 @@ describe("resolveAprovadores", () => {
     ] as never);
     const ids = await resolveAprovadores({
       etapa_atual: Role.RH_ADMIN,
-      solicitante: { gestor_id: null },
+      solicitante: { equipe: null },
     } as never);
     expect(ids).toEqual(["rh-1", "rh-2"]);
     expect(mockUserFindMany).toHaveBeenCalledWith(
@@ -104,7 +104,7 @@ describe("resolveAprovadores", () => {
     mockUserFindMany.mockResolvedValueOnce([] as never);
     const ids = await resolveAprovadores({
       etapa_atual: Role.RH_ADMIN,
-      solicitante: { gestor_id: null },
+      solicitante: { equipe: null },
     } as never);
     expect(ids).toEqual([]);
   });
@@ -201,11 +201,11 @@ describe("verificarSla", () => {
 
   it("sem aprovador resolvido: Log ERRO DESTINATARIO_SLA e nao cobra", async () => {
     mockFindMany.mockResolvedValueOnce([
-      candidata({ solicitante: { gestor_id: null } }),
+      candidata({ solicitante: { equipe: null } }),
     ] as never);
     mockUpdateMany.mockResolvedValueOnce({ count: 1 } as never);
     mockFindUnique.mockResolvedValueOnce(
-      candidata({ atrasada_em: NOW, solicitante: { gestor_id: null } }) as never,
+      candidata({ atrasada_em: NOW, solicitante: { equipe: null } }) as never,
     );
 
     const resumo = await verificarSla(NOW);

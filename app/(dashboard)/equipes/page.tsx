@@ -5,32 +5,21 @@ import {
   ErroNaoAutenticado,
   ErroNaoAutorizado,
 } from "@/lib/services/authService";
-import { listar } from "@/lib/services/userService";
+import { listar } from "@/lib/services/equipeService";
 import { Role } from "@/lib/generated/prisma/client";
 import StatusToggleButton from "./_components/StatusToggleButton";
-import styles from "./usuarios.module.css";
-
-const ROTULO_PAPEL: Record<Role, string> = {
-  SOLICITANTE: "Solicitante",
-  GESTOR: "Gestor",
-  RH_ADMIN: "RH_Admin",
-};
+import styles from "./equipes.module.css";
 
 /**
- * Tela de listagem de usuários (USR-13, USR-14, USR-15) — Server Component.
+ * Tela de listagem de `Equipe` (T11, EQP) — Server Component.
  *
- * Mesmo padrão de gate de acesso de `configuracao-fluxos/page.tsx`: a
- * checagem roda no backend, antes de qualquer leitura de `User` — quem não é
- * GESTOR/RH_ADMIN nunca chega a disparar `userService.listar()`.
- *
- * Título/dado adaptado ao papel: RH_Admin vê "Usuários" (todos); Gestor vê
- * "Minha equipe" (só a própria equipe — `userService.listar` já aplica esse
- * filtro no backend).
+ * RH_Admin-only: mesmo padrão de gate de acesso de
+ * `configuracao-fluxos/page.tsx` — a checagem roda no backend, antes de
+ * qualquer leitura de `Equipe`.
  */
 export default async function Page() {
-  let usuario;
   try {
-    usuario = await requireUser([Role.GESTOR, Role.RH_ADMIN]);
+    await requireUser([Role.RH_ADMIN]);
   } catch (erro) {
     if (erro instanceof ErroNaoAutenticado) {
       redirect("/login");
@@ -46,57 +35,44 @@ export default async function Page() {
     throw erro;
   }
 
-  const usuarios = await listar(usuario);
-  const ehRhAdmin = usuario.role === Role.RH_ADMIN;
+  const equipes = await listar();
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>
-            {ehRhAdmin ? "Usuários" : "Minha equipe"}
-          </h1>
-          <p className={styles.subtitle}>
-            {ehRhAdmin
-              ? "Todos os usuários cadastrados no FluxoRH."
-              : "Colaboradores sob sua gestão."}
-          </p>
+          <h1 className={styles.title}>Equipes</h1>
+          <p className={styles.subtitle}>Times e seus gestores responsáveis.</p>
         </div>
-        <Link href="/usuarios/novo" className={`${styles.btn} ${styles.btnPrimary}`}>
-          + Novo usuário
+        <Link href="/equipes/novo" className={`${styles.btn} ${styles.btnPrimary}`}>
+          + Nova equipe
         </Link>
       </header>
 
-      {usuarios.length === 0 ? (
-        <p className={styles.empty}>
-          {ehRhAdmin
-            ? "Nenhum usuário cadastrado ainda."
-            : "Você ainda não tem colaboradores na sua equipe."}
-        </p>
+      {equipes.length === 0 ? (
+        <p className={styles.empty}>Nenhuma equipe cadastrada ainda.</p>
       ) : (
         <div className={styles.card}>
           <table className={styles.table}>
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>E-mail</th>
-                <th>Papel</th>
-                <th>Equipe</th>
+                <th>Gestor responsável</th>
+                <th>Membros</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody>
-              {usuarios.map((item) => (
+              {equipes.map((item) => (
                 <tr key={item.id}>
                   <td className={styles.nome}>{item.nome}</td>
-                  <td className={styles.mono}>{item.email}</td>
+                  <td>{item.gestor_nome}</td>
                   <td>
-                    <span className={styles.chipRole}>
-                      {ROTULO_PAPEL[item.role]}
+                    <span className={styles.chipContagem}>
+                      {item.membros_ativos}
                     </span>
                   </td>
-                  <td>{item.equipe_nome ?? "—"}</td>
                   <td>
                     <span
                       className={`${styles.stamp} ${
@@ -109,12 +85,12 @@ export default async function Page() {
                   <td>
                     <div className={styles.acoes}>
                       <Link
-                        href={`/usuarios/${item.id}/editar`}
+                        href={`/equipes/${item.id}/editar`}
                         className={`${styles.btn} ${styles.btnGhost} ${styles.btnGhostSm}`}
                       >
                         Editar
                       </Link>
-                      <StatusToggleButton usuarioId={item.id} ativo={item.ativo} />
+                      <StatusToggleButton equipeId={item.id} ativo={item.ativo} />
                     </div>
                   </td>
                 </tr>

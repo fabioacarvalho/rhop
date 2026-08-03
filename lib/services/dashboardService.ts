@@ -4,6 +4,7 @@ import {
   StatusSolicitacao,
   type Prisma,
 } from "@/lib/generated/prisma/client";
+import * as equipeService from "@/lib/services/equipeService";
 import type { AuthenticatedUser } from "@/lib/services/authService";
 import type { DashboardListaFiltro } from "@/lib/validations/dashboardFiltros";
 
@@ -41,19 +42,23 @@ export interface SolicitanteOpcao {
 /**
  * Regra de visibilidade por papel (DASH-03), aplicada em todas as queries
  * desta feature: `RH_ADMIN` vê tudo (sem filtro); `GESTOR` só vê as próprias
- * solicitações mais as dos usuários cujo `gestor_id` aponta para ele.
+ * solicitações mais as dos usuários membros das `Equipe`s que ele gere
+ * (ver `equipeService.listarGeridasPor`). Sem equipe gerida, o escopo cai
+ * para só as próprias solicitações — não lança, não quebra.
  */
-function visibilidadeSolicitacaoWhere(
+async function visibilidadeSolicitacaoWhere(
   usuario: AuthenticatedUser,
-): Prisma.SolicitacaoWhereInput {
+): Promise<Prisma.SolicitacaoWhereInput> {
   if (usuario.role === Role.RH_ADMIN) {
     return {};
   }
 
+  const equipes = await equipeService.listarGeridasPor(usuario.id);
+
   return {
     OR: [
       { solicitante_id: usuario.id },
-      { solicitante: { gestor_id: usuario.id } },
+      { solicitante: { equipe_id: { in: equipes.map((e) => e.id) } } },
     ],
   };
 }
@@ -68,7 +73,7 @@ function visibilidadeSolicitacaoWhere(
 export async function contarPorStatus(
   usuario: AuthenticatedUser,
 ): Promise<ContadoresDashboard> {
-  const visibilidade = visibilidadeSolicitacaoWhere(usuario);
+  const visibilidade = await visibilidadeSolicitacaoWhere(usuario);
 
   const [pendentes, atrasados, aprovados, rejeitados] = await Promise.all([
     prisma.solicitacao.count({
@@ -102,7 +107,7 @@ export async function listar(
   usuario: AuthenticatedUser,
   filtro: DashboardListaFiltro,
 ): Promise<ListarResultado> {
-  const visibilidade = visibilidadeSolicitacaoWhere(usuario);
+  const visibilidade = await visibilidadeSolicitacaoWhere(usuario);
 
   const statusWhere: Prisma.SolicitacaoWhereInput =
     filtro.status === "ATRASADO"
@@ -165,8 +170,15 @@ export async function listarSolicitantesVisiveis(
     });
   }
 
+  const equipes = await equipeService.listarGeridasPor(usuario.id);
+
   return prisma.user.findMany({
-    where: { OR: [{ id: usuario.id }, { gestor_id: usuario.id }] },
+    where: {
+      OR: [
+        { id: usuario.id },
+        { equipe_id: { in: equipes.map((e) => e.id) } },
+      ],
+    },
     select: { id: true, nome: true },
     orderBy: { nome: "asc" },
   });

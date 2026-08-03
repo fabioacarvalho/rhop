@@ -13,7 +13,7 @@ function usuarioValido(
     nome: "Fulano de Tal",
     email: "fulano@example.com",
     role: "SOLICITANTE",
-    gestor_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    equipe_id: "clx1a2b3c0000ex1amplexid0001",
     ...overrides,
   };
 }
@@ -54,24 +54,24 @@ describe("cadastrarUsuarioInputSchema", () => {
     ).toBe(false);
   });
 
-  it("aceita gestor_id ausente", () => {
-    const { gestor_id: _gestorId, ...semGestor } = usuarioValido();
-    expect(cadastrarUsuarioInputSchema.safeParse(semGestor).success).toBe(true);
+  it("aceita equipe_id ausente", () => {
+    const { equipe_id: _equipeId, ...semEquipe } = usuarioValido();
+    expect(cadastrarUsuarioInputSchema.safeParse(semEquipe).success).toBe(true);
   });
 
-  it("aceita gestor_id nulo", () => {
+  it("aceita equipe_id nulo", () => {
     expect(
-      cadastrarUsuarioInputSchema.safeParse(usuarioValido({ gestor_id: null }))
+      cadastrarUsuarioInputSchema.safeParse(usuarioValido({ equipe_id: null }))
         .success
     ).toBe(true);
   });
 
-  it("rejeita gestor_id que não é UUID", () => {
+  it("aceita equipe_id como string não vazia (não é UUID, é cuid)", () => {
     expect(
       cadastrarUsuarioInputSchema.safeParse(
-        usuarioValido({ gestor_id: "nao-e-uuid" })
+        usuarioValido({ equipe_id: "clx1a2b3c0000ex1amplexid0002" })
       ).success
-    ).toBe(false);
+    ).toBe(true);
   });
 });
 
@@ -88,7 +88,7 @@ describe("editarUsuarioInputSchema", () => {
 
   it("aceita múltiplos campos parciais", () => {
     expect(
-      editarUsuarioInputSchema.safeParse({ role: "GESTOR", gestor_id: null })
+      editarUsuarioInputSchema.safeParse({ role: "GESTOR", equipe_id: null })
         .success
     ).toBe(true);
   });

@@ -19,13 +19,14 @@ export interface SlaCheckResumo {
 }
 
 type SolicitacaoCandidata = Solicitacao & {
-  solicitante: { gestor_id: string | null };
+  solicitante: { equipe: { gestor_id: string } | null };
 };
 
 /**
  * Resolve os destinatarios da cobranca para a etapa atual (SLA-04).
  *
- * - `GESTOR` -> `[gestor_id]` do solicitante, ou `[]` se ausente.
+ * - `GESTOR` -> `[gestor_id]` da `Equipe` do solicitante (EQP), ou `[]` se o
+ *   solicitante nao tem `equipe`.
  * - `RH_ADMIN` -> id de todos os `User` com `role = RH_ADMIN` (fan-out: um
  *   admin aleatorio nao pode ser o unico avisado), ou `[]` se nenhum existir.
  * - Qualquer outra etapa -> `[]` (nao ha aprovador elegivel para cobranca).
@@ -34,8 +35,8 @@ export async function resolveAprovadores(
   solicitacao: Pick<SolicitacaoCandidata, "etapa_atual" | "solicitante">,
 ): Promise<string[]> {
   if (solicitacao.etapa_atual === Role.GESTOR) {
-    return solicitacao.solicitante.gestor_id
-      ? [solicitacao.solicitante.gestor_id]
+    return solicitacao.solicitante.equipe
+      ? [solicitacao.solicitante.equipe.gestor_id]
       : [];
   }
 
@@ -74,7 +75,7 @@ export async function verificarSla(
       prazo_sla: { lt: now },
     },
     include: {
-      solicitante: { select: { gestor_id: true } },
+      solicitante: { select: { equipe: { select: { gestor_id: true } } } },
     },
   });
 
@@ -132,7 +133,7 @@ async function processarCandidata(
 
   const fresh = await prisma.solicitacao.findUnique({
     where: { id: candidata.id },
-    include: { solicitante: { select: { gestor_id: true } } },
+    include: { solicitante: { select: { equipe: { select: { gestor_id: true } } } } },
   });
 
   if (!fresh || fresh.status !== StatusSolicitacao.PENDENTE) {

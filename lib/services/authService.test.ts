@@ -53,7 +53,7 @@ beforeEach(() => {
 });
 
 describe("authService.getSessionUser", () => {
-  it("sessao valida + User existente no Prisma -> retorna objeto completo (inclui gestor_id)", async () => {
+  it("sessao valida + User existente no Prisma -> retorna objeto completo (sem gestor_id)", async () => {
     enfileirarSupabaseAuth(
       vi.fn().mockResolvedValueOnce({
         data: { user: { id: "user-1", email: "fulano@example.com" } },
@@ -65,7 +65,6 @@ describe("authService.getSessionUser", () => {
       nome: "Fulano",
       email: "fulano@example.com",
       role: Role.GESTOR,
-      gestor_id: "gestor-raiz",
     } as never);
 
     const result = await getSessionUser();
@@ -75,7 +74,6 @@ describe("authService.getSessionUser", () => {
       nome: "Fulano",
       email: "fulano@example.com",
       role: Role.GESTOR,
-      gestor_id: "gestor-raiz",
     });
     expect(mockFindUnique).toHaveBeenCalledWith({ where: { id: "user-1" } });
     expect(mockRegistrar).not.toHaveBeenCalled();
@@ -115,7 +113,6 @@ describe("authService.getSessionUser", () => {
       nome: "Inativo",
       email: "inativo@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: "gestor-1",
       ativo: false,
     } as never);
 
@@ -146,7 +143,6 @@ describe("authService.getSessionUser", () => {
       nome: "Ativo",
       email: "ativo@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: "gestor-1",
       ativo: true,
     } as never);
 
@@ -157,7 +153,6 @@ describe("authService.getSessionUser", () => {
       nome: "Ativo",
       email: "ativo@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: "gestor-1",
     });
     expect(mockRegistrar).not.toHaveBeenCalled();
   });
@@ -216,7 +211,6 @@ describe("authService.requireUser", () => {
       nome: "Solicitante",
       email: "solicitante@example.com",
       role: Role.SOLICITANTE,
-      gestor_id: "gestor-1",
     } as never);
 
     const erroAutorizacao = await requireUser([Role.RH_ADMIN, Role.GESTOR]).catch(

@@ -21,12 +21,17 @@ vi.mock("@/lib/services/iaService", () => ({
   gerarResumoInsights: vi.fn(),
 }));
 
+vi.mock("@/lib/services/equipeService", () => ({
+  listarGeridasPor: vi.fn(),
+}));
+
 import { prisma } from "@/lib/prisma";
 import {
   buscarPorId,
   ErroNaoEncontrado,
 } from "@/lib/services/tipoFluxoService";
 import { gerarResumoInsights } from "@/lib/services/iaService";
+import * as equipeService from "@/lib/services/equipeService";
 import { Role } from "@/lib/generated/prisma/client";
 import type { AuthenticatedUser } from "@/lib/services/authService";
 import type { InsightsFiltro } from "@/lib/validations/insight";
@@ -41,13 +46,13 @@ const mockUserFindMany = vi.mocked(prisma.user.findMany);
 const mockQueryRaw = vi.mocked(prisma.$queryRaw);
 const mockBuscarPorId = vi.mocked(buscarPorId);
 const mockGerarResumoInsights = vi.mocked(gerarResumoInsights);
+const mockListarGeridasPor = vi.mocked(equipeService.listarGeridasPor);
 
 const RH: AuthenticatedUser = {
   id: "rh-1",
   nome: "RH Admin",
   email: "rh@ex.com",
   role: Role.RH_ADMIN,
-  gestor_id: null,
 };
 
 const GESTOR: AuthenticatedUser = {
@@ -55,7 +60,6 @@ const GESTOR: AuthenticatedUser = {
   nome: "Marina",
   email: "marina@ex.com",
   role: Role.GESTOR,
-  gestor_id: null,
 };
 
 const TIPO_FLUXO = {
@@ -79,7 +83,9 @@ beforeEach(() => {
   mockQueryRaw.mockReset();
   mockBuscarPorId.mockReset();
   mockGerarResumoInsights.mockReset();
+  mockListarGeridasPor.mockReset();
   mockBuscarPorId.mockResolvedValue(TIPO_FLUXO as never);
+  mockListarGeridasPor.mockResolvedValue([{ id: "equipe-1", nome: "Equipe 1" }]);
 });
 
 describe("periodoParaIntervalo", () => {
@@ -105,9 +111,14 @@ describe("resolverIdsVisiveis", () => {
     const resultado = await resolverIdsVisiveis(RH);
     expect(resultado).toBeNull();
     expect(mockUserFindMany).not.toHaveBeenCalled();
+    expect(mockListarGeridasPor).not.toHaveBeenCalled();
   });
 
-  it("GESTOR com equipe -> [proprio, ...equipe]", async () => {
+  it("GESTOR com 2 equipes -> [proprio, ...membros de ambas]", async () => {
+    mockListarGeridasPor.mockResolvedValueOnce([
+      { id: "equipe-1", nome: "Equipe 1" },
+      { id: "equipe-2", nome: "Equipe 2" },
+    ]);
     mockUserFindMany.mockResolvedValueOnce([
       { id: "sub-1" },
       { id: "sub-2" },
@@ -116,18 +127,24 @@ describe("resolverIdsVisiveis", () => {
     const resultado = await resolverIdsVisiveis(GESTOR);
 
     expect(resultado).toEqual(["gestor-1", "sub-1", "sub-2"]);
+    expect(mockListarGeridasPor).toHaveBeenCalledWith("gestor-1");
     expect(mockUserFindMany).toHaveBeenCalledWith({
-      where: { gestor_id: "gestor-1" },
+      where: { equipe_id: { in: ["equipe-1", "equipe-2"] } },
       select: { id: true },
     });
   });
 
-  it("GESTOR sem subordinados -> [proprio]", async () => {
+  it("GESTOR sem equipe gerida -> [proprio]", async () => {
+    mockListarGeridasPor.mockResolvedValueOnce([]);
     mockUserFindMany.mockResolvedValueOnce([] as never);
 
     const resultado = await resolverIdsVisiveis(GESTOR);
 
     expect(resultado).toEqual(["gestor-1"]);
+    expect(mockUserFindMany).toHaveBeenCalledWith({
+      where: { equipe_id: { in: [] } },
+      select: { id: true },
+    });
   });
 });
 
@@ -161,6 +178,9 @@ describe("agregar", () => {
   });
 
   it("GESTOR só equipe -> where com solicitante_id in [...]", async () => {
+    mockListarGeridasPor.mockResolvedValueOnce([
+      { id: "equipe-1", nome: "Equipe 1" },
+    ]);
     mockUserFindMany.mockResolvedValueOnce([{ id: "sub-1" }] as never);
     mockGroupBy.mockResolvedValueOnce([] as never);
 
@@ -171,6 +191,20 @@ describe("agregar", () => {
       unknown
     >;
     expect(where.solicitante_id).toEqual({ in: ["gestor-1", "sub-1"] });
+  });
+
+  it("GESTOR sem equipe gerida -> agrega so as proprias solicitacoes", async () => {
+    mockListarGeridasPor.mockResolvedValueOnce([]);
+    mockUserFindMany.mockResolvedValueOnce([] as never);
+    mockGroupBy.mockResolvedValueOnce([] as never);
+
+    await agregar(GESTOR, filtroBase);
+
+    const where = mockGroupBy.mock.calls[0][0].where as Record<
+      string,
+      unknown
+    >;
+    expect(where.solicitante_id).toEqual({ in: ["gestor-1"] });
   });
 
   it("total === 0 -> itens vazio, resumo_ia null, IA não chamada", async () => {

@@ -32,7 +32,7 @@ describe("getVisibleGroups", () => {
     expect(administracao.items.map((i) => i.label)).toEqual(["Usuários"]);
   });
 
-  it("RH_ADMIN ve os 4 grupos, 9 itens no total", () => {
+  it("RH_ADMIN ve os 4 grupos, 10 itens no total", () => {
     const groups = getVisibleGroups(Role.RH_ADMIN);
 
     expect(groups.map((g) => g.key)).toEqual([
@@ -43,7 +43,7 @@ describe("getVisibleGroups", () => {
     ]);
 
     const totalItens = groups.reduce((soma, g) => soma + g.items.length, 0);
-    expect(totalItens).toBe(9);
+    expect(totalItens).toBe(10);
   });
 
   it("grupo sem nenhum item visivel nao aparece no array retornado", () => {
