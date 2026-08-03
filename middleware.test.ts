@@ -81,6 +81,7 @@ describe("middleware config.matcher", () => {
       "https://example.com/favicon.ico",
       "https://example.com/_next/static/chunks/algo.js",
       "https://example.com/_next/image?url=x",
+      "https://example.com/auth/callback",
     ];
     const casosIncluidos = [
       "https://example.com/auditoria-logs",
