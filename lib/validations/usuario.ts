@@ -3,14 +3,15 @@ import { Role } from "@/lib/generated/prisma/client";
 
 /**
  * Payload de `POST /api/usuarios` (USR-05). A regra "Gestor so pode mandar
- * role: SOLICITANTE / gestor_id: proprio id" e de autorizacao por ator, nao
- * de formato — fica em `userService.assertEscopoGestao`, nao aqui.
+ * role: SOLICITANTE / equipe_id: da sua propria equipe" e de autorizacao por
+ * ator, nao de formato — fica em `userService.assertEscopoGestao`, nao aqui.
+ * `equipe_id` nao usa `.uuid()` porque `Equipe.id` e `cuid()`.
  */
 export const cadastrarUsuarioInputSchema = z.object({
   nome: z.string().trim().min(1, "nome e obrigatorio."),
   email: z.string().email("email invalido."),
   role: z.nativeEnum(Role),
-  gestor_id: z.string().uuid().nullable().optional(),
+  equipe_id: z.string().nullable().optional(),
 });
 
 export type CadastrarUsuarioInput = z.infer<typeof cadastrarUsuarioInputSchema>;
