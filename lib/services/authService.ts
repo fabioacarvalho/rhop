@@ -120,3 +120,90 @@ export async function requireUser(
 
   return user;
 }
+
+const DOMINIO_GOOGLE_PERMITIDO = "@01tec.com.br";
+
+/** Checa se `email` termina em `@01tec.com.br` (case-insensitive, GAUTH-02). */
+export function emailDominioValido(email: string | null | undefined): boolean {
+  return Boolean(email?.toLowerCase().endsWith(DOMINIO_GOOGLE_PERMITIDO));
+}
+
+/** Sessao Supabase resolvida sem exigir `User` no Prisma — ver `getSupabaseUser`. */
+export interface SupabaseSessionUser {
+  id: string;
+  email: string;
+  nome: string;
+}
+
+/**
+ * Resolve a sessao Supabase atual sem tocar Prisma — usado por
+ * `/onboarding/equipe` (page e route), o unico trecho da aplicacao que
+ * precisa lidar com "sessao Supabase valida, mas ainda sem `User`" (por
+ * definicao, `getSessionUser()`/`requireUser()` nao servem para esse caso).
+ *
+ * `nome` usa `user_metadata.full_name ?? user_metadata.name ?? email` como
+ * fallback, para o caso do provedor OAuth nao popular nome nenhum.
+ */
+export async function getSupabaseUser(): Promise<SupabaseSessionUser | null> {
+  const supabase = await createServerClient();
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data.user) {
+    return null;
+  }
+
+  const sessaoUser = data.user;
+  const metadata = sessaoUser.user_metadata ?? {};
+  const nome =
+    (metadata.full_name as string | undefined) ??
+    (metadata.name as string | undefined) ??
+    sessaoUser.email ??
+    "";
+
+  return {
+    id: sessaoUser.id,
+    email: sessaoUser.email ?? "",
+    nome,
+  };
+}
+
+/** Resultado de `autenticarComGoogle` — decide o redirect do callback OAuth. */
+export type ResultadoAuthGoogle =
+  | { status: "permitido" }
+  | { status: "onboarding_equipe" }
+  | { status: "negado" };
+
+/**
+ * Decide o destino de uma sessao Google recem-criada (GAUTH-01, GAUTH-02):
+ *
+ * 1. `email` ausente, e-mail nao confirmado/verificado, ou fora do dominio
+ *    `@01tec.com.br` -> `"negado"`, sem consultar o Prisma (short-circuit).
+ * 2. `User` ja existe para esse `id` -> `"permitido"` (vinculo ja garantido
+ *    pelo automatic identity linking do Supabase, ver `design.md`).
+ * 3. `User` nao existe -> `"onboarding_equipe"` (precisa escolher `Equipe`
+ *    antes de qualquer `User` ser criado).
+ */
+export async function autenticarComGoogle(supabaseUser: {
+  id: string;
+  email?: string | null;
+  email_confirmed_at?: string | null;
+  user_metadata: Record<string, unknown>;
+}): Promise<ResultadoAuthGoogle> {
+  const emailVerificado =
+    Boolean(supabaseUser.email_confirmed_at) &&
+    supabaseUser.user_metadata.email_verified !== false;
+
+  if (!emailVerificado || !emailDominioValido(supabaseUser.email)) {
+    return { status: "negado" };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: supabaseUser.id },
+  });
+
+  if (user) {
+    return { status: "permitido" };
+  }
+
+  return { status: "onboarding_equipe" };
+}
