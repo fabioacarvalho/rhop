@@ -28,15 +28,32 @@ model User {
   role      Role
   gestor_id String? @db.Uuid
   ativo     Boolean @default(true)
+  equipe_id String?
 
-  gestor       User?         @relation("Hierarquia", fields: [gestor_id], references: [id])
-  equipe       User[]        @relation("Hierarquia")
-  logs         Log[]
-  notificacoes Notificacao[] @relation("NotificacoesUsuario")
-  solicitacoes Solicitacao[]
-  aprovacoes   Aprovacao[]
-  feedbacks    Feedback[]
-  candidatos   Candidato[]
+  gestor             User?         @relation("Hierarquia", fields: [gestor_id], references: [id])
+  subordinadosLegado User[]        @relation("Hierarquia")
+  equipe             Equipe?       @relation("EquipeMembros", fields: [equipe_id], references: [id])
+  equipesGerenciadas Equipe[]      @relation("EquipeGestor")
+  logs               Log[]
+  notificacoes       Notificacao[] @relation("NotificacoesUsuario")
+  solicitacoes       Solicitacao[]
+  aprovacoes         Aprovacao[]
+  feedbacks          Feedback[]
+  candidatos         Candidato[]
+}
+
+model Equipe {
+  id            String   @id @default(cuid())
+  nome          String   @unique
+  gestor_id     String   @db.Uuid
+  gestor        User     @relation("EquipeGestor", fields: [gestor_id], references: [id])
+  membros       User[]   @relation("EquipeMembros")
+  ativo         Boolean  @default(true)
+  criado_em     DateTime @default(now())
+  atualizado_em DateTime @updatedAt
+
+  @@index([gestor_id])
+  @@map("equipes")
 }
 
 enum LogTipo {
@@ -120,17 +137,17 @@ enum TipoNotificacao {
 }
 
 model Notificacao {
-  id              String          @id @default(uuid()) @db.Uuid
-  usuario_id      String          @db.Uuid
-  solicitacao_id  String
-  tipo            TipoNotificacao
-  mensagem        String
-  lida            Boolean         @default(false)
-  link            String
-  criado_em       DateTime        @default(now())
+  id             String          @id @default(uuid()) @db.Uuid
+  usuario_id     String          @db.Uuid
+  solicitacao_id String
+  tipo           TipoNotificacao
+  mensagem       String
+  lida           Boolean         @default(false)
+  link           String
+  criado_em      DateTime        @default(now())
 
-  usuario         User            @relation("NotificacoesUsuario", fields: [usuario_id], references: [id])
-  solicitacao     Solicitacao     @relation(fields: [solicitacao_id], references: [id])
+  usuario     User        @relation("NotificacoesUsuario", fields: [usuario_id], references: [id])
+  solicitacao Solicitacao @relation(fields: [solicitacao_id], references: [id])
 
   @@index([usuario_id, lida])
   @@map("notificacoes")
@@ -190,20 +207,20 @@ enum StatusEmbedding {
 }
 
 model Candidato {
-  id                    String          @id @default(cuid())
+  id                    String                       @id @default(cuid())
   nome                  String
-  email                 String          @unique
+  email                 String                       @unique
   telefone              String
   curriculo_texto       String
   curriculo_arquivo_url String?
   transcricao_texto     String
   embedding             Unsupported("vector(1536)")?
-  status_embedding      StatusEmbedding @default(pendente)
+  status_embedding      StatusEmbedding              @default(pendente)
   solicitacao_id        String?
-  solicitacao           Solicitacao?    @relation(fields: [solicitacao_id], references: [id])
-  criado_por            String          @db.Uuid
-  criador               User            @relation(fields: [criado_por], references: [id])
-  criado_em             DateTime        @default(now())
+  solicitacao           Solicitacao?                 @relation(fields: [solicitacao_id], references: [id])
+  criado_por            String                       @db.Uuid
+  criador               User                         @relation(fields: [criado_por], references: [id])
+  criado_em             DateTime                     @default(now())
 
   @@index([status_embedding])
   @@index([solicitacao_id])
