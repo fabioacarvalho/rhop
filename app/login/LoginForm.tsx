@@ -5,8 +5,13 @@ import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@/lib/supabase/client";
 import styles from "./login.module.css";
 
+interface LoginFormProps {
+  erroInicial?: string | null;
+}
+
 /**
- * Formulario de login (AUTH-01, AUTH-02, AUTH-03, AUTH-04).
+ * Formulario de login (AUTH-01, AUTH-02, AUTH-03, AUTH-04) + botao "Entrar
+ * com Google" (GAUTH-01, GAUTH-04).
  *
  * Regras desta task (T10):
  * - Campos `required` no HTML bloqueiam o submit nativamente quando algum
@@ -18,18 +23,36 @@ import styles from "./login.module.css";
  * - Erro de rede/indisponibilidade -> mensagem de retry, formulario
  *   reabilitado (nunca trava em loading).
  * - Sucesso -> `router.push('/')` + `router.refresh()`.
+ * - "Entrar com Google" navega o browser inteiro via `signInWithOAuth` — o
+ *   tratamento de erro relevante (dominio errado, falha na troca de codigo)
+ *   acontece no servidor (`app/auth/callback/route.ts`) e volta como
+ *   `?erro=` na URL de `/login` (ver `erroInicial`).
  *
  * Visual: campos e CTA alinhados ao mockup (#screen-login).
  */
-export default function LoginForm() {
+export default function LoginForm({ erroInicial = null }: LoginFormProps) {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [manterConectado, setManterConectado] = useState(true);
   const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(erroInicial);
   const [dicaSenha, setDicaSenha] = useState(false);
+
+  function handleEntrarComGoogle() {
+    const supabase = createBrowserClient();
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          hd: "01tec.com.br",
+          prompt: "select_account",
+        },
+      },
+    });
+  }
 
   async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -143,6 +166,19 @@ export default function LoginForm() {
         disabled={carregando}
       >
         {carregando ? "Entrando..." : "Entrar"}
+      </button>
+
+      <div className={styles.divider} role="separator">
+        <span>ou</span>
+      </div>
+
+      <button
+        type="button"
+        className={styles.googleButton}
+        onClick={handleEntrarComGoogle}
+        disabled={carregando}
+      >
+        Entrar com Google
       </button>
     </form>
   );
