@@ -8,8 +8,15 @@ import styles from "./ajuda.module.css";
 
 const TIPOS: TipoRelato[] = ["Bug", "Melhoria", "Dúvida"];
 
+interface ValoresIniciais {
+  tipo: TipoRelato;
+  titulo: string;
+  descricao: string;
+}
+
 interface HelpModalProps {
   onClose: () => void;
+  valoresIniciais?: ValoresIniciais;
 }
 
 interface SucessoEnvio {
@@ -17,13 +24,13 @@ interface SucessoEnvio {
   numero: number;
 }
 
-export function HelpModal({ onClose }: HelpModalProps) {
+export function HelpModal({ onClose, valoresIniciais }: HelpModalProps) {
   const pathname = usePathname();
   const tela = resolveScreenTitle(pathname).titulo;
 
-  const [tipo, setTipo] = useState<TipoRelato>("Bug");
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
+  const [tipo, setTipo] = useState<TipoRelato>(valoresIniciais?.tipo ?? "Bug");
+  const [titulo, setTitulo] = useState(valoresIniciais?.titulo ?? "");
+  const [descricao, setDescricao] = useState(valoresIniciais?.descricao ?? "");
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState<SucessoEnvio | null>(null);
   const [erro, setErro] = useState<string | null>(null);

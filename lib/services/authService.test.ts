@@ -103,6 +103,65 @@ describe("authService.getSessionUser", () => {
     );
   });
 
+  it("User com ativo = false -> retorna null e grava Log tipo ERRO (USUARIO_INATIVO)", async () => {
+    enfileirarSupabaseAuth(
+      vi.fn().mockResolvedValueOnce({
+        data: { user: { id: "user-inativo", email: "inativo@example.com" } },
+        error: null,
+      }),
+    );
+    mockFindUnique.mockResolvedValueOnce({
+      id: "user-inativo",
+      nome: "Inativo",
+      email: "inativo@example.com",
+      role: Role.SOLICITANTE,
+      gestor_id: "gestor-1",
+      ativo: false,
+    } as never);
+
+    const result = await getSessionUser();
+
+    expect(result).toBeNull();
+    expect(mockRegistrar).toHaveBeenCalledTimes(1);
+    expect(mockRegistrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tipo: "ERRO",
+        entidade: "User",
+        entidade_id: "user-inativo",
+        acao: "USUARIO_INATIVO",
+        usuario_id: null,
+      }),
+    );
+  });
+
+  it("User com ativo = true -> comportamento inalterado", async () => {
+    enfileirarSupabaseAuth(
+      vi.fn().mockResolvedValueOnce({
+        data: { user: { id: "user-ativo", email: "ativo@example.com" } },
+        error: null,
+      }),
+    );
+    mockFindUnique.mockResolvedValueOnce({
+      id: "user-ativo",
+      nome: "Ativo",
+      email: "ativo@example.com",
+      role: Role.SOLICITANTE,
+      gestor_id: "gestor-1",
+      ativo: true,
+    } as never);
+
+    const result = await getSessionUser();
+
+    expect(result).toEqual({
+      id: "user-ativo",
+      nome: "Ativo",
+      email: "ativo@example.com",
+      role: Role.SOLICITANTE,
+      gestor_id: "gestor-1",
+    });
+    expect(mockRegistrar).not.toHaveBeenCalled();
+  });
+
   it("sem sessao (user null ou erro do Supabase) -> retorna null sem chamar logService", async () => {
     // Variante 1: auth.getUser() resolve sem erro mas sem user.
     enfileirarSupabaseAuth(

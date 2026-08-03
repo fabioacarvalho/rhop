@@ -11,13 +11,14 @@ describe("getVisibleGroups", () => {
     expect(itens).toEqual(["Minhas Solicitações", "Nova Solicitação"]);
   });
 
-  it("GESTOR ve Meu trabalho completo, Visao geral e Recrutamento, sem Administracao", () => {
+  it("GESTOR ve Meu trabalho completo, Visao geral, Recrutamento e Administracao (so Usuarios)", () => {
     const groups = getVisibleGroups(Role.GESTOR);
 
     expect(groups.map((g) => g.key)).toEqual([
       "meu-trabalho",
       "visao-geral",
       "recrutamento",
+      "administracao",
     ]);
 
     const meuTrabalho = groups.find((g) => g.key === "meu-trabalho")!;
@@ -26,9 +27,12 @@ describe("getVisibleGroups", () => {
       "Nova Solicitação",
       "Aprovações Pendentes",
     ]);
+
+    const administracao = groups.find((g) => g.key === "administracao")!;
+    expect(administracao.items.map((i) => i.label)).toEqual(["Usuários"]);
   });
 
-  it("RH_ADMIN ve os 4 grupos, 8 itens no total", () => {
+  it("RH_ADMIN ve os 4 grupos, 9 itens no total", () => {
     const groups = getVisibleGroups(Role.RH_ADMIN);
 
     expect(groups.map((g) => g.key)).toEqual([
@@ -39,7 +43,7 @@ describe("getVisibleGroups", () => {
     ]);
 
     const totalItens = groups.reduce((soma, g) => soma + g.items.length, 0);
-    expect(totalItens).toBe(8);
+    expect(totalItens).toBe(9);
   });
 
   it("grupo sem nenhum item visivel nao aparece no array retornado", () => {

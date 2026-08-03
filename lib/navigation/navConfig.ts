@@ -84,6 +84,11 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/auditoria-logs",
         roles: [Role.RH_ADMIN],
       },
+      {
+        label: "Usuários",
+        href: "/usuarios",
+        roles: [Role.GESTOR, Role.RH_ADMIN],
+      },
     ],
   },
 ];

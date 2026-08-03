@@ -77,6 +77,18 @@ export async function getSessionUser(): Promise<AuthenticatedUser | null> {
     return null;
   }
 
+  if (user.ativo === false) {
+    await registrar({
+      tipo: "ERRO",
+      entidade: "User",
+      entidade_id: user.id,
+      acao: "USUARIO_INATIVO",
+      usuario_id: null,
+      detalhes: { id: user.id, email: user.email },
+    });
+    return null;
+  }
+
   return {
     id: user.id,
     nome: user.nome,

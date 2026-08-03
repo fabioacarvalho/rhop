@@ -27,6 +27,7 @@ model User {
   email     String  @unique
   role      Role
   gestor_id String? @db.Uuid
+  ativo     Boolean @default(true)
 
   gestor       User?         @relation("Hierarquia", fields: [gestor_id], references: [id])
   equipe       User[]        @relation("Hierarquia")

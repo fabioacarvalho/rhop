@@ -1,0 +1,66 @@
+.wrap {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  max-width: 460px;
+  width: 100%;
+  background: var(--paper-raised);
+  border: 1px solid var(--linha);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px;
+  text-align: center;
+}
+
+.titulo {
+  font-family: var(--font-fraunces), serif;
+  font-size: 20px;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.texto {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin-bottom: 22px;
+}
+
+.acoes {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btnGhost {
+  background: var(--azul-100);
+  color: var(--azul-900);
+}
+
+.btnGhost:hover {
+  background: var(--azul-200);
+}
+
+.btnPrimary {
+  background: var(--amarelo-600);
+  color: var(--azul-900);
+}
+
+.btnPrimary:hover {
+  background: var(--amarelo-400);
+}
