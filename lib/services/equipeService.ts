@@ -293,3 +293,25 @@ export async function listarGeridasPor(
 export async function contarGeridasAtivasPor(userId: string): Promise<number> {
   return prisma.equipe.count({ where: { gestor_id: userId, ativo: true } });
 }
+
+/** Item de `buscarMembros()` — usado pelo bloco auxiliar de `/equipes/[id]/editar`. */
+export interface EquipeMembro {
+  nome: string;
+  email: string;
+  ativo: boolean;
+}
+
+/**
+ * Lista os `User` (`role === SOLICITANTE`) vinculados a `equipe_id` (T11,
+ * EQP-26) — leitura auxiliar simples para exibicao na tela de edicao de
+ * `Equipe`, sem paginacao (mesma decisao de escopo de `listar()`).
+ */
+export async function buscarMembros(equipeId: string): Promise<EquipeMembro[]> {
+  const membros = await prisma.user.findMany({
+    where: { equipe_id: equipeId },
+    select: { nome: true, email: true, ativo: true },
+    orderBy: { nome: "asc" },
+  });
+
+  return membros;
+}
