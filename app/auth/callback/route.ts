@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error || !data.user) {
+    console.error("exchangeCodeForSession falhou:", error);
     return NextResponse.redirect(`${origin}/login?erro=google`);
   }
 
