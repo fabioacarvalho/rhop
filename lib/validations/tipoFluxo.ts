@@ -17,6 +17,14 @@ export const PAPEIS_APROVADOR = ["GESTOR", "RH_ADMIN"] as const;
 export type PapelAprovador = (typeof PAPEIS_APROVADOR)[number];
 
 /**
+ * Categorias de `TipoFluxo` usadas para detecção de conflito de agenda entre
+ * membros da mesma equipe (RIA-11). `PADRAO` nunca dispara checagem de
+ * conflito.
+ */
+export const CATEGORIAS_TIPO_FLUXO = ["PADRAO", "FERIAS", "DAYOFF"] as const;
+export type CategoriaTipoFluxo = (typeof CATEGORIAS_TIPO_FLUXO)[number];
+
+/**
  * Valida um item de `TipoFluxo.campos_formulario` (`CampoFormularioDefinicao`
  * em `design.md`).
  *
@@ -60,6 +68,7 @@ export const tipoFluxoInputSchema = z.object({
     .array(campoFormularioSchema)
     .min(1, "campos_formulario deve ter ao menos 1 item."),
   etapas: z.array(z.enum(PAPEIS_APROVADOR)).min(1, "etapas deve ter ao menos 1 item."),
+  categoria: z.enum(CATEGORIAS_TIPO_FLUXO).default("PADRAO"),
 });
 
 export type TipoFluxoInput = z.infer<typeof tipoFluxoInputSchema>;

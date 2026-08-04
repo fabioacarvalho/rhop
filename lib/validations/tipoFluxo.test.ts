@@ -167,4 +167,34 @@ describe("tipoFluxoInputSchema", () => {
     );
     expect(resultado.success).toBe(false);
   });
+
+  it("assume 'categoria' como 'PADRAO' quando omitido", () => {
+    const resultado = tipoFluxoInputSchema.safeParse(tipoFluxoValido());
+    expect(resultado.success).toBe(true);
+    if (resultado.success) {
+      expect(resultado.data.categoria).toBe("PADRAO");
+    }
+  });
+
+  it.each(["PADRAO", "FERIAS", "DAYOFF"] as const)(
+    "aceita 'categoria' explícito: %s",
+    (categoria) => {
+      const resultado = tipoFluxoInputSchema.safeParse(
+        tipoFluxoValido({ categoria })
+      );
+      expect(resultado.success).toBe(true);
+      if (resultado.success) {
+        expect(resultado.data.categoria).toBe(categoria);
+      }
+    }
+  );
+
+  it("rejeita 'categoria' fora do enum", () => {
+    const resultado = tipoFluxoInputSchema.safeParse(
+      tipoFluxoValido({
+        categoria: "FOLGA" as unknown as TipoFluxoInput["categoria"],
+      })
+    );
+    expect(resultado.success).toBe(false);
+  });
 });
