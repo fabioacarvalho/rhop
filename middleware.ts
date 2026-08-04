@@ -37,7 +37,10 @@ export async function middleware(request: NextRequest) {
  * Adaptado do exemplo oficial de "Negative matching" da documentação do
  * Next.js para middleware/proxy
  * (https://nextjs.org/docs/app/api-reference/file-conventions/proxy#negative-matching):
- * exclui assets estáticos/arquivos de metadata e a página pública `/login`.
+ * exclui assets estáticos/arquivos de metadata, a página pública `/login` e
+ * `auth/callback` (GAUTH-01, GAUTH-03) — sem essa exclusão, o primeiro hit ao
+ * callback (ainda sem cookie de sessão) seria redirecionado para `/login`
+ * pelo próprio middleware antes de `exchangeCodeForSession` rodar.
  *
  * Diferente do exemplo padrão da doc — que também exclui `api` — aqui `/api`
  * NÃO é excluído: o middleware precisa correr em `/api/*` para devolver 401
@@ -45,6 +48,6 @@ export async function middleware(request: NextRequest) {
  */
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|login).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|login|auth/callback).*)",
   ],
 };

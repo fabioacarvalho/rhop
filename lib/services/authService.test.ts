@@ -24,9 +24,12 @@ import { prisma } from "@/lib/prisma";
 import { registrar } from "@/lib/services/logService";
 import { Role } from "@/lib/generated/prisma/client";
 import {
+  autenticarComGoogle,
+  emailDominioValido,
   ErroNaoAutenticado,
   ErroNaoAutorizado,
   getSessionUser,
+  getSupabaseUser,
   requireUser,
 } from "./authService";
 
@@ -219,5 +222,147 @@ describe("authService.requireUser", () => {
 
     expect(erroAutorizacao).toBeInstanceOf(ErroNaoAutorizado);
     expect(erroAutorizacao).not.toBeInstanceOf(ErroNaoAutenticado);
+  });
+});
+
+describe("authService.emailDominioValido", () => {
+  it("aceita @01tec.com.br case-insensitive, rejeita outros dominios e valores ausentes", () => {
+    expect(emailDominioValido("Fulano@01TEC.com.br")).toBe(true);
+    expect(emailDominioValido("fulano@01tec.com.br")).toBe(true);
+    expect(emailDominioValido("fulano@gmail.com")).toBe(false);
+    expect(emailDominioValido(undefined)).toBe(false);
+    expect(emailDominioValido(null)).toBe(false);
+  });
+});
+
+describe("authService.getSupabaseUser", () => {
+  it("sem sessao Supabase -> retorna null", async () => {
+    enfileirarSupabaseAuth(
+      vi.fn().mockResolvedValueOnce({ data: { user: null }, error: null }),
+    );
+
+    const result = await getSupabaseUser();
+
+    expect(result).toBeNull();
+  });
+
+  it("sessao valida -> retorna {id, email, nome} usando user_metadata.full_name", async () => {
+    enfileirarSupabaseAuth(
+      vi.fn().mockResolvedValueOnce({
+        data: {
+          user: {
+            id: "user-1",
+            email: "fulano@01tec.com.br",
+            user_metadata: { full_name: "Fulano da Silva" },
+          },
+        },
+        error: null,
+      }),
+    );
+
+    const result = await getSupabaseUser();
+
+    expect(result).toEqual({
+      id: "user-1",
+      email: "fulano@01tec.com.br",
+      nome: "Fulano da Silva",
+    });
+  });
+
+  it("sessao valida sem full_name -> usa fallback name, depois email", async () => {
+    enfileirarSupabaseAuth(
+      vi.fn().mockResolvedValueOnce({
+        data: {
+          user: {
+            id: "user-2",
+            email: "ciclano@01tec.com.br",
+            user_metadata: { name: "Ciclano" },
+          },
+        },
+        error: null,
+      }),
+    );
+
+    const comName = await getSupabaseUser();
+    expect(comName?.nome).toBe("Ciclano");
+
+    enfileirarSupabaseAuth(
+      vi.fn().mockResolvedValueOnce({
+        data: {
+          user: {
+            id: "user-3",
+            email: "beltrano@01tec.com.br",
+            user_metadata: {},
+          },
+        },
+        error: null,
+      }),
+    );
+
+    const semMetadata = await getSupabaseUser();
+    expect(semMetadata?.nome).toBe("beltrano@01tec.com.br");
+  });
+});
+
+describe("authService.autenticarComGoogle", () => {
+  const BASE = {
+    id: "user-1",
+    email: "fulano@01tec.com.br",
+    email_confirmed_at: "2026-01-01T00:00:00Z",
+    user_metadata: {} as Record<string, unknown>,
+  };
+
+  it("dominio fora de @01tec.com.br -> negado, sem consultar o Prisma", async () => {
+    const result = await autenticarComGoogle({
+      ...BASE,
+      email: "fulano@gmail.com",
+    });
+
+    expect(result).toEqual({ status: "negado" });
+    expect(mockFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("email_confirmed_at ausente -> negado, sem consultar o Prisma", async () => {
+    const result = await autenticarComGoogle({
+      ...BASE,
+      email_confirmed_at: null,
+    });
+
+    expect(result).toEqual({ status: "negado" });
+    expect(mockFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("user_metadata.email_verified === false -> negado, sem consultar o Prisma", async () => {
+    const result = await autenticarComGoogle({
+      ...BASE,
+      user_metadata: { email_verified: false },
+    });
+
+    expect(result).toEqual({ status: "negado" });
+    expect(mockFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("email ausente -> negado, sem consultar o Prisma", async () => {
+    const result = await autenticarComGoogle({ ...BASE, email: null });
+
+    expect(result).toEqual({ status: "negado" });
+    expect(mockFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("dominio/verificacao ok + User existente -> permitido", async () => {
+    mockFindUnique.mockResolvedValueOnce({ id: "user-1" } as never);
+
+    const result = await autenticarComGoogle(BASE);
+
+    expect(result).toEqual({ status: "permitido" });
+    expect(mockFindUnique).toHaveBeenCalledWith({ where: { id: "user-1" } });
+  });
+
+  it("dominio/verificacao ok + User inexistente -> onboarding_equipe", async () => {
+    mockFindUnique.mockResolvedValueOnce(null);
+
+    const result = await autenticarComGoogle(BASE);
+
+    expect(result).toEqual({ status: "onboarding_equipe" });
   });
 });

@@ -474,6 +474,69 @@ export async function listarElegiveisComoGestor(): Promise<
 }
 
 /**
+ * Entrada de `provisionarViaGoogle` — `equipe_id` ja escolhido pelo proprio
+ * usuario no onboarding obrigatorio (GAUTH-10), nunca inferido.
+ */
+export interface ProvisionarViaGoogleInput {
+  id: string;
+  nome: string;
+  email: string;
+  equipe_id: string;
+}
+
+/**
+ * Auto-provisiona um `User` (`role = SOLICITANTE`) a partir do primeiro
+ * login Google sem cadastro previo (GAUTH-07 revisado, GAUTH-08): reusa
+ * `provisionar` (mesma validacao de `equipe_id`), idempotente para reenvio
+ * duplicado/corrida entre abas, e grava `Log AUDITORIA` so na criacao nova.
+ */
+export async function provisionarViaGoogle(
+  input: ProvisionarViaGoogleInput,
+): Promise<User> {
+  const existente = await prisma.user.findUnique({
+    where: { id: input.id },
+  });
+  if (existente) {
+    return existente;
+  }
+
+  let usuario: User;
+  try {
+    usuario = await provisionar({
+      id: input.id,
+      nome: input.nome,
+      email: input.email,
+      role: Role.SOLICITANTE,
+      equipe_id: input.equipe_id,
+    });
+  } catch (erro) {
+    if (erro instanceof ErroValidacaoUsuario) {
+      // Corrida entre duas requisicoes simultaneas: a outra pode ter
+      // vencido e criado o `User` entre o `findUnique` acima e este
+      // `create`. Re-checa por `id` antes de repropagar.
+      const criadoPelaOutraRequisicao = await prisma.user.findUnique({
+        where: { id: input.id },
+      });
+      if (criadoPelaOutraRequisicao) {
+        return criadoPelaOutraRequisicao;
+      }
+    }
+    throw erro;
+  }
+
+  await registrar({
+    tipo: "AUDITORIA",
+    entidade: "User",
+    entidade_id: usuario.id,
+    acao: "CRIACAO_AUTO_GOOGLE",
+    usuario_id: null,
+    detalhes: { email: usuario.email, equipe_id: input.equipe_id, origem: "google" },
+  });
+
+  return usuario;
+}
+
+/**
  * Busca um `User` completo por `id`, aplicando o mesmo escopo de `listar`
  * (usado pela pagina de edicao). Fora do escopo do `GESTOR` -> mesmo erro
  * de "nao encontrado" (nao revela existencia do registro).
