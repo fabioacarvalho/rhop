@@ -65,6 +65,7 @@ export default function TipoFluxoForm({
   const [erroValidacao, setErroValidacao] = useState<string | null>(null);
   const [erroSubmissao, setErroSubmissao] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
 
   async function handleSubmit(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -123,6 +124,36 @@ export default function TipoFluxoForm({
     }
   }
 
+  async function handleExcluir() {
+    if (!tipoFluxoId) return;
+    if (!confirm("Tem certeza que deseja excluir esta configuração de fluxo?")) return;
+
+    setErroValidacao(null);
+    setErroSubmissao(null);
+    setExcluindo(true);
+
+    try {
+      const resposta = await fetch(`/api/tipos-fluxo/${tipoFluxoId}`, {
+        method: "DELETE",
+      });
+
+      if (!resposta.ok) {
+        const corpo = await resposta.json().catch(() => ({}));
+        setErroSubmissao(
+          corpo.error ?? `Falha ao excluir tipo de fluxo (status ${resposta.status}).`
+        );
+        setExcluindo(false);
+        return;
+      }
+
+      router.push("/configuracao-fluxos");
+      router.refresh();
+    } catch {
+      setErroSubmissao("Não foi possível excluir o tipo de fluxo. Tente novamente.");
+      setExcluindo(false);
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className={`${styles.card} ${styles.ruled}`}>
       <div className={styles.field}>
@@ -173,6 +204,17 @@ export default function TipoFluxoForm({
           <p role="alert" className={styles.formError}>
             {erroValidacao ?? erroSubmissao}
           </p>
+        )}
+        {modo === "editar" && (
+          <button
+            type="button"
+            onClick={handleExcluir}
+            disabled={excluindo || enviando}
+            className={`${styles.btn} ${styles.btnLg} ${styles.btnDanger}`}
+            style={!(erroValidacao || erroSubmissao) ? { marginRight: "auto" } : undefined}
+          >
+            {excluindo ? "Excluindo..." : "Excluir"}
+          </button>
         )}
         <Link
           href="/configuracao-fluxos"

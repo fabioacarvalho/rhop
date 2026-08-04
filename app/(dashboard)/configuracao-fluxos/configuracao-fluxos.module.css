@@ -82,6 +82,18 @@
   border-color: var(--azul-500);
 }
 
+.btnDanger {
+  background: transparent;
+  color: var(--vermelho);
+  border: 1.5px solid var(--vermelho);
+  padding: 6px 14px;
+  font-size: 12.5px;
+}
+
+.btnDanger:hover:not(:disabled) {
+  background: var(--vermelho-bg);
+}
+
 .empty {
   background: var(--paper-raised);
   border: 1px dashed var(--linha);
