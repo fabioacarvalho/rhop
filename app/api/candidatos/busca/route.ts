@@ -34,7 +34,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const busca = await buscar(resultado.data.texto, resultado.data.n);
+    const busca = await buscar(resultado.data.texto, resultado.data.n, {
+      habilidades: resultado.data.habilidades,
+      localizacao: resultado.data.localizacao,
+      ferramentas: resultado.data.ferramentas,
+      idiomas: resultado.data.idiomas,
+    });
 
     return Response.json(busca, { status: 200 });
   } catch (erro) {

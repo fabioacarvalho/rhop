@@ -75,6 +75,12 @@ function lerTetoMaximo(): number {
 export async function buscar(
   texto: string,
   n: number,
+  filtros?: {
+    habilidades?: string;
+    localizacao?: string;
+    ferramentas?: string;
+    idiomas?: string;
+  }
 ): Promise<ResultadoBusca> {
   const teto = lerTetoMaximo();
 
@@ -82,7 +88,13 @@ export async function buscar(
     throw new ErroNInvalido(teto);
   }
 
-  const vetor = await embeddingService.gerar(texto);
+  let queryExpandida = texto;
+  if (filtros?.habilidades) queryExpandida += `\nHabilidades desejadas: ${filtros.habilidades}`;
+  if (filtros?.localizacao) queryExpandida += `\nLocalidade preferida: ${filtros.localizacao}`;
+  if (filtros?.ferramentas) queryExpandida += `\nFerramentas chave: ${filtros.ferramentas}`;
+  if (filtros?.idiomas) queryExpandida += `\nIdiomas exigidos: ${filtros.idiomas}`;
+
+  const vetor = await embeddingService.gerar(queryExpandida);
   if (!vetor) {
     throw new ErroBuscaIndisponivel();
   }

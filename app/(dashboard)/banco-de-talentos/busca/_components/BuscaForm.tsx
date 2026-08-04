@@ -22,6 +22,10 @@ const N_PADRAO = 20;
 export function BuscaForm() {
   const [texto, setTexto] = useState("");
   const [n, setN] = useState(String(N_PADRAO));
+  const [habilidades, setHabilidades] = useState("");
+  const [localizacao, setLocalizacao] = useState("");
+  const [ferramentas, setFerramentas] = useState("");
+  const [idiomas, setIdiomas] = useState("");
   const [resultado, setResultado] = useState<ResultadoBusca | null>(null);
   const [erroValidacao, setErroValidacao] = useState<string | null>(null);
   const [erroApi, setErroApi] = useState<string | null>(null);
@@ -50,7 +54,14 @@ export function BuscaForm() {
       const res = await fetch("/api/candidatos/busca", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto, n: nNumero }),
+        body: JSON.stringify({ 
+          texto, 
+          n: nNumero,
+          ...(habilidades ? { habilidades } : {}),
+          ...(localizacao ? { localizacao } : {}),
+          ...(ferramentas ? { ferramentas } : {}),
+          ...(idiomas ? { idiomas } : {}),
+        }),
       });
 
       if (!res.ok) {
@@ -91,6 +102,61 @@ export function BuscaForm() {
             onChange={(e) => setN(e.target.value)}
             disabled={buscando}
           />
+        </label>
+
+        <label className={styles.field}>
+          <span>Habilidades</span>
+          <select value={habilidades} onChange={e => setHabilidades(e.target.value)} disabled={buscando}>
+            <option value="">Todas</option>
+            <option value="Frontend">Frontend</option>
+            <option value="Backend">Backend</option>
+            <option value="Fullstack">Fullstack</option>
+            <option value="Mobile">Mobile</option>
+            <option value="DevOps">DevOps</option>
+            <option value="Design">Design</option>
+            <option value="QA">QA</option>
+            <option value="Dados">Dados</option>
+            <option value="Produto">Produto</option>
+          </select>
+        </label>
+
+        <label className={styles.field}>
+          <span>Localização</span>
+          <select value={localizacao} onChange={e => setLocalizacao(e.target.value)} disabled={buscando}>
+            <option value="">Todas</option>
+            <option value="Remoto">Remoto</option>
+            <option value="Híbrido">Híbrido</option>
+            <option value="Presencial">Presencial</option>
+          </select>
+        </label>
+
+        <label className={styles.field}>
+          <span>Ferramentas</span>
+          <select value={ferramentas} onChange={e => setFerramentas(e.target.value)} disabled={buscando}>
+            <option value="">Todas</option>
+            <option value="React">React</option>
+            <option value="Node.js">Node.js</option>
+            <option value="Python">Python</option>
+            <option value="Java">Java</option>
+            <option value="C#">C#</option>
+            <option value="SQL">SQL</option>
+            <option value="NoSQL">NoSQL</option>
+            <option value="AWS">AWS</option>
+            <option value="Docker">Docker</option>
+            <option value="Figma">Figma</option>
+          </select>
+        </label>
+
+        <label className={styles.field}>
+          <span>Idiomas</span>
+          <select value={idiomas} onChange={e => setIdiomas(e.target.value)} disabled={buscando}>
+            <option value="">Todos</option>
+            <option value="Inglês Básico">Inglês Básico</option>
+            <option value="Inglês Intermediário">Inglês Intermediário</option>
+            <option value="Inglês Avançado/Fluente">Inglês Avançado/Fluente</option>
+            <option value="Espanhol">Espanhol</option>
+            <option value="Francês">Francês</option>
+          </select>
         </label>
 
         <button type="submit" className={styles.btn} disabled={buscando}>

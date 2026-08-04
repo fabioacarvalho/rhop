@@ -9,6 +9,10 @@ import { z } from "zod";
 export const talentoBuscaInputSchema = z.object({
   texto: z.string().min(1, "texto é obrigatório."),
   n: z.number().int().positive().default(20),
+  habilidades: z.string().optional(),
+  localizacao: z.string().optional(),
+  ferramentas: z.string().optional(),
+  idiomas: z.string().optional(),
 });
 
 export type TalentoBuscaInput = z.infer<typeof talentoBuscaInputSchema>;
