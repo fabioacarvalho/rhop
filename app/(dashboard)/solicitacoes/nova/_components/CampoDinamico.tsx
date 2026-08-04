@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import type { CampoFormularioDefinicao } from "@/lib/validations/tipoFluxo";
+import { createBrowserClient } from "@/lib/supabase/client";
 import styles from "../../solicitacoes.module.css";
 
 interface CampoDinamicoProps {
@@ -26,6 +28,32 @@ export default function CampoDinamico({
   onChange,
   erro,
 }: CampoDinamicoProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const supabase = createBrowserClient();
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("anexos")
+      .upload(fileName, file);
+
+    if (uploadError) {
+      alert(`Erro no upload: ${uploadError.message}`);
+      setIsUploading(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from("anexos").getPublicUrl(fileName);
+    onChange(data.publicUrl);
+    setIsUploading(false);
+  };
+
   return (
     <label className={styles.field}>
       <span className={styles.fieldLabel}>{campo.rotulo}</span>
@@ -63,14 +91,30 @@ export default function CampoDinamico({
           onChange={(e) => onChange(e.target.value)}
         />
       ) : campo.tipo === "anexo" ? (
-        <input
-          type="url"
-          placeholder="https://..."
-          className={styles.input}
-          value={value}
-          required={campo.obrigatorio}
-          onChange={(e) => onChange(e.target.value)}
-        />
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          {value ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <a href={value} target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-fg-accent)" }}>
+                Ver arquivo atual
+              </a>
+              <button type="button" onClick={() => onChange("")} style={{ fontSize: "0.875rem", color: "var(--color-danger-fg)" }}>
+                Remover
+              </button>
+            </div>
+          ) : (
+            <>
+              <input
+                type="file"
+                className={styles.input}
+                required={campo.obrigatorio}
+                onChange={handleFileUpload}
+                disabled={isUploading}
+                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+              />
+              {isUploading && <span style={{ fontSize: "0.875rem", color: "var(--color-fg-muted)" }}>Enviando arquivo...</span>}
+            </>
+          )}
+        </div>
       ) : (
         <input
           type="text"

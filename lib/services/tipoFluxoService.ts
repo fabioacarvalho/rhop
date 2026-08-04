@@ -193,3 +193,61 @@ export async function editar(
 
   return tipoFluxo;
 }
+
+/**
+ * Sinaliza exclusao bloqueada por `Solicitacao` vinculada ao
+ * `TipoFluxo` — quem chama `excluir` deve converter isso em `409`.
+ */
+export class ErroExclusaoBloqueada extends Error {
+  constructor(quantidade: number) {
+    super(
+      `Nao e possivel excluir: existem ${quantidade} solicitacao(oes) usando este tipo de fluxo.`,
+    );
+    this.name = "ErroExclusaoBloqueada";
+  }
+}
+
+/**
+ * Exclui um `TipoFluxo` existente.
+ *
+ * Ordem de checagem (ambas ANTES de qualquer escrita):
+ * 1. Conta `Solicitacao` com `tipo_fluxo_id = id`.
+ *    Se houver alguma, lanca `ErroExclusaoBloqueada` (mensagem cita a
+ *    quantidade) — `prisma.tipoFluxo.delete` e `logService.registrar` NAO
+ *    sao chamados.
+ * 2. Sem pendencias, tenta o `delete`. `id` inexistente e traduzido em
+ *    `ErroNaoEncontrado` (erro `P2025` do Prisma).
+ *
+ * Em sucesso, grava `Log` tipo `AUDITORIA` (`acao: 'EXCLUSAO'`).
+ */
+export async function excluir(id: string, usuarioId: string): Promise<void> {
+  const vinculadas = await prisma.solicitacao.count({
+    where: { tipo_fluxo_id: id },
+  });
+
+  if (vinculadas > 0) {
+    throw new ErroExclusaoBloqueada(vinculadas);
+  }
+
+  try {
+    await prisma.tipoFluxo.delete({
+      where: { id },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new ErroNaoEncontrado();
+    }
+    throw error;
+  }
+
+  await registrar({
+    tipo: "AUDITORIA",
+    entidade: "TipoFluxo",
+    entidade_id: id,
+    acao: "EXCLUSAO",
+    usuario_id: usuarioId,
+  });
+}

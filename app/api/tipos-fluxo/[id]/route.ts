@@ -6,8 +6,10 @@ import {
 import {
   buscarPorId,
   editar,
+  excluir,
   ErroNaoEncontrado,
   ErroEdicaoBloqueada,
+  ErroExclusaoBloqueada,
   ErroValidacaoTipoFluxo,
 } from "@/lib/services/tipoFluxoService";
 import { tipoFluxoInputSchema } from "@/lib/validations/tipoFluxo";
@@ -97,6 +99,39 @@ export async function PUT(request: Request, { params }: RouteContext) {
       return Response.json({ error: erro.message }, { status: 409 });
     }
     if (erro instanceof ErroValidacaoTipoFluxo) {
+      return Response.json({ error: erro.message }, { status: 409 });
+    }
+    throw erro;
+  }
+}
+
+/**
+ * `DELETE /api/tipos-fluxo/[id]`
+ *
+ * - Sem sessao/papel != `RH_ADMIN` -> 401/403.
+ * - `id` inexistente (`ErroNaoEncontrado`) -> 404.
+ * - Exclusao bloqueada por `Solicitacao` vinculada (`ErroExclusaoBloqueada`) -> 409.
+ * - Sucesso -> 204 No Content.
+ */
+export async function DELETE(_request: Request, { params }: RouteContext) {
+  try {
+    const usuario = await requireUser([Role.RH_ADMIN]);
+    const { id } = await params;
+
+    await excluir(id, usuario.id);
+
+    return new Response(null, { status: 204 });
+  } catch (erro) {
+    if (erro instanceof ErroNaoAutenticado) {
+      return Response.json({ error: erro.message }, { status: 401 });
+    }
+    if (erro instanceof ErroNaoAutorizado) {
+      return Response.json({ error: erro.message }, { status: 403 });
+    }
+    if (erro instanceof ErroNaoEncontrado) {
+      return Response.json({ error: erro.message }, { status: 404 });
+    }
+    if (erro instanceof ErroExclusaoBloqueada) {
       return Response.json({ error: erro.message }, { status: 409 });
     }
     throw erro;
