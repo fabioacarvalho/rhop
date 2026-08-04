@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     $queryRaw: vi.fn(),
+    candidato: {
+      findMany: vi.fn(),
+    },
   },
 }));
 
@@ -26,6 +29,7 @@ import {
 } from "./talentoSearchService";
 
 const mockQueryRaw = vi.mocked(prisma.$queryRaw);
+const mockFindMany = vi.mocked(prisma.candidato.findMany);
 const mockGerar = vi.mocked(embeddingService.gerar);
 const mockGerarJustificativa = vi.mocked(gerarJustificativaRanking);
 
@@ -33,6 +37,8 @@ const originalTeto = process.env.TALENTO_BUSCA_N_MAXIMO;
 
 beforeEach(() => {
   mockQueryRaw.mockReset();
+  mockFindMany.mockReset();
+  mockFindMany.mockResolvedValue([] as never);
   mockGerar.mockReset();
   mockGerarJustificativa.mockReset();
   delete process.env.TALENTO_BUSCA_N_MAXIMO;
@@ -52,7 +58,7 @@ const CANDIDATO_BRUTO = {
   email: "marina@empresa.com",
   solicitacao_id: null,
   curriculo_texto: "Engenheira de dados.",
-  transcricao_texto: "Entrevista solida.",
+  parecer_tecnico: "Entrevista solida.",
   score: 0.87,
 };
 
@@ -88,9 +94,12 @@ describe("talentoSearchService.buscar", () => {
     expect(mockGerarJustificativa).not.toHaveBeenCalled();
   });
 
-  it("ranking feliz -> retorna candidatos com score e justificativa", async () => {
+  it("ranking feliz -> retorna candidatos com score, justificativa e tags", async () => {
     mockGerar.mockResolvedValueOnce([0.1, 0.2]);
     mockQueryRaw.mockResolvedValueOnce([CANDIDATO_BRUTO]);
+    mockFindMany.mockResolvedValueOnce([
+      { id: "cand-1", tags: [{ id: "tag-1", nome: "Sênior" }] },
+    ] as never);
     mockGerarJustificativa.mockResolvedValueOnce("Forte aderencia ao perfil.");
 
     const resultado = await buscar("engenheiro de dados", 10);
@@ -104,8 +113,22 @@ describe("talentoSearchService.buscar", () => {
         solicitacao_id: null,
         score: 0.87,
         justificativa: "Forte aderencia ao perfil.",
+        tags: [{ id: "tag-1", nome: "Sênior" }],
       },
     ]);
+  });
+
+  it("candidato sem tags vinculadas -> tags vem como array vazio", async () => {
+    mockGerar.mockResolvedValueOnce([0.1, 0.2]);
+    mockQueryRaw.mockResolvedValueOnce([CANDIDATO_BRUTO]);
+    mockFindMany.mockResolvedValueOnce([
+      { id: "cand-1", tags: [] },
+    ] as never);
+    mockGerarJustificativa.mockResolvedValueOnce("Forte aderencia ao perfil.");
+
+    const resultado = await buscar("engenheiro de dados", 10);
+
+    expect(resultado.candidatos[0].tags).toEqual([]);
   });
 
   it("justificativa falha isolada em um item -> nao interrompe os demais", async () => {

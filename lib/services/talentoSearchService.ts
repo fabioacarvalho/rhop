@@ -30,6 +30,7 @@ export interface CandidatoRankeado {
   solicitacao_id: string | null;
   score: number;
   justificativa: string | null;
+  tags: { id: string; nome: string }[];
 }
 
 export interface ResultadoBusca {
@@ -43,7 +44,7 @@ interface CandidatoBruto {
   email: string;
   solicitacao_id: string | null;
   curriculo_texto: string;
-  transcricao_texto: string;
+  parecer_tecnico: string;
   score: number;
 }
 
@@ -89,7 +90,7 @@ export async function buscar(
   const vetorLiteral = embeddingService.formatarVetorLiteral(vetor);
 
   const brutos = await prisma.$queryRaw<CandidatoBruto[]>`
-    SELECT id, nome, email, solicitacao_id, curriculo_texto, transcricao_texto,
+    SELECT id, nome, email, solicitacao_id, curriculo_texto, parecer_tecnico,
            1 - (embedding <=> ${vetorLiteral}::vector) AS score
     FROM candidatos
     WHERE status_embedding = 'processado'
@@ -101,6 +102,10 @@ export async function buscar(
     return { candidatos: [], disponivel: false };
   }
 
+  const tagsPorCandidato = await buscarTagsPorCandidato(
+    brutos.map((bruto) => bruto.id),
+  );
+
   const candidatos: CandidatoRankeado[] = [];
 
   for (const bruto of brutos) {
@@ -110,7 +115,7 @@ export async function buscar(
         candidatoId: bruto.id,
         nome: bruto.nome,
         curriculoTexto: bruto.curriculo_texto,
-        transcricaoTexto: bruto.transcricao_texto,
+        transcricaoTexto: bruto.parecer_tecnico,
         queryTexto: texto,
       });
     } catch {
@@ -124,8 +129,26 @@ export async function buscar(
       solicitacao_id: bruto.solicitacao_id,
       score: Number(bruto.score),
       justificativa,
+      tags: tagsPorCandidato.get(bruto.id) ?? [],
     });
   }
 
   return { candidatos, disponivel: true };
+}
+
+/**
+ * Anexa as Tags de cada candidato do ranking (TAL-35) — feito como uma
+ * segunda consulta via Prisma Client normal (não `$queryRaw`), já que a
+ * consulta de similaridade acima roda em SQL raw por causa da coluna
+ * `embedding` e não pode usar `include`.
+ */
+async function buscarTagsPorCandidato(
+  ids: string[],
+): Promise<Map<string, { id: string; nome: string }[]>> {
+  const registros = await prisma.candidato.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, tags: { select: { id: true, nome: true } } },
+  });
+
+  return new Map(registros.map((registro) => [registro.id, registro.tags]));
 }
