@@ -159,17 +159,17 @@ export async function reprocessarEmbedding(
 }
 
 /**
- * Gera o embedding a partir do texto combinado (currículo + transcrição) e
+ * Gera o embedding a partir do texto combinado (currículo + parecer técnico) e
  * persiste o resultado — sucesso grava o vetor via `$executeRaw` e marca
  * `processado`; falha marca `falhou`. Nunca lança.
  */
 async function processarEmbedding(
   candidatoId: string,
   curriculoTexto: string,
-  transcricaoTexto: string,
+  parecerTecnico: string,
 ): Promise<void> {
   const vetor = await embeddingService.gerar(
-    `${curriculoTexto}\n${transcricaoTexto}`,
+    `${curriculoTexto}\n${parecerTecnico}`,
   );
 
   if (vetor) {
