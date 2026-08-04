@@ -46,7 +46,7 @@ export interface SolicitanteOpcao {
  * (ver `equipeService.listarGeridasPor`). Sem equipe gerida, o escopo cai
  * para só as próprias solicitações — não lança, não quebra.
  */
-async function visibilidadeSolicitacaoWhere(
+export async function visibilidadeSolicitacaoWhere(
   usuario: AuthenticatedUser,
 ): Promise<Prisma.SolicitacaoWhereInput> {
   if (usuario.role === Role.RH_ADMIN) {
