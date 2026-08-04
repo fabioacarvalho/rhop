@@ -107,6 +107,15 @@ export default async function Page() {
                     <td>
                       <div className={styles.nome}>{candidato.nome}</div>
                       <div className={styles.email}>{candidato.email}</div>
+                      {candidato.tags.length > 0 ? (
+                        <div className={styles.tagBadges}>
+                          {candidato.tags.map((tag) => (
+                            <span key={tag.id} className={styles.tagBadge}>
+                              {tag.nome}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                     </td>
                     <td>
                       <span className={`${styles.stamp} ${stamp.classe}`}>

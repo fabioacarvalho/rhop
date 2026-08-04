@@ -26,6 +26,16 @@ export function CandidatoCard({ candidato }: Props) {
         ) : null}
       </div>
 
+      {candidato.tags.length > 0 ? (
+        <div className={styles.tagBadges}>
+          {candidato.tags.map((tag) => (
+            <span key={tag.id} className={styles.tagBadge}>
+              {tag.nome}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
       <div className={styles.scoreRow}>
         <div className={styles.scoreBarTrack}>
           <div
