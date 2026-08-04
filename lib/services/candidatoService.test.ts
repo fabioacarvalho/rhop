@@ -166,6 +166,37 @@ describe("candidatoService.cadastrar", () => {
     );
   });
 
+  it("persiste curriculo_arquivo_url quando informado", async () => {
+    mockCreate.mockResolvedValueOnce(CANDIDATO_CRIADO);
+    mockGerar.mockResolvedValueOnce([0.1, 0.2]);
+
+    await cadastrar(
+      { ...DADOS_VALIDOS, curriculo_arquivo_url: "https://storage/x.pdf" },
+      "user-1",
+    );
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          curriculo_arquivo_url: "https://storage/x.pdf",
+        }),
+      }),
+    );
+  });
+
+  it("envia curriculo_arquivo_url null quando ausente no input", async () => {
+    mockCreate.mockResolvedValueOnce(CANDIDATO_CRIADO);
+    mockGerar.mockResolvedValueOnce([0.1, 0.2]);
+
+    await cadastrar(DADOS_VALIDOS, "user-1");
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ curriculo_arquivo_url: null }),
+      }),
+    );
+  });
+
   it("nao conecta tags quando tag_ids ausente", async () => {
     mockCreate.mockResolvedValueOnce(CANDIDATO_CRIADO);
     mockGerar.mockResolvedValueOnce([0.1, 0.2]);

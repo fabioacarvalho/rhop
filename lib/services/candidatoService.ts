@@ -62,6 +62,7 @@ export async function cadastrar(
         email: dados.email,
         telefone: dados.telefone,
         curriculo_texto: dados.curriculo_texto,
+        curriculo_arquivo_url: dados.curriculo_arquivo_url ?? null,
         parecer_tecnico: dados.parecer_tecnico,
         solicitacao_id: dados.solicitacao_id ?? null,
         status_embedding: "pendente",

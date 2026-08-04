@@ -90,4 +90,20 @@ describe("candidatoInputSchema", () => {
       ).success,
     ).toBe(true);
   });
+
+  it("aceita curriculo_arquivo_url ausente (campo opcional)", () => {
+    expect(candidatoInputSchema.safeParse(candidatoValido()).success).toBe(
+      true,
+    );
+  });
+
+  it("aceita curriculo_arquivo_url quando informado", () => {
+    expect(
+      candidatoInputSchema.safeParse(
+        candidatoValido({
+          curriculo_arquivo_url: "https://storage.example/curriculos/x.pdf",
+        }),
+      ).success,
+    ).toBe(true);
+  });
 });

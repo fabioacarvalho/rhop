@@ -6,12 +6,16 @@ import { z } from "zod";
  * ciclo), mas o campo já existe no schema (`design.md`). `parecer_tecnico`
  * substitui `transcricao_texto` (rodada 2, mesma obrigatoriedade).
  * `tag_ids` é opcional — cadastro sem nenhuma Tag selecionada é válido.
+ * `curriculo_arquivo_url` é opcional — só presente quando o currículo foi
+ * enviado como arquivo (TAL-43/TAL-47), preenchido pela extração prévia em
+ * `POST /api/candidatos/extrair-curriculo`.
  */
 export const candidatoInputSchema = z.object({
   nome: z.string().min(1, "nome é obrigatório."),
   email: z.string().email("email inválido."),
   telefone: z.string().min(1, "telefone é obrigatório."),
   curriculo_texto: z.string().min(1, "curriculo_texto é obrigatório."),
+  curriculo_arquivo_url: z.string().optional(),
   parecer_tecnico: z.string().min(1, "parecer_tecnico é obrigatório."),
   solicitacao_id: z.string().optional(),
   tag_ids: z.array(z.string()).optional(),
