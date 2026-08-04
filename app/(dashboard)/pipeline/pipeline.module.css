@@ -1,0 +1,247 @@
+/* ===== Board (scroll horizontal) ===== */
+
+.kanbanBoard {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 4px 18px;
+  scroll-snap-type: x proximity;
+}
+
+.kanbanBoard::-webkit-scrollbar {
+  height: 8px;
+}
+
+.kanbanBoard::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kanbanBoard::-webkit-scrollbar-thumb {
+  background: var(--azul-200);
+  border-radius: 8px;
+}
+
+/* ===== Coluna ===== */
+
+.kanbanColumn {
+  flex: 0 0 280px;
+  width: 280px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-raised);
+  border: 1px solid var(--linha);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  scroll-snap-align: start;
+  overflow: hidden;
+}
+
+.kanbanColumnHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 14px 12px;
+  border-bottom: 1.5px solid var(--linha);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.kanbanColumnCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--azul-100);
+  color: var(--azul-700);
+  font-family: var(--font-inter), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.kanbanColumnCountGood {
+  background: var(--verde-bg);
+  color: var(--verde);
+}
+
+.kanbanColumnCountBad {
+  background: var(--vermelho-bg);
+  color: var(--vermelho);
+}
+
+/* ===== Lista de cards (altura fixa, rolagem interna) ===== */
+
+.kanbanList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  min-height: 140px;
+  max-height: 620px;
+  overflow-y: auto;
+}
+
+/* ===== Card ===== */
+
+.kanbanCard {
+  background: var(--paper-raised);
+  border: 1px solid var(--linha);
+  border-left: 3px solid var(--azul-500);
+  border-radius: 9px;
+  padding: 12px 13px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kanbanCardLate {
+  border-color: var(--laranja);
+  border-left-color: var(--laranja);
+  background: var(--laranja-bg);
+}
+
+.kanbanCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kanbanChipTipo {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--azul-700);
+  background: var(--azul-100);
+  padding: 3px 9px;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
+}
+
+.kanbanStamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 8px 3px 7px;
+  border-radius: 5px;
+  border: 1.5px dashed currentColor;
+  white-space: nowrap;
+}
+
+.kanbanStamp::before {
+  content: "●";
+  font-size: 6px;
+}
+
+.kanbanStampPendente {
+  color: var(--azul-700);
+  background: var(--azul-100);
+}
+
+.kanbanStampAtrasado {
+  color: var(--laranja);
+  background: var(--laranja-bg);
+}
+
+.kanbanStampAprovado {
+  color: var(--verde);
+  background: var(--verde-bg);
+}
+
+.kanbanStampRejeitado {
+  color: var(--vermelho);
+  background: var(--vermelho-bg);
+}
+
+.kanbanStampCancelado {
+  color: var(--ink-soft);
+  background: var(--linha);
+}
+
+.kanbanSolicitante {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.kanbanProto {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11.5px;
+  color: var(--azul-700);
+  font-weight: 600;
+}
+
+.kanbanMeta {
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+/* ===== "+N outras" ===== */
+
+.kanbanMoreList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kanbanMoreBtn {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 1.5px dashed var(--linha);
+  border-radius: 8px;
+  padding: 9px 8px;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--azul-500);
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.1s ease, border-color 0.1s ease;
+}
+
+.kanbanMoreBtn:hover {
+  color: var(--azul-700);
+  border-color: var(--azul-500);
+}
+
+/* ===== Estado vazio por coluna ===== */
+
+.kanbanEmpty {
+  text-align: center;
+  padding: 28px 14px;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+}
+
+/* ===== Responsivo ===== */
+
+@media (max-width: 640px) {
+  .kanbanColumn {
+    flex: 0 0 250px;
+    width: 250px;
+    max-width: 250px;
+  }
+
+  .kanbanList {
+    max-height: 520px;
+  }
+}
