@@ -57,6 +57,11 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/insights",
         roles: [Role.GESTOR, Role.RH_ADMIN],
       },
+      {
+        label: "Pipeline",
+        href: "/pipeline",
+        roles: [Role.GESTOR, Role.RH_ADMIN],
+      },
     ],
   },
   {
