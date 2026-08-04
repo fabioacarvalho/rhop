@@ -79,7 +79,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                   fontWeight: 600,
                   cursor: "pointer",
                   background: "#e4ecfa",
-                  color: "#142a52",
+                  color: "#2e5e8c",
                 }}
               >
                 Tentar novamente
@@ -95,7 +95,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                   fontWeight: 600,
                   cursor: "pointer",
                   background: "#dda02a",
-                  color: "#142a52",
+                  color: "#2e5e8c",
                 }}
               >
                 Reportar este erro no GitHub

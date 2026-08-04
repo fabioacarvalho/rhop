@@ -171,7 +171,7 @@ export function InsightsPanel({ tipos }: Props) {
                 >
                   <defs>
                     <linearGradient id="insightBar" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3567B0" />
+                      <stop offset="0%" stopColor="#5F90BC" />
                       <stop offset="100%" stopColor="#1B356A" />
                     </linearGradient>
                   </defs>
@@ -197,7 +197,7 @@ export function InsightsPanel({ tipos }: Props) {
                       borderRadius: 8,
                       fontSize: 12.5,
                     }}
-                    labelStyle={{ color: "#142A52", fontWeight: 600 }}
+                    labelStyle={{ color: "#2E5E8C", fontWeight: 600 }}
                   />
                   <Bar
                     dataKey="quantidade"

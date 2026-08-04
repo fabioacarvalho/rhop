@@ -29,7 +29,7 @@ Explicitamente excluído. Documentado para prevenir scope creep.
 | Reprocessamento em lote de embeddings antigos se o modelo mudar | PRD §6 — fora de escopo. |
 | Decisão automática de aprovação/reprovação de candidato | PRD §6 — módulo só ranqueia e explica; decisão final é humana. |
 | Vincular candidato a uma `Solicitacao` existente | RF7, P1 (estende o núcleo) — não faz parte deste ciclo. |
-| Tela de detalhe do candidato + histórico de buscas | RF8, P2 (enriquecimento) — corta primeiro se necessário. |
+| Histórico de buscas no detalhe do candidato | RF8, continua P3 — rodada 3 traz a tela de detalhe (dados completos + resumo de IA), mas não o histórico de buscas em que o candidato apareceu bem rankeado. |
 | Distinção "próprios vs equipe" na visibilidade | PRD §4 — GESTOR e RH_ADMIN veem a base inteira; não há filtro por criador. |
 | Edição ou exclusão de candidato após cadastro | Não descrito no PRD. Ver Questões em Aberto. |
 | Edição de parecer técnico após cadastro (torná-lo opcional/preenchível depois) | Decisão desta rodada (`context.md`): parecer técnico continua obrigatório no cadastro, igual à transcrição antes — sem tela de edição posterior. |
@@ -161,6 +161,31 @@ Explicitamente excluído. Documentado para prevenir scope creep.
 
 ---
 
+### P1: Detalhe do Candidato com Resumo de IA ⭐ Nesta rodada (Rodada 3)
+
+**User Story**: Como GESTOR ou RH_ADMIN, quero clicar em um candidato na listagem e ver os dados completos dele junto do resumo gerado por IA, para avaliar o perfil sem precisar reabrir currículo e parecer técnico linha a linha.
+
+**Why P1 nesta rodada**: A listagem hoje só mostra nome, e-mail, status e Tags — pra decidir de verdade o avaliador precisa do currículo, do parecer técnico e de uma leitura sintetizada, e hoje não existe onde ver isso (PRD RF8, promovido de P3 pra este ciclo, sem o histórico de buscas).
+
+> **Decisão desta rodada**: hoje não existe nenhum resumo de IA salvo por candidato — só a `justificativa` gerada em tempo real durante uma busca, que não é persistida. Esta rodada adiciona um `resumo_ia` persistido em `Candidato`, gerado de forma não bloqueante junto do embedding (no cadastro e no reprocessamento), seguindo o mesmo padrão de resiliência já usado em `Solicitacao`/`Aprovacao`.
+
+**Acceptance Criteria**:
+
+1. WHEN um `Candidato` é criado com sucesso THEN o system SHALL disparar, de forma não bloqueante e junto da geração do embedding, a geração de um `resumo_ia` (síntese do perfil a partir de currículo + parecer técnico).
+2. WHEN a geração do `resumo_ia` é bem-sucedida THEN o system SHALL persistir o texto em `Candidato.resumo_ia`.
+3. WHEN a geração do `resumo_ia` falha (timeout, erro, rate limit) THEN o system SHALL manter o candidato salvo, `resumo_ia` permanece `null`, e o system SHALL gravar `Log` tipo `ERRO` — a falha NUNCA bloqueia o cadastro nem o embedding.
+4. WHEN o usuário aciona "Reprocessar" em um candidato com `status_embedding = falhou` THEN o system SHALL também tentar regenerar `resumo_ia` junto do embedding, com o mesmo tratamento de sucesso/falha.
+5. WHEN um usuário GESTOR ou RH_ADMIN clica em um candidato na listagem THEN o system SHALL navegar para uma tela de detalhe daquele candidato específico.
+6. WHEN a tela de detalhe é aberta THEN o system SHALL exibir nome, e-mail, telefone, `status_embedding`, Tags vinculadas, vaga vinculada (se houver), currículo completo (texto colado ou extraído do arquivo) e parecer técnico completo.
+7. WHEN o candidato exibido tem `resumo_ia` preenchido THEN o system SHALL exibir esse resumo em destaque visual (estilo `.callout-ia`), separado dos dados brutos.
+8. WHEN o candidato exibido tem `resumo_ia == null` (falha de IA ou candidato cadastrado antes desta funcionalidade existir) THEN o system SHALL exibir os dados brutos normalmente, sem bloquear a tela, com indicação neutra de que o resumo não está disponível — nunca erro.
+9. WHEN um usuário SOLICITANTE tenta acessar a rota/tela de detalhe THEN o system SHALL negar o acesso no backend.
+10. WHEN o `id` do candidato na URL não corresponde a nenhum registro THEN o system SHALL responder com estado "candidato não encontrado" (404), sem erro não tratado.
+
+**Independent Test**: Cadastrar um candidato novo, confirmar que após o processamento `resumo_ia` aparece preenchido; clicar nele na listagem e ver o resumo em destaque + todos os dados. Repetir com um candidato cujo `resumo_ia` é `null` (simulando falha de IA) e confirmar que a tela abre normalmente, só sem o destaque de resumo. Tentar acessar a rota como SOLICITANTE e confirmar bloqueio.
+
+---
+
 ### P2: Vincular Candidato a uma Vaga
 
 **User Story**: Como GESTOR ou RH_ADMIN, quero vincular um candidato a uma `Solicitacao` (Vaga) existente, para relacionar o banco de talentos ao fluxo de aprovação já existente.
@@ -176,15 +201,15 @@ Explicitamente excluído. Documentado para prevenir scope creep.
 
 ---
 
-### P3: Detalhe do Candidato e Histórico de Buscas
+### P3: Histórico de Buscas do Candidato
 
-**User Story**: Como GESTOR ou RH_ADMIN, quero ver o currículo completo, a transcrição completa e o histórico de buscas em que o candidato apareceu bem rankeado, para entender melhor o perfil antes de decidir.
+**User Story**: Como GESTOR ou RH_ADMIN, quero ver, no detalhe do candidato, o histórico de buscas em que ele apareceu bem rankeado, para entender em quais perfis buscados ele já se destacou.
 
-**Why P3**: Enriquecimento (PRD RF8) — não bloqueia o valor central do módulo.
+**Why P3**: Enriquecimento (PRD RF8) — currículo completo e parecer técnico já entram na tela de detalhe da Rodada 3 (P1 acima); só o histórico de buscas (que exige persistir buscas anteriores, hoje inexistente) continua fora deste ciclo.
 
 **Acceptance Criteria**:
 
-1. WHEN o usuário abre o detalhe de um candidato THEN o system SHALL exibir currículo completo, transcrição completa e histórico de buscas em que apareceu bem rankeado.
+1. WHEN o usuário abre o detalhe de um candidato THEN o system SHALL exibir o histórico de buscas em que apareceu bem rankeado (perfil buscado, posição, score).
 
 ---
 
@@ -200,6 +225,8 @@ Explicitamente excluído. Documentado para prevenir scope creep.
 - WHEN o nome de uma Tag já existe (case-insensitive) THEN o system SHALL bloquear criação/edição com mensagem clara, nunca criar duplicata silenciosa.
 - WHEN um arquivo de currículo enviado não é PDF, `.docx` nem `.md` THEN o system SHALL rejeitar antes de processar, com mensagem clara, sem impedir cadastro via texto colado.
 - WHEN a extração de texto de um arquivo válido (PDF/Word/Markdown) falha por corrupção/conteúdo não textual THEN o system SHALL orientar colar o texto manualmente, sem bloquear o cadastro por outros meios.
+- WHEN a geração do `resumo_ia` falha (cadastro ou reprocessamento) THEN o system SHALL manter o candidato salvo e visível, `resumo_ia` permanece `null`, e gravar `Log` tipo `ERRO` — nunca bloqueia cadastro, embedding ou reprocessamento.
+- WHEN um candidato foi cadastrado antes desta funcionalidade existir (portanto nunca teve `resumo_ia` gerado) THEN o system SHALL exibir a tela de detalhe normalmente, tratando `resumo_ia == null` do mesmo jeito que uma falha de IA (fallback gracioso, nunca erro).
 
 ---
 
@@ -233,7 +260,7 @@ Cada requisito recebe um ID único para rastreio entre design, tasks e validaç�
 | TAL-22 | P2: Upload PDF (armazenamento) | Design | Pending |
 | TAL-23 | P2: Vincular a Vaga | Design | Pending |
 | TAL-24 | P2: Vincular a Vaga (opcional) | Design | Pending |
-| TAL-25 | P3: Detalhe e histórico de buscas | Design | Pending |
+| TAL-25 | P3: Histórico de buscas | Design | Pending |
 | TAL-26 | Edge: validação de N | Design | Pending |
 | TAL-27 | Edge: pgvector indisponível | Design | Pending |
 | TAL-28 | P1: Cadastrar Candidato (e-mail duplicado) | Design | Pending |
@@ -256,6 +283,16 @@ Cada requisito recebe um ID único para rastreio entre design, tasks e validaç�
 | TAL-45 | P1: Upload de Currículo (falha de extração) | In Tasks (R5, R6) | **Bloqueado** — mesmo motivo de TAL-43 |
 | TAL-46 | P1: Upload de Currículo (formato não suportado rejeitado) | In Tasks (R5, R6) | Implementing (coberto por unit tests; não exercitado no UAT manual por causa do bloqueio de TAL-43) |
 | TAL-47 | P1: Upload de Currículo (armazenamento Supabase Storage) | In Tasks (R5, R6) | **Bloqueado** — bucket `curriculos` ausente no Supabase real |
+| TAL-48 | P1: Detalhe do Candidato (geração `resumo_ia` não bloqueante no cadastro) | Design | Pending |
+| TAL-49 | P1: Detalhe do Candidato (persistência do `resumo_ia`) | Design | Pending |
+| TAL-50 | P1: Detalhe do Candidato (falha do `resumo_ia`) | Design | Pending |
+| TAL-51 | P1: Detalhe do Candidato (Reprocessar também regenera `resumo_ia`) | Design | Pending |
+| TAL-52 | P1: Detalhe do Candidato (navegação a partir da listagem) | Design | Pending |
+| TAL-53 | P1: Detalhe do Candidato (dados completos exibidos) | Design | Pending |
+| TAL-54 | P1: Detalhe do Candidato (resumo IA em destaque) | Design | Pending |
+| TAL-55 | P1: Detalhe do Candidato (fallback gracioso sem resumo) | Design | Pending |
+| TAL-56 | P1: Detalhe do Candidato (autorização SOLICITANTE bloqueado) | Design | Pending |
+| TAL-57 | P1: Detalhe do Candidato (candidato inexistente → 404) | Design | Pending |
 
 **Mapa ID → critério:**
 
@@ -306,12 +343,22 @@ Cada requisito recebe um ID único para rastreio entre design, tasks e validaç�
 - **TAL-45** — Falha de extração orienta colar manualmente, não bloqueia cadastro (P1-Upload #3).
 - **TAL-46** — Formato não suportado é rejeitado antes de processar (P1-Upload #4).
 - **TAL-47** — Arquivo original armazenado em Supabase Storage (bucket `curriculos`) (P1-Upload #5).
+- **TAL-48** — `resumo_ia` gerado de forma não bloqueante, junto do embedding, no cadastro (P1-Detalhe #1).
+- **TAL-49** — Sucesso persiste `resumo_ia` em `Candidato` (P1-Detalhe #2).
+- **TAL-50** — Falha mantém `resumo_ia = null`, grava Log ERRO, não bloqueia (P1-Detalhe #3).
+- **TAL-51** — "Reprocessar" regenera `resumo_ia` junto do embedding (P1-Detalhe #4).
+- **TAL-52** — Clique no candidato na listagem navega pro detalhe (P1-Detalhe #5).
+- **TAL-53** — Detalhe exibe nome/e-mail/telefone/status/Tags/vaga/currículo completo/parecer técnico completo (P1-Detalhe #6).
+- **TAL-54** — `resumo_ia` preenchido exibido em destaque estilo `.callout-ia` (P1-Detalhe #7).
+- **TAL-55** — `resumo_ia == null` exibe dados brutos com fallback neutro, nunca erro (P1-Detalhe #8).
+- **TAL-56** — SOLICITANTE bloqueado no backend da rota/tela de detalhe (P1-Detalhe #9).
+- **TAL-57** — `id` inexistente retorna estado "candidato não encontrado" (P1-Detalhe #10).
 
 **ID format:** `TAL-[NUMBER]`
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 47 total (31 da rodada 1 + 16 novos nesta rodada). TAL-32 a TAL-47 mapeados às tasks R1–R13 (`tasks.md`), implementados e com `npx prisma validate && npm run build`/`npx vitest run` verdes — status `Implementing` até UAT manual confirmar (ver `tasks.md`, seção "Notas da execução real"). TAL-20/21/22 marcados como superseded, não contam mais separadamente.
+**Coverage:** 57 total (31 da rodada 1 + 16 da rodada 2 + 10 novos na rodada 3). TAL-32 a TAL-47 mapeados às tasks R1–R13 (`tasks.md`), implementados e com `npx prisma validate && npm run build`/`npx vitest run` verdes — status `Implementing` até UAT manual confirmar (ver `tasks.md`, seção "Notas da execução real"). TAL-20/21/22 marcados como superseded, não contam mais separadamente. TAL-48 a TAL-57 (rodada 3) ainda `Pending` — aguardando Design.
 
 ---
 
@@ -326,6 +373,9 @@ Como saberemos que a feature está bem-sucedida (PRD §11):
 - [ ] Upload de PDF, Word e Markdown extrai texto corretamente para um currículo de teste padrão de cada formato (texto puro, não escaneado/corrompido).
 - [ ] RH_Admin cria uma Tag, vincula a um candidato no cadastro, e ela aparece na listagem e no ranking de busca.
 - [ ] Desativar uma Tag a remove das opções de novo cadastro sem quebrar candidatos já vinculados a ela.
+- [ ] Cadastrar um candidato novo gera `resumo_ia` com sucesso e ele aparece em destaque na tela de detalhe.
+- [ ] Clicar em qualquer candidato na listagem abre a tela de detalhe correta, com todos os dados e (quando existir) o resumo de IA.
+- [ ] Falha simulada na geração do `resumo_ia` não impede cadastro, embedding, nem abertura da tela de detalhe — só o destaque de resumo fica ausente.
 
 ---
 
@@ -344,10 +394,19 @@ Zonas cinzentas relevantes para decisão do usuário antes de avançar para Desi
 9. ✅ **RESOLVIDO** (ver `context.md`, rodada 2) — **Cardinalidade Candidato↔Tag**: many-to-many (múltiplas tags por candidato).
 10. ✅ **RESOLVIDO** (ver `context.md`, rodada 2) — **Coexistência upload vs texto colado**: ambos coexistem.
 11. ✅ **RESOLVIDO** (ver `context.md`, rodada 2) — **Quem gerencia Tags**: só RH_ADMIN.
+12. ✅ **RESOLVIDO** (ver `context.md`, rodada 3) — **Origem do "resumo de IA salvo previamente"**: não existia campo persistido; decisão foi criar `Candidato.resumo_ia`, gerado no cadastro/reprocessamento (mesmo padrão não bloqueante do embedding), em vez de reaproveitar a `justificativa` efêmera da busca.
+13. **Backfill de `resumo_ia` para candidatos já cadastrados antes desta rodada.** Ficam com `resumo_ia = null` permanentemente, a menos que passem por "Reprocessar" (só disponível quando `status_embedding = falhou`) ou um novo mecanismo de regeneração seja desenhado. Assumido aceitável nesta rodada (fallback gracioso cobre o caso) — **a confirmar no Design** se vale a pena um botão de "Gerar resumo" independente do reprocessamento de embedding.
 
 ---
 
 ## Changelog
+
+### Rodada 3 (2026-08-04)
+
+- Nova tela de Detalhe do Candidato (TAL-52, TAL-53, TAL-56, TAL-57) — clique na listagem abre dados completos (currículo, parecer técnico, telefone, status, Tags, vaga vinculada).
+- Novo campo persistido `Candidato.resumo_ia` (TAL-48 a TAL-51), gerado de forma não bloqueante junto do embedding (cadastro e reprocessamento), exibido em destaque no detalhe (TAL-54) com fallback gracioso quando ausente (TAL-55).
+- P3 "Detalhe do Candidato e Histórico de Buscas" (TAL-25) reduzido para só "Histórico de Buscas" — currículo/parecer/resumo IA saem do P3 e entram no P1 desta rodada.
+- Out of Scope atualizado: só o histórico de buscas continua fora deste ciclo, não mais a tela de detalhe inteira.
 
 ### Rodada 2 (2026-08-03)
 

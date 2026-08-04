@@ -1,14 +1,41 @@
 # Banco de Talentos Context
 
-**Gathered:** 2026-07-31 (rodada 1) + 2026-08-03 (rodada 2)
+**Gathered:** 2026-07-31 (rodada 1) + 2026-08-03 (rodada 2) + 2026-08-04 (rodada 3)
 **Spec:** `.specs/features/banco-de-talentos/spec.md`
-**Status:** Ready for design
+**Status:** Ready for design (rodada 3)
 
 ---
 
 ## Feature Boundary
 
-Módulo de triagem de currículos com IA: cadastro de candidato (currículo colado ou enviado como arquivo + parecer técnico), classificação por Tags, listagem com status de embedding e Tags, e busca/ranking em texto livre com justificativa gerada por IA. Vínculo a `Solicitacao`, tela de detalhe/histórico e importação de planilhas ficam fora deste ciclo (ver spec.md).
+Módulo de triagem de currículos com IA: cadastro de candidato (currículo colado ou enviado como arquivo + parecer técnico), classificação por Tags, listagem com status de embedding e Tags, busca/ranking em texto livre com justificativa gerada por IA, e tela de detalhe do candidato com resumo de IA persistido. Vínculo a `Solicitacao`, histórico de buscas no detalhe e importação de planilhas ficam fora deste ciclo (ver spec.md).
+
+---
+
+## Rodada 3 — Implementation Decisions (2026-08-04)
+
+### Origem do "resumo de IA salvo previamente"
+
+- Não existia campo persistido de resumo por candidato — só a `justificativa` gerada em tempo real durante uma busca (efêmera, ligada a um texto de busca específico, nunca salva).
+- Decisão: criar `Candidato.resumo_ia`, gerado de forma **não bloqueante junto do embedding** (mesma chamada de processamento, no cadastro e no reprocessamento), seguindo o padrão já usado em `Solicitacao.resumo_ia`/`Aprovacao.resumo_ia`. Falha nunca bloqueia cadastro/embedding/reprocessamento — grava `Log ERRO` e mantém `resumo_ia = null`.
+- Alternativa descartada: reaproveitar a última `justificativa` de busca (exigiria persistir histórico de busca, que não existe e está fora de escopo).
+
+### Escopo da tela de detalhe
+
+- Entra nesta rodada: navegação por clique na listagem, dados completos (nome, e-mail, telefone, status_embedding, Tags, vaga vinculada, currículo completo, parecer técnico completo) e o `resumo_ia` em destaque (estilo `.callout-ia`) quando existir.
+- Fica fora: histórico de buscas em que o candidato apareceu bem rankeado (P3, `TAL-25`, sem mudança nesta rodada).
+
+### Candidatos antigos sem `resumo_ia`
+
+- Candidatos cadastrados antes desta funcionalidade ficam com `resumo_ia = null` permanentemente, a menos que passem por "Reprocessar" (só visível quando `status_embedding = falhou`).
+- Tela de detalhe trata isso com o mesmo fallback gracioso de uma falha de IA — nunca erro, nunca bloqueia a tela.
+- Se vale a pena um botão de "Gerar resumo" independente do reprocessamento de embedding fica **a decidir no Design** (ver Questão em Aberto #13 na spec).
+
+### Agent's Discretion (rodada 3)
+
+- Layout exato da tela de detalhe (ordem dos campos, onde o `.callout-ia` aparece em relação aos dados brutos) — seguir `docs/design-ux-ui/fluxorh-ui-layout-specs.md` e `docs/design-ux-ui/fluxorh-mockup.html` como referência visual.
+- Se a rota de detalhe é Server Component com fetch direto via `candidatoService` (mesmo padrão da listagem, sem round-trip por API) ou precisa de uma rota `GET /api/candidatos/[id]` dedicada — Design decide.
+- Prompt exato usado para gerar `resumo_ia` (tom, tamanho) — Design/implementação decide, seguindo o padrão já usado em `iaService.ts`.
 
 ---
 
