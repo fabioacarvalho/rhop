@@ -689,7 +689,7 @@ Todos ✅ — nenhuma restruturação necessária.
 ## Rodada 2 — Parecer Técnico, Tags e Upload Multi-formato
 
 **Design**: `.specs/features/banco-de-talentos/design.md`, seção "Rodada 2"
-**Status**: Concluído — R1 a R13 implementados e commitados; `npx prisma validate && npm run build` e `npx vitest run` verdes (ver `Riscos / Notas` ao final desta seção para o gap fechado fora do escopo original e cosméticos conhecidos). UAT manual em andamento.
+**Status**: Concluído — R1 a R13 implementados e commitados; `npx prisma validate && npm run build` e `npx vitest run` verdes; UAT manual concluído via dev server real (`playwright-skill`) contra o Supabase real do projeto. **Um bloqueio de infraestrutura foi encontrado e não corrigido nesta rodada** — ver "UAT manual (achados reais)" ao final desta seção.
 
 ## 0. Escopo desta rodada
 
@@ -1150,6 +1150,29 @@ de cada candidato como badges.
 - **Falha pré-existente e não relacionada**: `lib/navigation/navConfig.test.ts` falha (espera 10
   itens de nav, recebe 11) por causa de outra feature (`pipeline-kanban`) sendo desenvolvida em
   paralelo no mesmo diretório de trabalho, por outra sessão. Não é responsabilidade desta rodada.
-- **UAT manual**: ver seção "Riscos / Pontos a verificar" do `design.md` — bucket `curriculos` no
-  Supabase Storage nunca foi confirmado contra o projeto real antes desta rodada; verificação via
-  dev server/`playwright-skill` ficou para depois deste commit (ver resultado no resumo da sessão).
+### UAT manual (achados reais — via dev server + `playwright-skill`, projeto Supabase real)
+
+Rodado contra `npm run dev` + Supabase real do projeto (não mockado), usuários de teste
+`rh.admin@01tec.com.br`/`gestor@01tec.com.br` (`scripts/seed-users.ts`).
+
+**Confirmado funcionando (evidência: screenshots + logs do dev server)**:
+- TAL-42: GESTOR bloqueado com "Acesso restrito" em `/banco-de-talentos/tags`; RH_ADMIN acessa normalmente.
+- TAL-38/39: criar Tag funciona (`POST /api/tags` 201); nome duplicado bloqueia (`409`, confirmado num teste anterior de regressão).
+- TAL-40/41: ativar/desativar Tag funciona de ponta a ponta (`PATCH /api/tags/[id]` alterna `ativo` corretamente, confirmado lendo a tabela `tags` direto no banco após os cliques).
+- TAL-32/33/34: cadastro de candidato com `parecer_tecnico` (texto colado) + Tag selecionada funciona; candidato aparece na listagem com `status_embedding = processado` (embedding real da OpenAI rodou) e a badge da Tag aparece na linha.
+- TAL-35: badge da Tag aparece no card de ranking em `/banco-de-talentos/busca`, junto com justificativa de IA real e score.
+- TAL-44: cadastro via texto colado (sem upload de arquivo) continua funcionando normalmente — coexistência confirmada.
+
+**Achado — bloqueio de infraestrutura, não corrigido nesta rodada**:
+- `POST /api/candidatos/extrair-curriculo` retorna `500` para qualquer upload (`.pdf`/`.docx`/`.md`)
+  porque o bucket `curriculos` **não existe no projeto Supabase real** (`StorageApiError: Bucket not
+  found`, ver log do dev server). A extração de texto em si (`arquivoCurriculoService.extrairTexto`)
+  roda antes do erro e provavelmente funcionaria — o erro acontece na chamada seguinte,
+  `armazenarArquivo`, sem try/catch na rota (comportamento intencional, ver `design.md` Error
+  Handling Strategy: falha de Storage é infraestrutura, não regra de negócio, propaga como 500).
+  **TAL-43, TAL-45, TAL-46, TAL-47 ficam formalmente não verificados em ambiente real** até o bucket
+  `curriculos` ser criado no projeto Supabase — decisão de criar o bucket (nome, público/privado,
+  políticas de acesso) não foi tomada unilateralmente aqui, precisa de confirmação do usuário.
+- Dados de teste (`Candidato UAT ...`, `TagUAT ...`, `Debug Toggle ...`) ficaram gravados no banco
+  real do projeto durante o UAT — não removidos automaticamente (exclusão de `Candidato`/`Tag` está
+  fora de escopo do produto, ver `spec.md`); avisado ao usuário para limpeza manual se desejado.

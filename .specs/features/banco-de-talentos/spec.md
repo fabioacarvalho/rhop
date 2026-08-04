@@ -240,22 +240,22 @@ Cada requisito recebe um ID único para rastreio entre design, tasks e validaç�
 | TAL-29 | P1: Listar Candidatos (ação Reprocessar) | Design | Pending |
 | TAL-30 | P1: Buscar e Ranquear (bloqueio de N inválido) | Design | Pending |
 | TAL-31 | P1: Buscar e Ranquear (layout cards + score) | Design | Pending |
-| TAL-32 | P1: Cadastrar Candidato (rename parecer técnico) | In Tasks (R1, R3, R7, R9, R12) | Implementing |
-| TAL-33 | P1: Classificar com Tags (vínculo many-to-many no cadastro) | In Tasks (R1, R3, R7, R9, R12) | Implementing |
-| TAL-34 | P1: Classificar com Tags (badges na listagem) | In Tasks (R7, R13) | Implementing |
-| TAL-35 | P1: Classificar com Tags (badges no ranking de busca) | In Tasks (R7, R13) | Implementing |
-| TAL-36 | P1: Classificar com Tags (Tag inativa some das opções, mantém vínculo) | In Tasks (R4, R8) | Implementing |
-| TAL-37 | P1: Gerenciar Tags (listar) | In Tasks (R4, R8, R10, R11) | Implementing |
-| TAL-38 | P1: Gerenciar Tags (criar) | In Tasks (R2, R4, R8, R10) | Implementing |
-| TAL-39 | P1: Gerenciar Tags (nome único) | In Tasks (R1, R4, R8, R10) | Implementing |
-| TAL-40 | P1: Gerenciar Tags (editar) | In Tasks (R4, R8, R10) | Implementing |
-| TAL-41 | P1: Gerenciar Tags (ativar/desativar) | In Tasks (R4, R8, R10) | Implementing |
-| TAL-42 | P1: Gerenciar Tags (autorização RH_ADMIN-only) | In Tasks (R8, R11) | Implementing |
-| TAL-43 | P1: Upload de Currículo (PDF/Word/Markdown, extração + conferência) | In Tasks (R5, R6, R12) | Implementing |
-| TAL-44 | P1: Upload de Currículo (coexistência com texto colado) | In Tasks (R12) | Implementing |
-| TAL-45 | P1: Upload de Currículo (falha de extração) | In Tasks (R5, R6) | Implementing |
-| TAL-46 | P1: Upload de Currículo (formato não suportado rejeitado) | In Tasks (R5, R6) | Implementing |
-| TAL-47 | P1: Upload de Currículo (armazenamento Supabase Storage) | In Tasks (R5, R6) | Implementing |
+| TAL-32 | P1: Cadastrar Candidato (rename parecer técnico) | In Tasks (R1, R3, R7, R9, R12) | Verified (UAT manual) |
+| TAL-33 | P1: Classificar com Tags (vínculo many-to-many no cadastro) | In Tasks (R1, R3, R7, R9, R12) | Verified (UAT manual) |
+| TAL-34 | P1: Classificar com Tags (badges na listagem) | In Tasks (R7, R13) | Verified (UAT manual) |
+| TAL-35 | P1: Classificar com Tags (badges no ranking de busca) | In Tasks (R7, R13) | Verified (UAT manual) |
+| TAL-36 | P1: Classificar com Tags (Tag inativa some das opções, mantém vínculo) | In Tasks (R4, R8) | Implementing (coberto por unit tests; não repetido no UAT manual) |
+| TAL-37 | P1: Gerenciar Tags (listar) | In Tasks (R4, R8, R10, R11) | Verified (UAT manual) |
+| TAL-38 | P1: Gerenciar Tags (criar) | In Tasks (R2, R4, R8, R10) | Verified (UAT manual) |
+| TAL-39 | P1: Gerenciar Tags (nome único) | In Tasks (R1, R4, R8, R10) | Verified (UAT manual) |
+| TAL-40 | P1: Gerenciar Tags (editar) | In Tasks (R4, R8, R10) | Implementing (coberto por unit tests; UAT manual exercitou ativar/desativar, não editar nome/função) |
+| TAL-41 | P1: Gerenciar Tags (ativar/desativar) | In Tasks (R4, R8, R10) | Verified (UAT manual) |
+| TAL-42 | P1: Gerenciar Tags (autorização RH_ADMIN-only) | In Tasks (R8, R11) | Verified (UAT manual) |
+| TAL-43 | P1: Upload de Currículo (PDF/Word/Markdown, extração + conferência) | In Tasks (R5, R6, R12) | **Bloqueado** — bucket `curriculos` ausente no Supabase real, ver `tasks.md` "UAT manual (achados reais)" |
+| TAL-44 | P1: Upload de Currículo (coexistência com texto colado) | In Tasks (R12) | Verified (UAT manual) |
+| TAL-45 | P1: Upload de Currículo (falha de extração) | In Tasks (R5, R6) | **Bloqueado** — mesmo motivo de TAL-43 |
+| TAL-46 | P1: Upload de Currículo (formato não suportado rejeitado) | In Tasks (R5, R6) | Implementing (coberto por unit tests; não exercitado no UAT manual por causa do bloqueio de TAL-43) |
+| TAL-47 | P1: Upload de Currículo (armazenamento Supabase Storage) | In Tasks (R5, R6) | **Bloqueado** — bucket `curriculos` ausente no Supabase real |
 
 **Mapa ID → critério:**
 
