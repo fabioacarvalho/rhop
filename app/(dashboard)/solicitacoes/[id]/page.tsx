@@ -12,6 +12,7 @@ import {
 } from "@/lib/services/solicitacaoService";
 import { Role } from "@/lib/generated/prisma/client";
 import type { CampoFormularioDefinicao } from "@/lib/validations/tipoFluxo";
+import { FormattedIaSummary } from "@/components/FormattedIaSummary";
 import styles from "../solicitacoes.module.css";
 
 interface PageProps {
@@ -125,8 +126,11 @@ export default async function Page({ params }: PageProps) {
 
       <div className={`${styles.calloutIa} ${styles.calloutIaPage}`}>
         <div className={styles.calloutIaTag}>✦ Resumo por IA</div>
-        {solicitacao.resumo_ia_solicitante ??
-          "Resumo da IA indisponível no momento."}
+        {solicitacao.resumo_ia_solicitante ? (
+          <FormattedIaSummary text={solicitacao.resumo_ia_solicitante} />
+        ) : (
+          "Resumo da IA indisponível no momento."
+        )}
       </div>
 
       <div className={styles.card}>

@@ -1,4 +1,5 @@
 import type { CandidatoRankeado } from "@/lib/services/talentoSearchService";
+import { FormattedIaSummary } from "@/components/FormattedIaSummary";
 import styles from "../busca.module.css";
 
 type Props = {
@@ -49,7 +50,7 @@ export function CandidatoCard({ candidato }: Props) {
       {candidato.justificativa ? (
         <div className={styles.callout}>
           <div className={styles.calloutTag}>✦ Justificativa da IA</div>
-          {candidato.justificativa}
+          <FormattedIaSummary text={candidato.justificativa} />
         </div>
       ) : (
         <div className={`${styles.callout} ${styles.calloutFallback}`}>

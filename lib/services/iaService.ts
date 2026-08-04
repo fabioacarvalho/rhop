@@ -37,8 +37,10 @@ export async function gerarResumoSolicitacao(input: {
           role: "system",
           content:
             "Voce e um assistente de RH. Gere um resumo conciso em portugues " +
-            "para o aprovador decidir rapidamente, destacando contexto, " +
-            "urgencia e dados-chave da solicitacao.",
+            "para o aprovador decidir rapidamente. Organize em topicos com quebras de linha claras em Markdown:\n" +
+            "- **Contexto:** motivo e informacoes principais\n" +
+            "- **Urgencia:** nivel de prioridade ou prazo\n" +
+            "- **Dados chave:** dados criticos para decisao.",
         },
         {
           role: "user",

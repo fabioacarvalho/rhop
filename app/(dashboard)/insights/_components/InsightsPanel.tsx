@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import type { TipoFluxoResumo } from "@/lib/services/tipoFluxoService";
 import type { InsightResultado } from "@/lib/services/insightsService";
+import { FormattedIaSummary } from "@/components/FormattedIaSummary";
 import styles from "../insights.module.css";
 
 type Props = {
@@ -215,7 +216,7 @@ export function InsightsPanel({ tipos }: Props) {
               <div className={styles.calloutTag}>
                 ✦ Leitura da IA sobre os números acima
               </div>
-              {resultado.resumo_ia}
+              <FormattedIaSummary text={resultado.resumo_ia} />
             </div>
           ) : (
             <div className={`${styles.callout} ${styles.calloutFallback}`}>

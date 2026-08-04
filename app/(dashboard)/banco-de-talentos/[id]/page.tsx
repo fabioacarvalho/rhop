@@ -10,6 +10,7 @@ import {
   ErroNaoEncontrado,
 } from "@/lib/services/candidatoService";
 import { Role } from "@/lib/generated/prisma/client";
+import { FormattedIaSummary } from "@/components/FormattedIaSummary";
 import styles from "./detalhe.module.css";
 
 interface PageProps {
@@ -93,7 +94,11 @@ export default async function Page({ params }: PageProps) {
 
       <div className={styles.calloutIa}>
         <div className={styles.calloutIaTag}>✦ Resumo por IA</div>
-        {candidato.resumo_ia ?? "Resumo da IA indisponível no momento."}
+        {candidato.resumo_ia ? (
+          <FormattedIaSummary text={candidato.resumo_ia} />
+        ) : (
+          "Resumo da IA indisponível no momento."
+        )}
       </div>
 
       <div className={styles.card}>

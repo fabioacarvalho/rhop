@@ -1,0 +1,85 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.heading {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--azul-900);
+  margin-top: 4px;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+
+.kvRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.bulletKvRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--ink);
+  padding-left: 10px;
+  border-left: 2px solid var(--amarelo-400);
+  margin-left: 2px;
+}
+
+.kvLabel {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  color: var(--azul-800, #1b356a);
+  background: rgba(221, 160, 42, 0.14);
+  border: 1px solid rgba(221, 160, 42, 0.28);
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.kvValue {
+  color: var(--ink);
+  flex: 1;
+  min-width: 200px;
+}
+
+.bulletItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.bulletDot {
+  color: var(--amarelo-600);
+  font-weight: bold;
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.bulletText {
+  flex: 1;
+}
+
+.paragraph {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--ink);
+  margin: 0;
+}
