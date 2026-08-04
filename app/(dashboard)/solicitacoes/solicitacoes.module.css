@@ -229,6 +229,38 @@
   background: var(--vermelho-bg);
 }
 
+.rowClickable {
+  cursor: pointer;
+}
+
+.rowClickable:hover {
+  background: var(--paper-raised);
+}
+
+.calloutIa {
+  background: var(--amarelo-100);
+  border: 1px solid var(--amarelo-400);
+  border-left: 3px solid var(--amarelo-600);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--azul-900);
+}
+
+.calloutIaTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amarelo-700);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
 /* ===== Nova Solicitação ===== */
 
 .stack16 {
