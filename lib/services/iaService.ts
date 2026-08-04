@@ -340,3 +340,71 @@ async function registrarFalhaIaCandidato(
     detalhes,
   });
 }
+
+/**
+ * Gera uma sintese objetiva do perfil do candidato a partir do curriculo e do
+ * parecer tecnico (TAL-48), via OpenAI `gpt-4o-mini`, para exibicao na tela de
+ * detalhe do Banco de Talentos — sem comparacao com nenhuma busca especifica
+ * (diferente de `gerarJustificativaRanking`, que compara com um perfil buscado).
+ *
+ * Mesmo contrato "nunca lança" dos demais geradores deste arquivo: qualquer
+ * falha (chave ausente, erro de API, timeout, conteúdo vazio) grava `Log ERRO`
+ * (`entidade: "Candidato"`, `acao: "FALHA_IA"`) e retorna `null` — o candidato
+ * fica salvo normalmente, so sem `resumo_ia` (TAL-50).
+ */
+export async function gerarResumoCandidato(input: {
+  candidatoId: string;
+  nome: string;
+  curriculoTexto: string;
+  parecerTecnico: string;
+}): Promise<string | null> {
+  const { candidatoId, nome, curriculoTexto, parecerTecnico } = input;
+
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      await registrarFalhaIaCandidato(candidatoId, {
+        motivo: "OPENAI_API_KEY ausente",
+      });
+      return null;
+    }
+
+    const client = new OpenAI({ apiKey });
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Voce e um assistente de recrutamento. Gere uma sintese objetiva " +
+            "em portugues do perfil deste candidato, com base no curriculo e " +
+            "no parecer tecnico, para um avaliador decidir rapidamente sem " +
+            "precisar reler os dois textos completos.",
+        },
+        {
+          role: "user",
+          content: [
+            `Candidato: ${nome}`,
+            `Curriculo: ${curriculoTexto}`,
+            `Parecer tecnico: ${parecerTecnico}`,
+          ].join("\n"),
+        },
+      ],
+    });
+
+    const content = completion.choices[0]?.message?.content?.trim() ?? "";
+    if (!content) {
+      await registrarFalhaIaCandidato(candidatoId, {
+        motivo: "conteudo vazio da OpenAI",
+      });
+      return null;
+    }
+
+    return content;
+  } catch (error) {
+    await registrarFalhaIaCandidato(candidatoId, {
+      motivo: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
