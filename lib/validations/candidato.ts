@@ -1,17 +1,20 @@
 import { z } from "zod";
 
 /**
- * Valida o envelope de cadastro de candidato (TAL-06). `solicitacao_id` é
- * opcional — vínculo a `Solicitacao` é P2 (fora deste ciclo), mas o campo já
- * existe no schema (`design.md`).
+ * Valida o envelope de cadastro de candidato (TAL-06, TAL-32, TAL-33).
+ * `solicitacao_id` é opcional — vínculo a `Solicitacao` é P2 (fora deste
+ * ciclo), mas o campo já existe no schema (`design.md`). `parecer_tecnico`
+ * substitui `transcricao_texto` (rodada 2, mesma obrigatoriedade).
+ * `tag_ids` é opcional — cadastro sem nenhuma Tag selecionada é válido.
  */
 export const candidatoInputSchema = z.object({
   nome: z.string().min(1, "nome é obrigatório."),
   email: z.string().email("email inválido."),
   telefone: z.string().min(1, "telefone é obrigatório."),
   curriculo_texto: z.string().min(1, "curriculo_texto é obrigatório."),
-  transcricao_texto: z.string().min(1, "transcricao_texto é obrigatório."),
+  parecer_tecnico: z.string().min(1, "parecer_tecnico é obrigatório."),
   solicitacao_id: z.string().optional(),
+  tag_ids: z.array(z.string()).optional(),
 });
 
 export type CandidatoInput = z.infer<typeof candidatoInputSchema>;

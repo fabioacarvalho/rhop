@@ -9,7 +9,7 @@ function candidatoValido(
     email: "marina.costa@empresa.com",
     telefone: "11999998888",
     curriculo_texto: "Engenheira de software com 8 anos de experiência.",
-    transcricao_texto: "Entrevista: candidata demonstrou forte domínio técnico.",
+    parecer_tecnico: "Entrevista: candidata demonstrou forte domínio técnico.",
     ...overrides,
   };
 }
@@ -63,11 +63,31 @@ describe("candidatoInputSchema", () => {
     ).toBe(false);
   });
 
-  it("rejeita transcricao_texto vazio", () => {
+  it("rejeita parecer_tecnico vazio", () => {
     expect(
       candidatoInputSchema.safeParse(
-        candidatoValido({ transcricao_texto: "" }),
+        candidatoValido({ parecer_tecnico: "" }),
       ).success,
     ).toBe(false);
+  });
+
+  it("aceita tag_ids ausente (campo opcional)", () => {
+    expect(candidatoInputSchema.safeParse(candidatoValido()).success).toBe(
+      true,
+    );
+  });
+
+  it("aceita tag_ids com array vazio", () => {
+    expect(
+      candidatoInputSchema.safeParse(candidatoValido({ tag_ids: [] })).success,
+    ).toBe(true);
+  });
+
+  it("aceita tag_ids com múltiplos ids", () => {
+    expect(
+      candidatoInputSchema.safeParse(
+        candidatoValido({ tag_ids: ["tag-1", "tag-2"] }),
+      ).success,
+    ).toBe(true);
   });
 });
