@@ -220,6 +220,7 @@ model Candidato {
   curriculo_texto       String
   curriculo_arquivo_url String?
   parecer_tecnico       String
+  resumo_ia             String?
   embedding             Unsupported("vector(1536)")?
   status_embedding      StatusEmbedding              @default(pendente)
   solicitacao_id        String?
