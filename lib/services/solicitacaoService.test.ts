@@ -9,6 +9,7 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      update: vi.fn(),
     },
   },
 }));
@@ -42,11 +43,14 @@ import { gerarEPersistir } from "@/lib/services/resumoSolicitanteService";
 import { Role } from "@/lib/generated/prisma/client";
 import {
   ErroAcessoNegado,
+  ErroCancelamentoInvalido,
   ErroDadosInvalidos,
+  ErroNaoAutorizadoCancelamento,
   ErroNaoEncontrado,
   ErroTipoFluxoNaoEncontrado,
   SLA_HORAS,
   buscarDetalhePorId,
+  cancelar,
   criar,
   listarMinhas,
 } from "./solicitacaoService";
@@ -55,6 +59,7 @@ import type { SolicitacaoInput } from "@/lib/validations/solicitacao";
 const mockCreate = vi.mocked(prisma.solicitacao.create);
 const mockFindMany = vi.mocked(prisma.solicitacao.findMany);
 const mockFindUnique = vi.mocked(prisma.solicitacao.findUnique);
+const mockUpdate = vi.mocked(prisma.solicitacao.update);
 const mockRegistrar = vi.mocked(registrar);
 const mockBuscarPorId = vi.mocked(tipoFluxoService.buscarPorId);
 const mockGerarEPersistir = vi.mocked(gerarEPersistir);
@@ -63,6 +68,7 @@ beforeEach(() => {
   mockCreate.mockReset();
   mockFindMany.mockReset();
   mockFindUnique.mockReset();
+  mockUpdate.mockReset();
   mockRegistrar.mockReset();
   mockBuscarPorId.mockReset();
   mockGerarEPersistir.mockReset();
@@ -274,4 +280,133 @@ describe("solicitacaoService.buscarDetalhePorId", () => {
       buscarDetalhePorId("sol-1", "user-1"),
     ).rejects.toBeInstanceOf(ErroAcessoNegado);
   });
+});
+
+describe("solicitacaoService.cancelar", () => {
+  const SOLICITANTE = {
+    id: "user-1",
+    nome: "Solicitante",
+    email: "solicitante@example.com",
+    role: Role.SOLICITANTE,
+  };
+
+  const OUTRO_SOLICITANTE = {
+    id: "user-2",
+    nome: "Outro Solicitante",
+    email: "outro@example.com",
+    role: Role.SOLICITANTE,
+  };
+
+  const RH_ADMIN = {
+    id: "rh-1",
+    nome: "RH",
+    email: "rh@example.com",
+    role: Role.RH_ADMIN,
+  };
+
+  const GESTOR = {
+    id: "gestor-1",
+    nome: "Gestor",
+    email: "gestor@example.com",
+    role: Role.GESTOR,
+  };
+
+  const SOLICITACAO_PENDENTE = {
+    ...SOLICITACAO_CRIADA,
+    status: "PENDENTE",
+    solicitante_id: "user-1",
+    etapa_atual: Role.GESTOR,
+  };
+
+  it("id inexistente -> lanca ErroNaoEncontrado", async () => {
+    mockFindUnique.mockResolvedValueOnce(null);
+
+    await expect(
+      cancelar("sol-inexistente", SOLICITANTE),
+    ).rejects.toBeInstanceOf(ErroNaoEncontrado);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("solicitante dono + status=PENDENTE -> sucesso, status vira CANCELADA, Log AUDITORIA gravado", async () => {
+    mockFindUnique.mockResolvedValueOnce(SOLICITACAO_PENDENTE as never);
+    mockUpdate.mockResolvedValueOnce({
+      ...SOLICITACAO_PENDENTE,
+      status: "CANCELADA",
+    } as never);
+
+    const resultado = await cancelar("sol-1", SOLICITANTE);
+
+    expect(resultado.status).toBe("CANCELADA");
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "sol-1" },
+      data: { status: "CANCELADA" },
+    });
+    expect(mockRegistrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tipo: "AUDITORIA",
+        entidade: "Solicitacao",
+        entidade_id: "sol-1",
+        acao: "CANCELAMENTO",
+        usuario_id: "user-1",
+      }),
+    );
+  });
+
+  it("RH_ADMIN + status=PENDENTE de outro solicitante -> sucesso (mesmo efeito)", async () => {
+    mockFindUnique.mockResolvedValueOnce(SOLICITACAO_PENDENTE as never);
+    mockUpdate.mockResolvedValueOnce({
+      ...SOLICITACAO_PENDENTE,
+      status: "CANCELADA",
+    } as never);
+
+    const resultado = await cancelar("sol-1", RH_ADMIN);
+
+    expect(resultado.status).toBe("CANCELADA");
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "sol-1" },
+      data: { status: "CANCELADA" },
+    });
+    expect(mockRegistrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tipo: "AUDITORIA",
+        entidade: "Solicitacao",
+        entidade_id: "sol-1",
+        acao: "CANCELAMENTO",
+        usuario_id: "rh-1",
+      }),
+    );
+  });
+
+  it("GESTOR (mesmo sendo aprovador da etapa atual) -> ErroNaoAutorizadoCancelamento", async () => {
+    mockFindUnique.mockResolvedValueOnce(SOLICITACAO_PENDENTE as never);
+
+    await expect(cancelar("sol-1", GESTOR)).rejects.toBeInstanceOf(
+      ErroNaoAutorizadoCancelamento,
+    );
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("outro solicitante (nao dono) -> ErroNaoAutorizadoCancelamento", async () => {
+    mockFindUnique.mockResolvedValueOnce(SOLICITACAO_PENDENTE as never);
+
+    await expect(
+      cancelar("sol-1", OUTRO_SOLICITANTE),
+    ).rejects.toBeInstanceOf(ErroNaoAutorizadoCancelamento);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it.each(["APROVADA", "REJEITADA", "CANCELADA"])(
+    "status ja %s -> ErroCancelamentoInvalido, sem chamar update",
+    async (status) => {
+      mockFindUnique.mockResolvedValueOnce({
+        ...SOLICITACAO_PENDENTE,
+        status,
+      } as never);
+
+      await expect(cancelar("sol-1", SOLICITANTE)).rejects.toBeInstanceOf(
+        ErroCancelamentoInvalido,
+      );
+      expect(mockUpdate).not.toHaveBeenCalled();
+    },
+  );
 });

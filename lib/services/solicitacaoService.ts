@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma, Role, type Solicitacao } from "@/lib/generated/prisma/client";
+import {
+  Prisma,
+  Role,
+  StatusSolicitacao,
+  type Solicitacao,
+} from "@/lib/generated/prisma/client";
 import { registrar } from "@/lib/services/logService";
+import type { AuthenticatedUser } from "@/lib/services/authService";
 import * as tipoFluxoService from "@/lib/services/tipoFluxoService";
 import { gerarEPersistir } from "@/lib/services/resumoSolicitanteService";
 import {
@@ -45,6 +51,26 @@ export class ErroDadosInvalidos extends Error {
     super("Dados invalidos para o tipo de fluxo selecionado.");
     this.name = "ErroDadosInvalidos";
     this.erros = erros;
+  }
+}
+
+/**
+ * Usuario nao e o solicitante dono nem RH_Admin — cancelamento e acao do
+ * solicitante ou do RH, nunca do aprovador (mesmo que seja o gestor da etapa
+ * atual) — rota converte em 403.
+ */
+export class ErroNaoAutorizadoCancelamento extends Error {
+  constructor(message = "Usuario nao autorizado a cancelar esta solicitacao.") {
+    super(message);
+    this.name = "ErroNaoAutorizadoCancelamento";
+  }
+}
+
+/** `status` diferente de `PENDENTE` (ja encerrada ou corrida concorrente) — rota converte em 409. */
+export class ErroCancelamentoInvalido extends Error {
+  constructor(message = "Solicitacao ja encerrada; nao e possivel cancelar.") {
+    super(message);
+    this.name = "ErroCancelamentoInvalido";
   }
 }
 
@@ -186,4 +212,53 @@ export async function buscarDetalhePorId(
   }
 
   return solicitacao;
+}
+
+/**
+ * Cancela uma `Solicitacao` (SOL-14 e similares).
+ *
+ * - `id` inexistente -> `ErroNaoEncontrado`.
+ * - Somente o solicitante dono ou `RH_ADMIN` pode cancelar —
+ *   `ErroNaoAutorizadoCancelamento` mesmo se o usuario for o `GESTOR`
+ *   aprovador da etapa atual (cancelamento nunca e acao do aprovador).
+ * - `status !== PENDENTE` -> `ErroCancelamentoInvalido` (tambem cobre a
+ *   corrida de dois cancelamentos concorrentes: o segundo encontra o status
+ *   ja alterado).
+ * - Sucesso: `status=CANCELADA`, grava `Log AUDITORIA` (acao `CANCELAMENTO`).
+ */
+export async function cancelar(
+  id: string,
+  usuario: AuthenticatedUser,
+): Promise<Solicitacao> {
+  const solicitacao = await prisma.solicitacao.findUnique({ where: { id } });
+
+  if (!solicitacao) {
+    throw new ErroNaoEncontrado();
+  }
+
+  if (
+    usuario.role !== Role.RH_ADMIN &&
+    solicitacao.solicitante_id !== usuario.id
+  ) {
+    throw new ErroNaoAutorizadoCancelamento();
+  }
+
+  if (solicitacao.status !== StatusSolicitacao.PENDENTE) {
+    throw new ErroCancelamentoInvalido();
+  }
+
+  const atualizada = await prisma.solicitacao.update({
+    where: { id },
+    data: { status: StatusSolicitacao.CANCELADA },
+  });
+
+  await registrar({
+    tipo: "AUDITORIA",
+    entidade: "Solicitacao",
+    entidade_id: id,
+    acao: "CANCELAMENTO",
+    usuario_id: usuario.id,
+  });
+
+  return atualizada;
 }
