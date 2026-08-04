@@ -6,6 +6,7 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      update: vi.fn(),
     },
   },
 }));
@@ -20,14 +21,20 @@ vi.mock("@/lib/services/embeddingService", () => ({
   marcarFalha: vi.fn(),
 }));
 
+vi.mock("@/lib/services/iaService", () => ({
+  gerarResumoCandidato: vi.fn(),
+}));
+
 import { prisma } from "@/lib/prisma";
 import { registrar } from "@/lib/services/logService";
 import * as embeddingService from "@/lib/services/embeddingService";
+import * as iaService from "@/lib/services/iaService";
 import { Prisma, type Candidato } from "@/lib/generated/prisma/client";
 import {
   ErroEmailDuplicado,
   ErroNaoEncontrado,
   ErroReprocessamentoNaoPermitido,
+  buscarPorId,
   cadastrar,
   listar,
   reprocessarEmbedding,
@@ -37,20 +44,25 @@ import type { CandidatoInput } from "@/lib/validations/candidato";
 const mockCreate = vi.mocked(prisma.candidato.create);
 const mockFindMany = vi.mocked(prisma.candidato.findMany);
 const mockFindUnique = vi.mocked(prisma.candidato.findUnique);
+const mockUpdate = vi.mocked(prisma.candidato.update);
 const mockRegistrar = vi.mocked(registrar);
 const mockGerar = vi.mocked(embeddingService.gerar);
 const mockPersistirEmbedding = vi.mocked(embeddingService.persistirEmbedding);
 const mockMarcarFalha = vi.mocked(embeddingService.marcarFalha);
+const mockGerarResumoCandidato = vi.mocked(iaService.gerarResumoCandidato);
 
 beforeEach(() => {
   mockCreate.mockReset();
   mockFindMany.mockReset();
   mockFindUnique.mockReset();
+  mockUpdate.mockReset();
   mockRegistrar.mockReset();
   mockRegistrar.mockResolvedValue(undefined);
   mockGerar.mockReset();
   mockPersistirEmbedding.mockReset();
   mockMarcarFalha.mockReset();
+  mockGerarResumoCandidato.mockReset();
+  mockGerarResumoCandidato.mockResolvedValue(null);
 });
 
 const DADOS_VALIDOS: CandidatoInput = {
@@ -209,6 +221,63 @@ describe("candidatoService.cadastrar", () => {
       }),
     );
   });
+
+  it("resumo_ia gerado com sucesso -> persiste via prisma.candidato.update", async () => {
+    mockCreate.mockResolvedValueOnce(CANDIDATO_CRIADO);
+    mockGerar.mockResolvedValueOnce([0.1, 0.2]);
+    mockGerarResumoCandidato.mockResolvedValueOnce("Perfil forte em dados.");
+
+    await cadastrar(DADOS_VALIDOS, "user-1");
+
+    expect(mockGerarResumoCandidato).toHaveBeenCalledWith({
+      candidatoId: "cand-1",
+      nome: DADOS_VALIDOS.nome,
+      curriculoTexto: DADOS_VALIDOS.curriculo_texto,
+      parecerTecnico: DADOS_VALIDOS.parecer_tecnico,
+    });
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "cand-1" },
+      data: { resumo_ia: "Perfil forte em dados." },
+    });
+  });
+
+  it("resumo_ia falha (null) -> nao chama prisma.candidato.update, cadastro ainda retorna sucesso", async () => {
+    mockCreate.mockResolvedValueOnce(CANDIDATO_CRIADO);
+    mockGerar.mockResolvedValueOnce([0.1, 0.2]);
+    mockGerarResumoCandidato.mockResolvedValueOnce(null);
+
+    const result = await cadastrar(DADOS_VALIDOS, "user-1");
+
+    expect(result).toEqual(CANDIDATO_CRIADO);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("embedding falha e resumo_ia sucede -> cada um persiste seu proprio resultado, independentes", async () => {
+    mockCreate.mockResolvedValueOnce(CANDIDATO_CRIADO);
+    mockGerar.mockResolvedValueOnce(null);
+    mockGerarResumoCandidato.mockResolvedValueOnce("Resumo ok mesmo com embedding falho.");
+
+    await cadastrar(DADOS_VALIDOS, "user-1");
+
+    expect(mockMarcarFalha).toHaveBeenCalledWith("cand-1");
+    expect(mockPersistirEmbedding).not.toHaveBeenCalled();
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "cand-1" },
+      data: { resumo_ia: "Resumo ok mesmo com embedding falho." },
+    });
+  });
+
+  it("embedding sucede e resumo_ia falha -> cada um persiste seu proprio resultado, independentes", async () => {
+    mockCreate.mockResolvedValueOnce(CANDIDATO_CRIADO);
+    mockGerar.mockResolvedValueOnce([0.1, 0.2]);
+    mockGerarResumoCandidato.mockResolvedValueOnce(null);
+
+    await cadastrar(DADOS_VALIDOS, "user-1");
+
+    expect(mockPersistirEmbedding).toHaveBeenCalledWith("cand-1", [0.1, 0.2]);
+    expect(mockMarcarFalha).not.toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
 });
 
 describe("candidatoService.listar", () => {
@@ -293,5 +362,72 @@ describe("candidatoService.reprocessarEmbedding", () => {
     expect(result).toEqual(falho);
     expect(mockMarcarFalha).toHaveBeenCalledWith("cand-1");
     expect(mockPersistirEmbedding).not.toHaveBeenCalled();
+  });
+
+  it("reprocessamento regenera resumo_ia junto do embedding (TAL-51)", async () => {
+    const falho = { ...CANDIDATO_CRIADO, status_embedding: "falhou" };
+    const atualizado = { ...CANDIDATO_CRIADO, status_embedding: "processado" };
+    mockFindUnique
+      .mockResolvedValueOnce(falho as never)
+      .mockResolvedValueOnce(atualizado as never);
+    mockGerar.mockResolvedValueOnce([0.3, 0.4]);
+    mockGerarResumoCandidato.mockResolvedValueOnce("Resumo regenerado.");
+
+    await reprocessarEmbedding("cand-1", "user-1");
+
+    expect(mockGerarResumoCandidato).toHaveBeenCalledWith({
+      candidatoId: "cand-1",
+      nome: CANDIDATO_CRIADO.nome,
+      curriculoTexto: CANDIDATO_CRIADO.curriculo_texto,
+      parecerTecnico: CANDIDATO_CRIADO.parecer_tecnico,
+    });
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "cand-1" },
+      data: { resumo_ia: "Resumo regenerado." },
+    });
+  });
+});
+
+describe("candidatoService.buscarPorId", () => {
+  const CANDIDATO_DETALHE = {
+    id: "cand-1",
+    nome: "Marina Costa",
+    email: "marina.costa@empresa.com",
+    telefone: "11999998888",
+    curriculo_texto: "Engenheira de dados.",
+    curriculo_arquivo_url: null,
+    parecer_tecnico: "Entrevista tecnica solida.",
+    resumo_ia: "Perfil forte em dados.",
+    status_embedding: "processado",
+    criado_em: new Date("2026-08-01T00:00:00.000Z"),
+    tags: [{ id: "tag-1", nome: "Sênior" }],
+    solicitacao: null,
+  };
+
+  it("caminho feliz -> retorna candidato completo, nunca inclui embedding", async () => {
+    mockFindUnique.mockResolvedValueOnce(CANDIDATO_DETALHE as never);
+
+    const result = await buscarPorId("cand-1");
+
+    expect(result).toEqual(CANDIDATO_DETALHE);
+    expect(mockFindUnique).toHaveBeenCalledWith({
+      where: { id: "cand-1" },
+      select: expect.objectContaining({
+        resumo_ia: true,
+        curriculo_texto: true,
+        parecer_tecnico: true,
+        tags: { select: { id: true, nome: true } },
+      }),
+    });
+    const chamada = mockFindUnique.mock.calls[0][0] as {
+      select: Record<string, unknown>;
+    };
+    expect(chamada.select.embedding).toBeUndefined();
+  });
+
+  it("id inexistente -> ErroNaoEncontrado", async () => {
+    mockFindUnique.mockResolvedValueOnce(null);
+
+    await expect(buscarPorId("cand-x")).rejects.toThrow(ErroNaoEncontrado);
   });
 });

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma, type Candidato } from "@/lib/generated/prisma/client";
 import { registrar } from "@/lib/services/logService";
 import * as embeddingService from "@/lib/services/embeddingService";
+import * as iaService from "@/lib/services/iaService";
 import type { CandidatoInput } from "@/lib/validations/candidato";
 
 /** E-mail já cadastrado (`@@unique`, `P2002`) — rota mapeia para 409 (TAL-28). */
@@ -38,6 +39,24 @@ export type CandidatoResumo = Pick<
   Candidato,
   "id" | "nome" | "email" | "status_embedding" | "criado_em"
 > & { tags: { id: string; nome: string }[] };
+
+/** Registro completo, retornado por `buscarPorId` (TAL-53) — nunca inclui `embedding`. */
+export type CandidatoDetalhe = Pick<
+  Candidato,
+  | "id"
+  | "nome"
+  | "email"
+  | "telefone"
+  | "curriculo_texto"
+  | "curriculo_arquivo_url"
+  | "parecer_tecnico"
+  | "resumo_ia"
+  | "status_embedding"
+  | "criado_em"
+> & {
+  tags: { id: string; nome: string }[];
+  solicitacao: { id: string; tipoFluxo: { nome: string } } | null;
+};
 
 /**
  * Cadastra um candidato (TAL-01, TAL-06, TAL-28).
@@ -87,6 +106,7 @@ export async function cadastrar(
 
   await processarEmbedding(
     candidato.id,
+    candidato.nome,
     dados.curriculo_texto,
     dados.parecer_tecnico,
   );
@@ -122,6 +142,40 @@ export async function listar(): Promise<CandidatoResumo[]> {
 }
 
 /**
+ * Busca um candidato pelo `id` com todos os campos para a tela de detalhe
+ * (TAL-53) — nunca inclui `embedding` (coluna `Unsupported`). `id` sem
+ * registro correspondente lança `ErroNaoEncontrado` (mesma classe usada por
+ * `reprocessarEmbedding`).
+ */
+export async function buscarPorId(id: string): Promise<CandidatoDetalhe> {
+  const candidato = await prisma.candidato.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      nome: true,
+      email: true,
+      telefone: true,
+      curriculo_texto: true,
+      curriculo_arquivo_url: true,
+      parecer_tecnico: true,
+      resumo_ia: true,
+      status_embedding: true,
+      criado_em: true,
+      tags: { select: { id: true, nome: true } },
+      solicitacao: {
+        select: { id: true, tipoFluxo: { select: { nome: true } } },
+      },
+    },
+  });
+
+  if (!candidato) {
+    throw new ErroNaoEncontrado();
+  }
+
+  return candidato;
+}
+
+/**
  * Reprocessa o embedding de um candidato cujo `status_embedding` é `falhou`
  * (TAL-29). `id` inexistente → `ErroNaoEncontrado`; status diferente de
  * `falhou` → `ErroReprocessamentoNaoPermitido`. Repete o mesmo fluxo síncrono
@@ -143,6 +197,7 @@ export async function reprocessarEmbedding(
 
   await processarEmbedding(
     candidato.id,
+    candidato.nome,
     candidato.curriculo_texto,
     candidato.parecer_tecnico,
   );
@@ -161,22 +216,38 @@ export async function reprocessarEmbedding(
 
 /**
  * Gera o embedding a partir do texto combinado (currículo + parecer técnico) e
- * persiste o resultado — sucesso grava o vetor via `$executeRaw` e marca
- * `processado`; falha marca `falhou`. Nunca lança.
+ * o `resumo_ia` (TAL-48) em paralelo — cada um persiste seu próprio resultado
+ * de forma independente, falha de um não afeta o outro. Nunca lança: tanto
+ * `embeddingService.gerar` quanto `iaService.gerarResumoCandidato` já
+ * absorvem suas próprias falhas e retornam `null`.
  */
 async function processarEmbedding(
   candidatoId: string,
+  nome: string,
   curriculoTexto: string,
   parecerTecnico: string,
 ): Promise<void> {
-  const vetor = await embeddingService.gerar(
-    `${curriculoTexto}\n${parecerTecnico}`,
-  );
+  const [vetor, resumo] = await Promise.all([
+    embeddingService.gerar(`${curriculoTexto}\n${parecerTecnico}`),
+    iaService.gerarResumoCandidato({
+      candidatoId,
+      nome,
+      curriculoTexto,
+      parecerTecnico,
+    }),
+  ]);
 
   if (vetor) {
     await embeddingService.persistirEmbedding(candidatoId, vetor);
   } else {
     await embeddingService.marcarFalha(candidatoId);
+  }
+
+  if (resumo) {
+    await prisma.candidato.update({
+      where: { id: candidatoId },
+      data: { resumo_ia: resumo },
+    });
   }
 }
 
