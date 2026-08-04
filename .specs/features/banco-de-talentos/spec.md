@@ -283,16 +283,16 @@ Cada requisito recebe um ID único para rastreio entre design, tasks e validaç�
 | TAL-45 | P1: Upload de Currículo (falha de extração) | In Tasks (R5, R6) | **Bloqueado** — mesmo motivo de TAL-43 |
 | TAL-46 | P1: Upload de Currículo (formato não suportado rejeitado) | In Tasks (R5, R6) | Implementing (coberto por unit tests; não exercitado no UAT manual por causa do bloqueio de TAL-43) |
 | TAL-47 | P1: Upload de Currículo (armazenamento Supabase Storage) | In Tasks (R5, R6) | **Bloqueado** — bucket `curriculos` ausente no Supabase real |
-| TAL-48 | P1: Detalhe do Candidato (geração `resumo_ia` não bloqueante no cadastro) | Design | Pending |
-| TAL-49 | P1: Detalhe do Candidato (persistência do `resumo_ia`) | Design | Pending |
-| TAL-50 | P1: Detalhe do Candidato (falha do `resumo_ia`) | Design | Pending |
-| TAL-51 | P1: Detalhe do Candidato (Reprocessar também regenera `resumo_ia`) | Design | Pending |
-| TAL-52 | P1: Detalhe do Candidato (navegação a partir da listagem) | Design | Pending |
-| TAL-53 | P1: Detalhe do Candidato (dados completos exibidos) | Design | Pending |
-| TAL-54 | P1: Detalhe do Candidato (resumo IA em destaque) | Design | Pending |
-| TAL-55 | P1: Detalhe do Candidato (fallback gracioso sem resumo) | Design | Pending |
-| TAL-56 | P1: Detalhe do Candidato (autorização SOLICITANTE bloqueado) | Design | Pending |
-| TAL-57 | P1: Detalhe do Candidato (candidato inexistente → 404) | Design | Pending |
+| TAL-48 | P1: Detalhe do Candidato (geração `resumo_ia` não bloqueante no cadastro) | In Tasks (R14, R15, R16) | Implementing (coberto por unit tests; UAT manual pendente) |
+| TAL-49 | P1: Detalhe do Candidato (persistência do `resumo_ia`) | In Tasks (R16) | Implementing (coberto por unit tests; UAT manual pendente) |
+| TAL-50 | P1: Detalhe do Candidato (falha do `resumo_ia`) | In Tasks (R15, R16) | Implementing (coberto por unit tests; UAT manual pendente) |
+| TAL-51 | P1: Detalhe do Candidato (Reprocessar também regenera `resumo_ia`) | In Tasks (R16) | Implementing (coberto por unit tests; UAT manual pendente) |
+| TAL-52 | P1: Detalhe do Candidato (navegação a partir da listagem) | In Tasks (R18) | Implementing (build verde; UAT manual pendente) |
+| TAL-53 | P1: Detalhe do Candidato (dados completos exibidos) | In Tasks (R16, R17) | Implementing (coberto por unit tests + build; UAT manual pendente) |
+| TAL-54 | P1: Detalhe do Candidato (resumo IA em destaque) | In Tasks (R17) | Implementing (build verde; UAT manual pendente) |
+| TAL-55 | P1: Detalhe do Candidato (fallback gracioso sem resumo) | In Tasks (R17) | Implementing (build verde; UAT manual pendente) |
+| TAL-56 | P1: Detalhe do Candidato (autorização SOLICITANTE bloqueado) | In Tasks (R17) | Implementing (build verde; UAT manual pendente) |
+| TAL-57 | P1: Detalhe do Candidato (candidato inexistente → 404) | In Tasks (R16, R17) | Implementing (coberto por unit tests + build; UAT manual pendente) |
 
 **Mapa ID → critério:**
 
@@ -358,7 +358,7 @@ Cada requisito recebe um ID único para rastreio entre design, tasks e validaç�
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 57 total (31 da rodada 1 + 16 da rodada 2 + 10 novos na rodada 3). TAL-32 a TAL-47 mapeados às tasks R1–R13 (`tasks.md`), implementados e com `npx prisma validate && npm run build`/`npx vitest run` verdes — status `Implementing` até UAT manual confirmar (ver `tasks.md`, seção "Notas da execução real"). TAL-20/21/22 marcados como superseded, não contam mais separadamente. TAL-48 a TAL-57 (rodada 3) ainda `Pending` — aguardando Design.
+**Coverage:** 57 total (31 da rodada 1 + 16 da rodada 2 + 10 novos na rodada 3). TAL-32 a TAL-47 mapeados às tasks R1–R13 (`tasks.md`), implementados e com `npx prisma validate && npm run build`/`npx vitest run` verdes — status `Implementing` até UAT manual confirmar (ver `tasks.md`, seção "Notas da execução real"). TAL-20/21/22 marcados como superseded, não contam mais separadamente. TAL-48 a TAL-57 (rodada 3) mapeados às tasks R14–R18, implementados e com `npx prisma validate && npm run build`/`npx vitest run` verdes — status `Implementing` até UAT manual confirmar.
 
 ---
 

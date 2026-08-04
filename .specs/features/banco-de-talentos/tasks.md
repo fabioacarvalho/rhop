@@ -1,7 +1,7 @@
 # Banco de Talentos — Tasks
 
 **Design**: `.specs/features/banco-de-talentos/design.md`
-**Status**: Rodada 1 concluída. Rodada 2 (esta revisão) pendente de execução — ver seção ao final do arquivo.
+**Status**: Rodada 1 e Rodada 2 concluídas. Rodada 3 (esta revisão) pendente de execução — ver seção ao final do arquivo.
 
 ---
 
@@ -1176,3 +1176,259 @@ Rodado contra `npm run dev` + Supabase real do projeto (não mockado), usuários
 - Dados de teste (`Candidato UAT ...`, `TagUAT ...`, `Debug Toggle ...`) ficaram gravados no banco
   real do projeto durante o UAT — não removidos automaticamente (exclusão de `Candidato`/`Tag` está
   fora de escopo do produto, ver `spec.md`); avisado ao usuário para limpeza manual se desejado.
+
+---
+---
+
+## Rodada 3 — Detalhe do Candidato com Resumo de IA
+
+**Design**: `.specs/features/banco-de-talentos/design.md`, seção "Rodada 3"
+**Status**: Concluído — R14 a R18 implementados e commitados; `npx prisma validate && npm run build` e `npx vitest run` (arquivos tocados) verdes. UAT manual via dev server real ainda não executado nesta rodada.
+
+## 0. Escopo desta rodada
+
+Cobre `TAL-48` a `TAL-57`: novo campo `Candidato.resumo_ia` (gerado de forma não bloqueante junto
+do embedding, no cadastro e no reprocessamento) e nova tela de detalhe do candidato (clique na
+listagem), reusando ponto a ponto o padrão já em produção de `app/(dashboard)/solicitacoes/[id]/page.tsx`.
+Histórico de buscas (TAL-25, P3) continua fora de escopo — nenhuma task aqui o implementa.
+
+**Gate check commands**: os mesmos das rodadas anteriores (`npm test`, `npx prisma validate && npm run build`).
+
+---
+
+## Execution Plan (rodada 3)
+
+```
+Phase 1 (Parallel, sem dependencias):
+  R14 [P] · R15 [P]
+
+Phase 2 (Sequential — depende do schema e do iaService):
+  R14, R15 ──→ R16
+
+Phase 3 (Sequential — depende dos dados de detalhe):
+  R16 ──→ R17
+
+Phase 4 (Sequential — depende da rota de detalhe existir):
+  R17 ──→ R18
+```
+
+---
+
+## Task Breakdown (Rodada 3)
+
+### R14: Migration — adiciona `resumo_ia` a `Candidato` [P]
+
+**What**: Adicionar `resumo_ia String?` ao `model Candidato` em `prisma/schema.prisma` (coluna
+aditiva, nullable, sem risco de perda de dado). Gerar e aplicar a migration — repetir o mesmo fluxo
+manual documentado nas "Notas da execução real" da Rodada 2 (`prisma migrate diff` + correção manual
+se necessário + `prisma db execute` + `prisma migrate resolve --applied`) caso `prisma migrate dev`
+tente forçar `migrate reset` por causa do drift das extensões que o Supabase já injeta.
+
+**Where**: `prisma/schema.prisma`, `prisma/migrations/**`
+**Depends on**: None
+**Reuses**: mesmo procedimento de migration manual documentado na Rodada 2 (`tasks.md`, "Notas da execução real")
+**Requirement**: TAL-48, TAL-49
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] `Candidato.resumo_ia String?` presente no schema, sem alterar nenhum outro campo
+- [x] Migration aplicada sem perda de dado nos candidatos já cadastrados (`ALTER TABLE ADD COLUMN` aditivo, aplicado via `prisma db execute` + `prisma migrate resolve --applied`, mesmo fluxo da rodada 2)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): adiciona campo resumo_ia ao model Candidato`
+
+---
+
+### R15: `iaService.gerarResumoCandidato` [P]
+
+**What**: Nova função no `iaService` existente — gera uma síntese objetiva do perfil do candidato a
+partir de currículo + parecer técnico, seguindo o mesmo padrão de resiliência de
+`gerarResumoSolicitacao`/`gerarJustificativaRanking` (falha → `Log ERRO` + `null`, nunca lança).
+**Where**: `lib/services/iaService.ts` (modifica), `lib/services/iaService.test.ts` (modifica)
+**Depends on**: None
+**Reuses**: estrutura de `gerarJustificativaRanking` (mesmo arquivo) — client OpenAI, `registrar` de `logService`
+**Requirement**: TAL-48, TAL-50
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] `gerarResumoCandidato(input: { candidatoId: string; nome: string; curriculoTexto: string; parecerTecnico: string }): Promise<string | null>` exportada
+- [x] Prompt monta síntese do perfil a partir de currículo + parecer técnico (sem comparação com vaga/busca); resposta em português
+- [x] Falha (chave ausente, erro de API, conteúdo vazio) → `Log ERRO` (`entidade: "Candidato"`, `entidade_id: candidatoId`, `acao: FALHA_IA`) + retorna `null`, nunca lança
+- [x] Sucesso com conteúdo não-vazio → string trimada
+- [x] Gate check passa: `npm test` (arquivo `iaService.test.ts`, casos novos + existentes intactos — 19/19 na suíte local)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: 4 casos novos (sucesso, chave ausente, erro de API, conteúdo vazio) sem quebrar os 15 testes existentes de `gerarResumoSolicitacao`/`gerarResumoSolicitante`/`gerarResumoInsights`/`gerarJustificativaRanking`
+
+**Tests**: unit
+**Gate**: quick + build
+
+**Commit**: `feat(banco-de-talentos): adiciona gerarResumoCandidato ao iaService`
+
+---
+
+### R16: `candidatoService` — `processarEmbedding` gera `resumo_ia` + nova `buscarPorId`
+
+**What**: Alterar `processarEmbedding` para rodar `embeddingService.gerar` e
+`iaService.gerarResumoCandidato` em paralelo (`Promise.all`), cada um persistindo seu próprio
+resultado de forma independente (falha de um não afeta o outro). Adicionar `buscarPorId(id: string):
+Promise<CandidatoDetalhe>` — busca todos os campos exceto `embedding`, inclui `tags` e `solicitacao.tipoFluxo.nome`;
+`id` sem registro → lança `ErroNaoEncontrado` (classe já existente no arquivo).
+**Where**: `lib/services/candidatoService.ts` (modifica), `lib/services/candidatoService.test.ts` (modifica)
+**Depends on**: R14 (campo `resumo_ia` no schema), R15 (`gerarResumoCandidato`)
+**Reuses**: `ErroNaoEncontrado` (já existe, usada por `reprocessarEmbedding`); mesmo padrão de projeção de `listar()`
+**Requirement**: TAL-48, TAL-49, TAL-50, TAL-51, TAL-53, TAL-57
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] `processarEmbedding` chama embedding e resumo em paralelo (`Promise.all`); sucesso do resumo → `prisma.candidato.update({ where: { id }, data: { resumo_ia } })`; falha do resumo → `resumo_ia` permanece `null` (sem update), sem lançar
+- [x] Falha do embedding não impede a persistência do resumo bem-sucedido, e vice-versa (testado com mocks retornando sucesso de um e `null` do outro, nas duas combinações)
+- [x] `reprocessarEmbedding` (sem alteração de assinatura) volta a chamar `processarEmbedding` e portanto regenera `resumo_ia` também — coberto por teste que confirma `resumo_ia` atualizado após reprocessamento
+- [x] `buscarPorId(id)` retorna `CandidatoDetalhe` com `nome, email, telefone, curriculo_texto, curriculo_arquivo_url, parecer_tecnico, resumo_ia, status_embedding, criado_em, tags, solicitacao` (nunca `embedding`)
+- [x] `buscarPorId` com `id` inexistente lança `ErroNaoEncontrado`
+- [x] Gate check passa: `npm test` (arquivo `candidatoService.test.ts`, casos novos + existentes intactos — 20/20 na suíte local)
+- [x] Gate check passa: `npx prisma validate && npm run build` (exigiu `npx prisma generate` antes, client não estava regenerado após R14)
+- [x] Test count: 8 casos novos (resumo sucesso, resumo falha isolada, embedding falha + resumo sucesso, embedding sucesso + resumo falha, reprocessar regenera resumo, buscarPorId sucesso, buscarPorId não encontrado, + verificação de que `embedding` nunca é selecionado)
+
+**Tests**: unit
+**Gate**: quick + build
+
+**Commit**: `feat(banco-de-talentos): gera resumo_ia no cadastro/reprocessamento e adiciona buscarPorId`
+
+---
+
+### R17: `app/(dashboard)/banco-de-talentos/[id]/page.tsx` + `detalhe.module.css`
+
+**What**: Nova página de detalhe do candidato — Server Component: gate `requireUser([GESTOR,
+RH_ADMIN])` (mesmo formato de `solicitacoes/[id]/page.tsx`); chama `candidatoService.buscarPorId(id)`
+DIRETO; `ErroNaoEncontrado` → `notFound()`; renderiza nome, e-mail, telefone, badge de
+`status_embedding`, Tags, vaga vinculada (se houver), callout de `resumo_ia` (texto ou fallback
+"Resumo da IA indisponível no momento." quando `null`), e currículo completo + parecer técnico
+completo em seções com `sectionDivider`. CSS module próprio, copiando as classes de
+`solicitacoes.module.css` (`.calloutIa`, `.calloutIaTag`, `.detailGrid`, `.detailField`,
+`.detailLabel`, `.detailValue`, `.sectionDivider`, `.backLink`, `.card`, `.cardPad`) e o `.stamp*` de
+`banco-de-talentos.module.css`.
+**Where**: `app/(dashboard)/banco-de-talentos/[id]/page.tsx`, `app/(dashboard)/banco-de-talentos/[id]/detalhe.module.css`
+**Depends on**: R16 (`buscarPorId`)
+**Reuses**: `app/(dashboard)/solicitacoes/[id]/page.tsx` (estrutura inteira: auth, notFound, callout com fallback)
+**Requirement**: TAL-52, TAL-53, TAL-54, TAL-55, TAL-56, TAL-57
+
+**Tools**:
+- MCP: NONE
+- Skill: `frontend-design`, `ui-ux-pro-max`
+
+**Done when**:
+- [x] Sem sessão → `redirect('/login')`; papel SOLICITANTE → mensagem "Acesso restrito" (mesmo texto/estilo das outras telas do módulo)
+- [x] `id` inexistente → página 404 (`notFound()`)
+- [x] Página exibe nome, e-mail, telefone, badge de `status_embedding`, Tags (badges), vaga vinculada quando `solicitacao` não é `null`
+- [x] `resumo_ia` preenchido aparece em destaque no callout; `resumo_ia == null` mostra o texto de fallback, sem erro
+- [x] Currículo completo e parecer técnico completo exibidos em seções separadas, com o texto integral (não truncado)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): implementa pagina de detalhe do candidato`
+
+---
+
+### R18: Atualiza `page.tsx` (listagem) — link para o detalhe
+
+**What**: Envolver o bloco de nome/e-mail/tags de cada linha da tabela em um `<Link
+href={`/banco-de-talentos/${candidato.id}`}>`, sem aninhar o `<Link>` dentro do `<td>` que contém o
+botão "Reprocessar" (continua em `<td>` próprio, fora do link).
+**Where**: `app/(dashboard)/banco-de-talentos/page.tsx`
+**Depends on**: R17 (rota de detalhe precisa existir)
+**Reuses**: componente já existente, alterado
+**Requirement**: TAL-52
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] Clicar no nome/e-mail/tags de qualquer linha navega para `/banco-de-talentos/[id]` daquele candidato
+- [x] Botão "Reprocessar" continua funcionando normalmente (clique nele não navega para o detalhe)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): linka candidato da listagem para a tela de detalhe`
+
+---
+
+## Task Granularity Check (rodada 3)
+
+| Task | Scope | Status |
+| --- | --- | --- |
+| R14: schema (resumo_ia) | 1 arquivo de schema + 1 migration | ✅ Granular |
+| R15: gerarResumoCandidato | 1 função, 1 arquivo | ✅ Granular |
+| R16: candidatoService (processarEmbedding + buscarPorId) | 2 funções coesivas, 1 arquivo (mesma revisão de dado) | ✅ Granular (coesivo) |
+| R17: página de detalhe + css module | 1 página + 1 stylesheet, mesmo componente | ✅ Granular (coesivo) |
+| R18: link da listagem | 1 arquivo, ajuste pontual | ✅ Granular |
+
+---
+
+## Diagram-Definition Cross-Check (rodada 3)
+
+| Task | Depends On (task body) | Diagram Shows | Status |
+| --- | --- | --- | --- |
+| R14 | None | Phase 1, sem seta de entrada | ✅ Match |
+| R15 | None | Phase 1, sem seta de entrada | ✅ Match |
+| R16 | R14, R15 | Phase 2, seta de R14 e R15 | ✅ Match |
+| R17 | R16 | Phase 3, seta de R16 | ✅ Match |
+| R18 | R17 | Phase 4, seta de R17 | ✅ Match |
+
+Todos ✅ — nenhuma restruturação necessária.
+
+---
+
+## Test Co-location Validation (rodada 3)
+
+| Task | Code Layer Created/Modified | Matrix Requires | Task Says | Status |
+| --- | --- | --- | --- | --- |
+| R14: schema | `prisma/schema.prisma` | none | none | ✅ OK |
+| R15: iaService | `lib/services/iaService.ts` | unit | unit | ✅ OK |
+| R16: candidatoService | `lib/services/candidatoService.ts` | unit | unit | ✅ OK |
+| R17: `[id]/page.tsx` | `app/(dashboard)/**/*.tsx` | none | none | ✅ OK |
+| R18: `page.tsx` | `app/(dashboard)/**/*.tsx` | none | none | ✅ OK |
+
+Todos ✅ — nenhuma restruturação necessária.
+
+---
+
+## Riscos / Notas herdadas do `design.md` (rodada 3)
+
+- **R14 é bloqueante para R16** (schema precisa existir antes do service usar o campo) — migration
+  aditiva, risco bem menor que o rename da rodada 2, mas o mesmo procedimento manual de aplicação
+  (drift de extensões do Supabase) deve ser revalidado, não assumido resolvido de vez.
+- **Backfill de candidatos antigos sem `resumo_ia`** (Questão em Aberto #13 da spec) não é resolvido
+  nesta rodada — nenhuma task cria um botão "Gerar resumo" independente do reprocessamento de
+  embedding; comportamento esperado é fallback textual na tela de detalhe.
+- **`Promise.all` em `processarEmbedding`** (R16): como `embeddingService.gerar` e
+  `gerarResumoCandidato` já nunca lançam (contrato de resiliência do projeto), o risco teórico de
+  `Promise.all` abortar tudo se uma rejeitar é baixo — ainda assim, R16 inclui teste explícito das
+  combinações de sucesso/falha cruzada pra não depender só da suposição.
+- Histórico de buscas (TAL-25, P3) permanece formalmente fora desta rodada — nenhuma task aqui o
+  implementa; fica para uma rodada futura de Design + Tasks própria.
+
+---
+
+## Ferramentas por Task (MCPs e Skills)
+
+Nenhum MCP externo necessário nesta rodada (mesmo padrão das rodadas 1/2 — `NONE` em todas). Skills
+usadas apenas nas tasks de UI (`R17`): `frontend-design` (consistência visual com o resto do app) e
+`ui-ux-pro-max` (guidelines de UX/hierarquia visual), seguindo `docs/design-ux-ui/fluxorh-ui-layout-specs.md`
+e `docs/design-ux-ui/fluxorh-mockup.html` como referência, conforme pedido do usuário.
