@@ -229,6 +229,11 @@
   background: var(--vermelho-bg);
 }
 
+.stampCancelada {
+  color: var(--ink-soft);
+  background: var(--linha);
+}
+
 .rowClickable {
   cursor: pointer;
 }
