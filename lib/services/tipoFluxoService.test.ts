@@ -58,6 +58,7 @@ const DADOS_VALIDOS: TipoFluxoInput = {
     { chave: "data_inicio", rotulo: "Data de inicio", tipo: "data", obrigatorio: true },
   ],
   etapas: ["GESTOR", "RH_ADMIN"],
+  categoria: "PADRAO",
 };
 
 const TIPO_FLUXO_CRIADO: TipoFluxoDetalhe = {
@@ -65,6 +66,7 @@ const TIPO_FLUXO_CRIADO: TipoFluxoDetalhe = {
   nome: DADOS_VALIDOS.nome,
   campos_formulario: DADOS_VALIDOS.campos_formulario,
   etapas: DADOS_VALIDOS.etapas,
+  categoria: DADOS_VALIDOS.categoria,
   criado_em: new Date("2026-01-01T00:00:00.000Z"),
   atualizado_em: new Date("2026-01-01T00:00:00.000Z"),
 } as unknown as TipoFluxoDetalhe;
@@ -111,6 +113,7 @@ describe("tipoFluxoService.criar", () => {
         nome: DADOS_VALIDOS.nome,
         campos_formulario: DADOS_VALIDOS.campos_formulario,
         etapas: DADOS_VALIDOS.etapas,
+        categoria: DADOS_VALIDOS.categoria,
       },
     });
     expect(mockRegistrar).toHaveBeenCalledTimes(1);
@@ -120,6 +123,25 @@ describe("tipoFluxoService.criar", () => {
       entidade_id: TIPO_FLUXO_CRIADO.id,
       acao: "CRIACAO",
       usuario_id: "user-1",
+    });
+  });
+
+  it("persiste 'categoria: FERIAS' quando informado", async () => {
+    const dadosFerias: TipoFluxoInput = { ...DADOS_VALIDOS, categoria: "FERIAS" };
+    mockCreate.mockResolvedValueOnce({
+      ...TIPO_FLUXO_CRIADO,
+      categoria: "FERIAS",
+    } as never);
+
+    await criar(dadosFerias, "user-1");
+
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: {
+        nome: dadosFerias.nome,
+        campos_formulario: dadosFerias.campos_formulario,
+        etapas: dadosFerias.etapas,
+        categoria: "FERIAS",
+      },
     });
   });
 
@@ -176,6 +198,7 @@ describe("tipoFluxoService.editar", () => {
         nome: DADOS_VALIDOS.nome,
         campos_formulario: DADOS_VALIDOS.campos_formulario,
         etapas: DADOS_VALIDOS.etapas,
+        categoria: DADOS_VALIDOS.categoria,
       },
     });
     expect(mockRegistrar).toHaveBeenCalledTimes(1);
@@ -185,6 +208,27 @@ describe("tipoFluxoService.editar", () => {
       entidade_id: TIPO_FLUXO_CRIADO.id,
       acao: "EDICAO",
       usuario_id: "user-1",
+    });
+  });
+
+  it("persiste 'categoria: FERIAS' no editar quando informado", async () => {
+    mockCount.mockResolvedValueOnce(0);
+    const dadosFerias: TipoFluxoInput = { ...DADOS_VALIDOS, categoria: "FERIAS" };
+    mockUpdate.mockResolvedValueOnce({
+      ...TIPO_FLUXO_CRIADO,
+      categoria: "FERIAS",
+    } as never);
+
+    await editar("tipo-1", dadosFerias, "user-1");
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "tipo-1" },
+      data: {
+        nome: dadosFerias.nome,
+        campos_formulario: dadosFerias.campos_formulario,
+        etapas: dadosFerias.etapas,
+        categoria: "FERIAS",
+      },
     });
   });
 

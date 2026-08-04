@@ -101,6 +101,7 @@ export async function criar(
         nome: dados.nome,
         campos_formulario: dados.campos_formulario,
         etapas: dados.etapas,
+        categoria: dados.categoria,
       },
     });
   } catch (error) {
@@ -161,6 +162,7 @@ export async function editar(
         nome: dados.nome,
         campos_formulario: dados.campos_formulario,
         etapas: dados.etapas,
+        categoria: dados.categoria,
       },
     });
   } catch (error) {
