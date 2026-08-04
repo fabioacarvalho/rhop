@@ -58,7 +58,7 @@ const DADOS_VALIDOS: CandidatoInput = {
   email: "marina.costa@empresa.com",
   telefone: "11999998888",
   curriculo_texto: "Engenheira de dados.",
-  transcricao_texto: "Entrevista tecnica solida.",
+  parecer_tecnico: "Entrevista tecnica solida.",
 };
 
 const CANDIDATO_CRIADO: Candidato = {
@@ -68,7 +68,7 @@ const CANDIDATO_CRIADO: Candidato = {
   telefone: DADOS_VALIDOS.telefone,
   curriculo_texto: DADOS_VALIDOS.curriculo_texto,
   curriculo_arquivo_url: null,
-  transcricao_texto: DADOS_VALIDOS.transcricao_texto,
+  parecer_tecnico: DADOS_VALIDOS.parecer_tecnico,
   status_embedding: "pendente",
   solicitacao_id: null,
   criado_por: "user-1",
@@ -84,7 +84,7 @@ describe("candidatoService.cadastrar", () => {
 
     expect(result).toEqual(CANDIDATO_CRIADO);
     expect(mockGerar).toHaveBeenCalledWith(
-      `${DADOS_VALIDOS.curriculo_texto}\n${DADOS_VALIDOS.transcricao_texto}`,
+      `${DADOS_VALIDOS.curriculo_texto}\n${DADOS_VALIDOS.parecer_tecnico}`,
     );
     expect(mockPersistirEmbedding).toHaveBeenCalledWith("cand-1", [0.1, 0.2]);
     expect(mockMarcarFalha).not.toHaveBeenCalled();
@@ -150,10 +150,38 @@ describe("candidatoService.cadastrar", () => {
       }),
     );
   });
+
+  it("conecta tags quando tag_ids informado", async () => {
+    mockCreate.mockResolvedValueOnce(CANDIDATO_CRIADO);
+    mockGerar.mockResolvedValueOnce([0.1, 0.2]);
+
+    await cadastrar({ ...DADOS_VALIDOS, tag_ids: ["tag-1", "tag-2"] }, "user-1");
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tags: { connect: [{ id: "tag-1" }, { id: "tag-2" }] },
+        }),
+      }),
+    );
+  });
+
+  it("nao conecta tags quando tag_ids ausente", async () => {
+    mockCreate.mockResolvedValueOnce(CANDIDATO_CRIADO);
+    mockGerar.mockResolvedValueOnce([0.1, 0.2]);
+
+    await cadastrar(DADOS_VALIDOS, "user-1");
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ tags: undefined }),
+      }),
+    );
+  });
 });
 
 describe("candidatoService.listar", () => {
-  it("retorna todos os candidatos, sem filtro por criado_por", async () => {
+  it("retorna todos os candidatos, sem filtro por criado_por, incluindo tags", async () => {
     mockFindMany.mockResolvedValueOnce([
       {
         id: "cand-1",
@@ -161,12 +189,14 @@ describe("candidatoService.listar", () => {
         email: "marina@empresa.com",
         status_embedding: "processado",
         criado_em: new Date("2026-08-01T00:00:00.000Z"),
+        tags: [{ id: "tag-1", nome: "Sênior" }],
       },
     ] as never);
 
     const result = await listar();
 
     expect(result).toHaveLength(1);
+    expect(result[0].tags).toEqual([{ id: "tag-1", nome: "Sênior" }]);
     expect(mockFindMany).toHaveBeenCalledWith({
       select: {
         id: true,
@@ -174,6 +204,7 @@ describe("candidatoService.listar", () => {
         email: true,
         status_embedding: true,
         criado_em: true,
+        tags: { select: { id: true, nome: true } },
       },
       orderBy: { criado_em: "desc" },
     });

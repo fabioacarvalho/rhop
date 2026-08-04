@@ -37,7 +37,7 @@ export class ErroReprocessamentoNaoPermitido extends Error {
 export type CandidatoResumo = Pick<
   Candidato,
   "id" | "nome" | "email" | "status_embedding" | "criado_em"
->;
+> & { tags: { id: string; nome: string }[] };
 
 /**
  * Cadastra um candidato (TAL-01, TAL-06, TAL-28).
@@ -62,10 +62,14 @@ export async function cadastrar(
         email: dados.email,
         telefone: dados.telefone,
         curriculo_texto: dados.curriculo_texto,
-        transcricao_texto: dados.transcricao_texto,
+        parecer_tecnico: dados.parecer_tecnico,
         solicitacao_id: dados.solicitacao_id ?? null,
         status_embedding: "pendente",
         criado_por: usuarioId,
+        tags:
+          dados.tag_ids && dados.tag_ids.length > 0
+            ? { connect: dados.tag_ids.map((id) => ({ id })) }
+            : undefined,
       },
     });
   } catch (error) {
@@ -83,7 +87,7 @@ export async function cadastrar(
   await processarEmbedding(
     candidato.id,
     dados.curriculo_texto,
-    dados.transcricao_texto,
+    dados.parecer_tecnico,
   );
 
   await registrarSemFalhar({
@@ -110,6 +114,7 @@ export async function listar(): Promise<CandidatoResumo[]> {
       email: true,
       status_embedding: true,
       criado_em: true,
+      tags: { select: { id: true, nome: true } },
     },
     orderBy: { criado_em: "desc" },
   });
@@ -138,7 +143,7 @@ export async function reprocessarEmbedding(
   await processarEmbedding(
     candidato.id,
     candidato.curriculo_texto,
-    candidato.transcricao_texto,
+    candidato.parecer_tecnico,
   );
 
   await registrarSemFalhar({
