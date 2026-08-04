@@ -1,6 +1,6 @@
 # Banco de Talentos Context
 
-**Gathered:** 2026-07-31
+**Gathered:** 2026-07-31 (rodada 1) + 2026-08-03 (rodada 2)
 **Spec:** `.specs/features/banco-de-talentos/spec.md`
 **Status:** Ready for design
 
@@ -8,7 +8,48 @@
 
 ## Feature Boundary
 
-Módulo de triagem de currículos com IA: cadastro de candidato (texto colado de currículo + transcrição), listagem com status de embedding, e busca/ranking em texto livre com justificativa gerada por IA. Upload de PDF, vínculo a `Solicitacao` e tela de detalhe/histórico ficam fora deste ciclo (P2/P3, ver spec.md).
+Módulo de triagem de currículos com IA: cadastro de candidato (currículo colado ou enviado como arquivo + parecer técnico), classificação por Tags, listagem com status de embedding e Tags, e busca/ranking em texto livre com justificativa gerada por IA. Vínculo a `Solicitacao`, tela de detalhe/histórico e importação de planilhas ficam fora deste ciclo (ver spec.md).
+
+---
+
+## Rodada 2 — Implementation Decisions (2026-08-03)
+
+### Parecer técnico (substitui transcrição)
+
+- Continua **obrigatório** no cadastro — mesma regra que a transcrição tinha antes. Não vira opcional, não ganha edição posterior.
+- É rename de campo/semântica (`transcricao_texto` → `parecer_tecnico`), não um campo novo — mesmo papel na geração do embedding (combinado com `curriculo_texto`).
+
+### Tag — campo "função"
+
+- Representa **descrição livre** do que a tag significa/serve — não é uma categoria estruturada (não existe "tipo de tag" nem hierarquia).
+- Catálogo de Tag é plano: `nome` (único), `funcao` (texto livre), `ativo` (boolean).
+
+### Cardinalidade Candidato↔Tag
+
+- **Many-to-many**: um candidato pode acumular várias Tags (ex: "Backend" + "Sênior" + "Urgente" ao mesmo tempo).
+
+### Upload de currículo (PDF/Word/Markdown)
+
+- **Coexiste** com o texto colado — usuário escolhe subir arquivo OU colar texto, nunca é obrigado a um dos dois especificamente.
+- Texto extraído do arquivo é exibido pra conferência antes de salvar (mesmo desenho já previsto no P2 original da spec, agora com 3 formatos em vez de só PDF).
+- Falha de extração (qualquer formato) nunca bloqueia o cadastro — orienta colar manualmente.
+
+### Gestão de Tags
+
+- Só **RH_ADMIN** cria/edita/ativa/desativa Tags — mesmo padrão de Equipes e Tipos de Fluxo (configuração é RH_ADMIN-only).
+- GESTOR usa as Tags já existentes (ativas) ao classificar candidato, mas não acessa a tela/rotas de gestão.
+
+### Agent's Discretion (rodada 2)
+
+- Layout exato da tela de gestão de Tags (lista + form) — segue o padrão visual já usado em `configuracao-fluxos`.
+- Como o multi-select de Tags aparece no formulário de cadastro de candidato (checkboxes, chips, etc.) — Design/implementação decide, desde que envie `tag_ids: string[]`.
+- Limite de tamanho de arquivo de currículo e mensagens de erro específicas por formato — Design decide um teto razoável (ex: 5MB), desde que documentado e configurável.
+
+---
+
+## Deferred Ideas (rodada 2)
+
+- **Importação de planilhas de candidatos com planilha modelo** — pedido explicitamente para ficar fora desta rodada, "só para coincidir depois". Nomes de campo (`Candidato`, `Tag`) foram mantidos simples e planos nesta revisão para reduzir remapeamento futuro, mas nenhuma tela/rota de import é criada agora.
 
 ---
 

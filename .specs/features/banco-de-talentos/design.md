@@ -313,6 +313,216 @@ interface ResultadoBusca {
 
 ---
 
+## Rodada 2 — Parecer Técnico, Tags e Upload Multi-formato
+
+**Contexto**: `context.md` (seção "Rodada 2") resolveu as decisões de produto. Esta seção resolve as decisões técnicas equivalentes à seção 0 da rodada 1.
+
+### 0.1 Decisões técnicas desta sessão (rodada 2)
+
+1. **Rename `transcricao_texto` → `parecer_tecnico`**: migration `ALTER TABLE candidatos RENAME COLUMN transcricao_texto TO parecer_tecnico` (via `prisma migrate dev`, gerado a partir do rename no schema — Prisma detecta rename se o campo for editado no mesmo `prisma migrate dev` sem remover+adicionar; caso o Prisma gere `DROP`+`ADD` em vez de `RENAME COLUMN`, a migration deve ser editada manualmente antes de aplicar, pra não perder dados de candidatos já cadastrados). Nenhuma outra mudança de tipo/nulidade.
+2. **Tags como relação implícita many-to-many do Prisma**: `model Tag { candidatos Candidato[] }` / `model Candidato { tags Tag[] }` — Prisma gera a tabela de junção automaticamente (`_CandidatoToTag`), sem precisar de campos extras na junção (nenhum requisito pede atributos no vínculo em si, ex: "quem marcou", "quando"). Se isso for necessário no futuro, vira uma migration própria pra tabela explícita.
+3. **Unicidade de nome da Tag**: mesmo padrão de `TipoFluxo.nome` — `@@unique` no schema, captura de `P2002` traduzida em `tagService`. Comparação case-insensitive fica a cargo do service (normaliza pra lowercase antes de comparar/gravar, ou usa índice funcional — mais simples: normalizar e comparar em lowercase no service antes do `create`/`update`, já que o Postgres/Prisma não tem `citext` habilitado no projeto).
+4. **Upload multi-formato**: sem fila/worker (mesmo racional da seção 0 original) — extração de texto acontece de forma síncrona numa rota dedicada (`POST /api/candidatos/extrair-curriculo`), separada do `POST /api/candidatos` que persiste. Isso evita misturar upload de arquivo (multipart/form-data) com o envelope JSON existente de cadastro, e permite ao usuário conferir/editar o texto extraído antes de salvar (TAL-43), exatamente como o P2 original já previa.
+5. **Bibliotecas de extração** (Step 3/4 da Knowledge Verification Chain — não fabricado, escolha por precedente de mercado + já citado no PRD original para PDF):
+   - PDF: `pdf-parse` (já citado no PRD §9 original).
+   - Word (`.docx`): `mammoth` (`mammoth.extractRawText({ buffer })`) — biblioteca padrão de mercado pra extrair texto puro de `.docx`, não requer LibreOffice/dependência de sistema.
+   - Markdown (`.md`): nenhuma lib nova — é texto puro, então o arquivo é lido como UTF-8 diretamente (`buffer.toString("utf-8")`), sem parsing de sintaxe Markdown (o texto vira input do embedding do jeito que está, marcações `#`/`*` não atrapalham a qualidade do embedding).
+   - **Ponto de incerteza sinalizado**: nem `pdf-parse` nem `mammoth` estão no `package.json` atual — precisam ser adicionados (`npm install pdf-parse mammoth`) na primeira task que os usa. Compatibilidade com Next.js 16 (App Router, Node runtime nas API routes) não foi verificada nesta sessão contra a documentação oficial de nenhuma das duas libs; ambas são amplamente usadas em Node puro, risco baixo, mas primeiro passo técnico da fase Tasks (mesmo padrão do risco `pgvector` da rodada 1).
+6. **Armazenamento do arquivo**: reaproveita a coluna `curriculo_arquivo_url` já existente no schema (rodada 1, nunca usada até agora) — nenhuma migration nova pra isso. Usa `createAdminClient()` (`lib/supabase/admin.ts`) para `storage.from("curriculos").upload(...)`, mesmo client já usado por outras integrações administrativas do projeto. O nome/extensão original do arquivo fica embutido no path do Storage (ex: `${candidatoId}-${nomeOriginal}`), sem precisar de coluna nova pra "tipo de arquivo" — dá pra inferir pela extensão do path se necessário no futuro.
+7. **Limite de tamanho de arquivo**: 5MB, constante `TALENTO_CURRICULO_TAMANHO_MAXIMO_MB` (não variável de ambiente como o teto de N — não foi pedido que fosse configurável em `context.md`, é "Agent's Discretion"; constante simples já documentada é suficiente, evita over-engineering).
+
+### Architecture Overview (incremento)
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4f46e5', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#3730a3', 'lineColor': '#94a3b8', 'secondaryColor': '#10b981', 'tertiaryColor': '#f59e0b', 'background': '#ffffff', 'mainBkg': '#f8fafc', 'nodeBorder': '#cbd5e1', 'clusterBkg': '#f1f5f9', 'clusterBorder': '#e2e8f0', 'titleColor': '#1e293b', 'edgeLabelBackground': '#ffffff', 'textColor': '#334155'}}}%%
+flowchart TD
+    user([GESTOR ou RH_ADMIN]) --> form["Tela Novo Candidato"]
+    form -->|"opcional: sobe arquivo"| upload["POST /api/candidatos/extrair-curriculo<br/>(multipart)"]
+    upload --> tipo{"PDF / .docx / .md ?"}
+    tipo -->|nao| rejeita["400 formato nao suportado"]
+    tipo -->|sim| extrai["arquivoCurriculoService.extrairTexto"]
+    extrai -->|sucesso| storage["Supabase Storage bucket curriculos"]
+    storage --> texto["retorna texto extraido pra conferencia"]
+    extrai -->|falha| erroExtracao["422 + orienta colar manualmente"]
+    texto --> form
+    form -->|"POST /api/candidatos<br/>(curriculo_texto final + parecer_tecnico + tag_ids)"| rotaCad["candidatoService.cadastrar"]
+    rotaCad --> vinculaTags["connect tags (many-to-many)"]
+
+    adminUser([RH_ADMIN]) --> telaTags["Tela Gestao de Tags"]
+    telaTags -->|"POST/PATCH /api/tags"| tagRoute["requireUser([RH_ADMIN])"]
+    tagRoute --> tagService["tagService.criar/editar/alternarAtivo"]
+```
+
+### Code Reuse Analysis (incremento)
+
+| Component | Location | How to Use |
+| --- | --- | --- |
+| Padrão `P2002` → erro de domínio | `lib/services/tipoFluxoService.ts:100-110` | Mesmo padrão para `Tag.nome` duplicado (`ErroTagDuplicada`). |
+| Padrão de tela RH_ADMIN-only (Server Component + gate) | `app/(dashboard)/configuracao-fluxos/page.tsx` | Mesmo gate para `app/(dashboard)/banco-de-talentos/tags/page.tsx`. |
+| `createAdminClient()` | `lib/supabase/admin.ts` | Reuso direto para `storage.from("curriculos").upload(...)` — primeira vez que o projeto usa Storage, mas o client já existe. |
+| Padrão de rota (`try/catch` mapeando erro → status) | `app/api/tipos-fluxo/route.ts` | Mesmo formato para `app/api/tags/**` e `app/api/candidatos/extrair-curriculo/route.ts`. |
+
+### Components (incremento)
+
+#### `prisma/schema.prisma` (altera + adiciona)
+
+```prisma
+model Tag {
+  id            String      @id @default(cuid())
+  nome          String      @unique
+  funcao        String
+  ativo         Boolean     @default(true)
+  criado_em     DateTime    @default(now())
+  atualizado_em DateTime    @updatedAt
+  candidatos    Candidato[]
+
+  @@map("tags")
+}
+
+model Candidato {
+  // ...campos existentes da rodada 1, sem mudança de tipo...
+  curriculo_texto       String
+  curriculo_arquivo_url String?
+  parecer_tecnico       String   // renomeado de transcricao_texto (TAL-32)
+  tags                  Tag[]
+  // ...demais campos inalterados...
+}
+```
+
+> `parecer_tecnico` substitui `transcricao_texto` via `RENAME COLUMN` — preserva dados existentes. `tags Tag[]` é relação implícita many-to-many (TAL-33), Prisma cria a tabela de junção automaticamente.
+
+#### `lib/services/tagService.ts` (novo)
+
+- **Purpose**: CRUD de `Tag` (TAL-37 a TAL-41).
+- **Location**: `lib/services/tagService.ts`
+- **Interfaces**:
+  - `listar(somenteAtivas?: boolean): Promise<Tag[]>` — `somenteAtivas=true` usado pelo formulário de cadastro de candidato (só oferece Tags ativas, TAL-36); tela de gestão chama sem o filtro (mostra todas, TAL-37).
+  - `criar(dados: TagInput): Promise<Tag>` — normaliza `nome` (trim) e compara case-insensitive contra existentes antes de `create`; `P2002` → `ErroTagDuplicada` (TAL-38, TAL-39).
+  - `editar(id: string, dados: TagInput): Promise<Tag>` — mesma checagem de duplicidade; `id` inexistente → `ErroNaoEncontrado` (TAL-40).
+  - `alternarAtivo(id: string, ativo: boolean): Promise<Tag>` — `update` simples do campo `ativo` (TAL-41).
+- **Dependencies**: `lib/prisma.ts`.
+- **Reuses**: mesmo padrão de erro de domínio de `tipoFluxoService.ts`.
+
+#### `lib/validations/tag.ts` (novo)
+
+- **Interface**: `tagInputSchema = z.object({ nome: z.string().min(1), funcao: z.string().min(1) })` (TAL-38).
+
+#### `lib/services/arquivoCurriculoService.ts` (novo)
+
+- **Purpose**: extrai texto de PDF/Word/Markdown e armazena o arquivo original (TAL-43 a TAL-47).
+- **Location**: `lib/services/arquivoCurriculoService.ts`
+- **Interfaces**:
+  - `TIPOS_SUPORTADOS = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/markdown"]` (mais checagem de extensão `.md` — nem todo browser envia `text/markdown` corretamente, então valida por extensão do nome do arquivo como fallback).
+  - `extrairTexto(arquivo: { buffer: Buffer; nomeOriginal: string; tipoMime: string }): Promise<{ texto: string } | { erro: string }>` — roteia por extensão/mime: `.pdf` → `pdf-parse`; `.docx` → `mammoth.extractRawText`; `.md`/`.markdown` → `buffer.toString("utf-8")`; extensão não reconhecida → `{ erro: "Formato nao suportado" }` (TAL-46) sem tentar processar; falha de parsing (PDF escaneado, docx corrompido) → `{ erro: "Nao foi possivel extrair texto deste arquivo" }` (TAL-45), nunca lança.
+  - `armazenarArquivo(candidatoIdOuTemp: string, arquivo: { buffer: Buffer; nomeOriginal: string }): Promise<string>` — `createAdminClient().storage.from("curriculos").upload(...)`, retorna a URL pública/assinada (TAL-47).
+- **Dependencies**: `pdf-parse`, `mammoth`, `lib/supabase/admin.ts`.
+- **Reuses**: nenhum código existente pra extração (biblioteca nova); reaproveita `createAdminClient` já existente pra storage.
+
+#### `lib/services/candidatoService.ts` (altera)
+
+- `cadastrar` passa a aceitar `tag_ids?: string[]` no input e usar `parecer_tecnico` no lugar de `transcricao_texto` em todas as referências (`create`, `processarEmbedding`, `reprocessarEmbedding`); vínculo de tags via `tags: { connect: tag_ids?.map(id => ({ id })) }` dentro do mesmo `prisma.candidato.create` (TAL-32, TAL-33).
+- `listar()` passa a incluir `tags: { select: { id: true, nome: true } }` no `select` (TAL-34).
+
+#### `lib/services/talentoSearchService.ts` (altera)
+
+- `$queryRaw` da busca por similaridade não muda (ainda não suporta `include` do Prisma Client por rodar via SQL raw) — após obter os candidatos ordenados, o service faz um segundo `prisma.tag.findMany` (ou `candidato.findMany` com `include: { tags: true }` filtrado pelos IDs já retornados) pra anexar as Tags de cada resultado antes de montar `CandidatoRankeado` (TAL-35).
+
+#### API Routes (novo/altera)
+
+- **`app/api/tags/route.ts`** (novo)
+  - `GET` → `requireUser([Role.GESTOR, Role.RH_ADMIN])` → `tagService.listar(somenteAtivas=true` se query-param `ativo=true`) (usado pelo formulário de candidato, TAL-33 — GESTOR só lê, nunca escreve).
+  - `POST` → `requireUser([Role.RH_ADMIN])` → Zod (`tagInputSchema`) → `tagService.criar` → `ErroTagDuplicada` → 409 (TAL-38, TAL-39, TAL-42).
+- **`app/api/tags/[id]/route.ts`** (novo)
+  - `PATCH` → `requireUser([Role.RH_ADMIN])` → aceita `{ nome?, funcao?, ativo? }` → `tagService.editar`/`alternarAtivo` conforme os campos presentes (TAL-40, TAL-41, TAL-42).
+- **`app/api/candidatos/extrair-curriculo/route.ts`** (novo)
+  - `POST` (multipart) → `requireUser([Role.GESTOR, Role.RH_ADMIN])` → `arquivoCurriculoService.extrairTexto` → formato não suportado ou falha de extração → 422 com mensagem; sucesso → 200 `{ texto, arquivo_url }` (arquivo já armazenado nesse ponto, TAL-43, TAL-45, TAL-46, TAL-47).
+- **`app/api/candidatos/route.ts`** (altera)
+  - `POST` passa a aceitar `parecer_tecnico` (renomeado) e `tag_ids?: string[]` no corpo — Zod atualizado (TAL-32, TAL-33).
+
+#### UI (novo/altera)
+
+- **`app/(dashboard)/banco-de-talentos/tags/page.tsx`** + **`_components/TagForm.tsx`** + **`_components/TagList.tsx`** (novo) — mesmo padrão de gate RH_ADMIN-only de `configuracao-fluxos/page.tsx`; lista com nome/função/badge ativo, botão toggle ativo por linha, form de criar/editar (TAL-37 a TAL-42).
+- **`NovoCandidatoForm.tsx`** (altera) — campo "Transcrição da entrevista" renomeado para "Parecer técnico" (mesmo `textarea`, novo `id`/label); novo bloco de upload (`<input type="file" accept=".pdf,.docx,.md">`) que chama `POST /api/candidatos/extrair-curriculo` ao selecionar, preenche o `textarea` de currículo com o texto retornado pra conferência/edição (usuário pode ainda editar manualmente após a extração); novo multi-select de Tags (`GET /api/tags?ativo=true`), enviando `tag_ids` no submit final (TAL-32, TAL-33, TAL-43, TAL-44).
+- **`page.tsx`** (listagem, altera) — cada linha ganha badges de Tags vinculadas (TAL-34).
+- **`CandidatoCard.tsx`** (altera) — ganha badges de Tags vinculadas (TAL-35).
+
+### Data Models (incremento)
+
+```typescript
+interface CandidatoResumo {
+  id: string
+  nome: string
+  email: string
+  status_embedding: 'pendente' | 'processado' | 'falhou'
+  criado_em: Date
+  tags: { id: string; nome: string }[] // novo, rodada 2
+}
+
+interface CandidatoRankeado {
+  // ...campos existentes...
+  tags: { id: string; nome: string }[] // novo, rodada 2
+}
+
+interface Tag {
+  id: string
+  nome: string
+  funcao: string
+  ativo: boolean
+  criado_em: Date
+  atualizado_em: Date
+}
+```
+
+### Error Handling Strategy (incremento)
+
+| Error Scenario | Handling | User Impact |
+| --- | --- | --- |
+| Nome de Tag duplicado (case-insensitive) | `P2002`/checagem prévia → `ErroTagDuplicada` → 409 | "Já existe uma tag com este nome" |
+| GESTOR/SOLICITANTE tenta gerenciar Tags | `requireUser([RH_ADMIN])` → `ErroNaoAutorizado` → 403 | "Você não tem permissão" |
+| Arquivo de currículo em formato não suportado | `arquivoCurriculoService.extrairTexto` retorna `{ erro }` antes de processar → 422 | "Formato não suportado — envie PDF, Word (.docx) ou Markdown (.md), ou cole o texto" |
+| Extração de texto falha (PDF escaneado, docx corrompido) | `{ erro }` → 422 | "Não foi possível extrair o texto — cole manualmente" |
+| Falha ao subir arquivo pro Supabase Storage | Erro não tratado propaga (infraestrutura, não regra de negócio) → 500 | "Erro ao processar o arquivo, tente novamente" |
+
+### Tech Decisions (only non-obvious ones, incremento)
+
+| Decision | Choice | Rationale |
+| --- | --- | --- |
+| Rename `transcricao_texto` | `RENAME COLUMN` via migration, preserva dados | Campo já em produção (rodada 1 implementada); `DROP`+`ADD` perderia dados de candidatos já cadastrados |
+| Relação Candidato↔Tag | Implicit many-to-many do Prisma (sem tabela explícita) | Nenhum requisito pede atributos no vínculo em si; menor superfície de schema |
+| Unicidade de nome de Tag | `@@unique` + normalização case-insensitive no service | Mesmo padrão de `TipoFluxo.nome`; Postgres sem `citext` habilitado, comparação feita em código |
+| Upload separado do cadastro (`/extrair-curriculo` antes de `POST /api/candidatos`) | Duas requisições em vez de uma multipart única | Preserva o fluxo de "conferência antes de salvar" já decidido no P2 original, sem misturar multipart com o envelope JSON existente |
+| Extensão `.md` sem parsing de Markdown | Texto bruto (UTF-8), marcações não removidas | Simplicidade — embedding não precisa de texto "limpo", e nenhum requisito pede renderização do Markdown |
+| Limite de tamanho de arquivo | Constante `5MB`, não env var | `context.md` deixou como discricionário; não é decisão de produto como o teto de N, não precisa de ponto de ajuste externo |
+
+### Requirement Traceability (rodada 2)
+
+| Requirement ID | Coberto por |
+| --- | --- |
+| TAL-32 | `RENAME COLUMN` na migration + `parecer_tecnico` em schema/service/validation/UI |
+| TAL-33 | `candidatoService.cadastrar` — `tags: { connect: tag_ids } }` |
+| TAL-34 | `candidatoService.listar` inclui `tags`; UI badges na listagem |
+| TAL-35 | `talentoSearchService.buscar` anexa `tags`; `CandidatoCard` exibe badges |
+| TAL-36 | `tagService.listar(somenteAtivas=true)` usado no formulário de cadastro |
+| TAL-37 | `tagService.listar()` (sem filtro) + tela de gestão |
+| TAL-38 | `tagService.criar` + `POST /api/tags` |
+| TAL-39 | Normalização case-insensitive + `@@unique` + `ErroTagDuplicada` |
+| TAL-40 | `tagService.editar` + `PATCH /api/tags/[id]` |
+| TAL-41 | `tagService.alternarAtivo` + `PATCH /api/tags/[id]` |
+| TAL-42 | `requireUser([RH_ADMIN])` em todas as rotas `/api/tags/**` |
+| TAL-43 | `arquivoCurriculoService.extrairTexto` + `POST /api/candidatos/extrair-curriculo` |
+| TAL-44 | `NovoCandidatoForm` mantém `textarea` de currículo editável independente do upload |
+| TAL-45 | `extrairTexto` retorna `{ erro }` sem lançar, rota converte em 422 |
+| TAL-46 | `extrairTexto` valida extensão/mime antes de tentar parsear |
+| TAL-47 | `arquivoCurriculoService.armazenarArquivo` (Supabase Storage, bucket `curriculos`) |
+
+### Riscos / Pontos a verificar na fase de Tasks (rodada 2)
+
+- **Migration de rename**: confirmar que `npx prisma migrate dev` gera `RENAME COLUMN` e não `DROP`+`ADD` — se gerar drop+add, editar a migration SQL manualmente antes de aplicar (risco de perda de dados de candidatos já cadastrados em produção/staging).
+- **`pdf-parse` e `mammoth` não instalados ainda** — adicionar como dependência real na primeira task que os usa; validar que rodam em runtime Node das API routes do Next 16 (não Edge runtime).
+- **Tamanho de arquivo**: sem validação de tamanho no client, um arquivo grande poderia demorar/estourar timeout de função serverless — teto de 5MB deve ser validado tanto no client (antes do upload) quanto no service (defesa em profundidade).
+
+---
+
 ## Riscos / Pontos a verificar na fase de Tasks
 
 - **Extensão `pgvector`** (TAL-27): primeiro passo técnico antes de qualquer código que toque a coluna `embedding` — confirmar sintaxe Prisma 7.9.1 + `@prisma/adapter-pg` pra habilitar a extensão, e confirmar que o projeto Supabase já a suporta (risco já citado no PRD §12).
