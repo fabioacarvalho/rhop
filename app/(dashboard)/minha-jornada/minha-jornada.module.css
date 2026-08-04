@@ -1,0 +1,77 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--azul-900);
+  font-size: 22px;
+}
+
+.subtitle {
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  margin: 4px 0 0 0;
+}
+
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--linha);
+  border-radius: var(--radius, 10px);
+  box-shadow: var(--shadow);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 64px 20px;
+  color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.seal {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--amarelo-400);
+  outline: 1.5px dashed rgba(27, 53, 106, 0.2);
+  outline-offset: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--amarelo-400);
+  flex-shrink: 0;
+  margin-bottom: 24px;
+}
+
+.emptyTitle {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  color: var(--azul-900);
+  margin-bottom: 8px;
+}
+
+.emptyText {
+  font-size: 14px;
+  max-width: 480px;
+  line-height: 1.5;
+}

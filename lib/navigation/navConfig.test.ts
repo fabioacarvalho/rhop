@@ -8,7 +8,7 @@ describe("getVisibleGroups", () => {
 
     expect(groups.map((g) => g.key)).toEqual(["meu-trabalho"]);
     const itens = groups[0].items.map((i) => i.label);
-    expect(itens).toEqual(["Minhas Solicitações", "Nova Solicitação"]);
+    expect(itens).toEqual(["Minhas Solicitações", "Minha jornada"]);
   });
 
   it("GESTOR ve Meu trabalho completo, Visao geral, Recrutamento e Administracao (so Usuarios)", () => {
@@ -24,7 +24,7 @@ describe("getVisibleGroups", () => {
     const meuTrabalho = groups.find((g) => g.key === "meu-trabalho")!;
     expect(meuTrabalho.items.map((i) => i.label)).toEqual([
       "Minhas Solicitações",
-      "Nova Solicitação",
+      "Minha jornada",
       "Aprovações Pendentes",
     ]);
 
@@ -32,7 +32,7 @@ describe("getVisibleGroups", () => {
     expect(administracao.items.map((i) => i.label)).toEqual(["Usuários"]);
   });
 
-  it("RH_ADMIN ve os 4 grupos, 10 itens no total", () => {
+  it("RH_ADMIN ve os 4 grupos, 11 itens no total", () => {
     const groups = getVisibleGroups(Role.RH_ADMIN);
 
     expect(groups.map((g) => g.key)).toEqual([
@@ -43,7 +43,7 @@ describe("getVisibleGroups", () => {
     ]);
 
     const totalItens = groups.reduce((soma, g) => soma + g.items.length, 0);
-    expect(totalItens).toBe(10);
+    expect(totalItens).toBe(11);
   });
 
   it("grupo sem nenhum item visivel nao aparece no array retornado", () => {
@@ -77,10 +77,10 @@ describe("resolveScreenTitle", () => {
     });
   });
 
-  it("prefere o prefixo mais especifico entre /solicitacoes e /solicitacoes/nova", () => {
-    expect(resolveScreenTitle("/solicitacoes/nova")).toEqual({
+  it("prefere o prefixo mais especifico entre /solicitacoes e /minha-jornada", () => {
+    expect(resolveScreenTitle("/minha-jornada")).toEqual({
       eyebrow: "Meu trabalho",
-      titulo: "Nova Solicitação",
+      titulo: "Minha jornada",
     });
   });
 
