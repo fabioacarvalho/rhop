@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
   CampoFormularioDefinicao,
+  CategoriaTipoFluxo,
   PapelAprovador,
   TipoFluxoInput,
 } from "@/lib/validations/tipoFluxo";
@@ -51,6 +52,9 @@ export default function TipoFluxoForm({
   const router = useRouter();
 
   const [nome, setNome] = useState(initialData?.nome ?? "");
+  const [categoria, setCategoria] = useState<CategoriaTipoFluxo>(
+    initialData?.categoria ?? "PADRAO"
+  );
   const [etapas, setEtapas] = useState<PapelAprovador[]>(
     initialData?.etapas ?? []
   );
@@ -88,6 +92,7 @@ export default function TipoFluxoForm({
       nome,
       campos_formulario: camposFormulario,
       etapas,
+      categoria,
     };
 
     try {
@@ -132,6 +137,22 @@ export default function TipoFluxoForm({
           onChange={(e) => setNome(e.target.value)}
           placeholder="ex: Solicitação de Férias"
         />
+      </div>
+
+      <div className={styles.field}>
+        <label htmlFor="categoria" className={styles.fieldLabel}>
+          Categoria
+        </label>
+        <select
+          id="categoria"
+          className={styles.input}
+          value={categoria}
+          onChange={(e) => setCategoria(e.target.value as CategoriaTipoFluxo)}
+        >
+          <option value="PADRAO">Padrão</option>
+          <option value="FERIAS">Férias</option>
+          <option value="DAYOFF">Day Off</option>
+        </select>
       </div>
 
       <div className={styles.sectionDivider}>
