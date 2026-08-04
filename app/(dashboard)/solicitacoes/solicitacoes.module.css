@@ -253,6 +253,35 @@
   color: var(--azul-900);
 }
 
+.calloutIa p {
+  margin: 0 0 8px;
+}
+
+.calloutIa p:last-child {
+  margin-bottom: 0;
+}
+
+.calloutIa ul {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.calloutIa ul:last-child {
+  margin-bottom: 0;
+}
+
+.calloutIa li {
+  margin-bottom: 4px;
+}
+
+.calloutIa li:last-child {
+  margin-bottom: 0;
+}
+
+.calloutIa strong {
+  font-weight: 700;
+}
+
 .calloutIaPage {
   margin-bottom: 20px;
 }

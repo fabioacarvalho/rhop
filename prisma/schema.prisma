@@ -83,14 +83,15 @@ enum CategoriaTipoFluxo {
 }
 
 model TipoFluxo {
-  id                String             @id @default(cuid())
-  nome              String             @unique
-  campos_formulario Json
-  etapas            Json // Role[] serializado, ex: ["GESTOR", "RH_ADMIN"]
-  categoria         CategoriaTipoFluxo @default(PADRAO)
-  criado_em         DateTime           @default(now())
-  atualizado_em     DateTime           @updatedAt
-  solicitacoes      Solicitacao[]
+  id                    String             @id @default(cuid())
+  nome                  String             @unique
+  campos_formulario     Json
+  etapas                Json // Role[] serializado, ex: ["GESTOR", "RH_ADMIN"]
+  categoria             CategoriaTipoFluxo @default(PADRAO)
+  habilitado_solicitante Boolean           @default(true) // false = só GESTOR/RH_ADMIN podem abrir solicitação deste tipo
+  criado_em             DateTime           @default(now())
+  atualizado_em         DateTime           @updatedAt
+  solicitacoes          Solicitacao[]
 
   @@map("tipos_fluxo")
 }

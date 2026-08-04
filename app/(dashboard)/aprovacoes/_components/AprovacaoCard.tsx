@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import type { AprovacaoPendenteCard } from "@/lib/services/aprovacaoService";
+import { ResumoIaTexto } from "@/app/_components/ResumoIaTexto";
 import styles from "../aprovacoes.module.css";
 
 function rotuloSla(prazo: Date | string): {
@@ -94,7 +95,7 @@ export function AprovacaoCard({ card }: Props) {
       {card.resumo_ia ? (
         <div className={styles.callout}>
           <div className={styles.calloutTag}>✦ Resumo por IA</div>
-          {card.resumo_ia}
+          <ResumoIaTexto texto={card.resumo_ia} />
         </div>
       ) : (
         <div className={`${styles.callout} ${styles.calloutFallback}`}>

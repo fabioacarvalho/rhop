@@ -4,6 +4,7 @@ import { Fragment, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { Role } from "@/lib/generated/prisma/client";
 import type { SolicitacaoResumo } from "@/lib/services/solicitacaoService";
+import { ResumoIaTexto } from "@/app/_components/ResumoIaTexto";
 import CancelarSolicitacaoButton from "./CancelarSolicitacaoButton";
 import styles from "../solicitacoes.module.css";
 
@@ -132,8 +133,11 @@ export default function SolicitacaoTableBody({
               <td colSpan={7}>
                 <div className={styles.calloutIa}>
                   <div className={styles.calloutIaTag}>✦ Resumo por IA</div>
-                  {solicitacao.resumo_ia_solicitante ??
-                    "Resumo da IA indisponível no momento."}
+                  {solicitacao.resumo_ia_solicitante ? (
+                    <ResumoIaTexto texto={solicitacao.resumo_ia_solicitante} />
+                  ) : (
+                    <p>Resumo da IA indisponível no momento.</p>
+                  )}
                 </div>
               </td>
             </tr>

@@ -69,6 +69,7 @@ export const tipoFluxoInputSchema = z.object({
     .min(1, "campos_formulario deve ter ao menos 1 item."),
   etapas: z.array(z.enum(PAPEIS_APROVADOR)).min(1, "etapas deve ter ao menos 1 item."),
   categoria: z.enum(CATEGORIAS_TIPO_FLUXO).default("PADRAO"),
+  habilitado_solicitante: z.boolean().default(true),
 });
 
 export type TipoFluxoInput = z.infer<typeof tipoFluxoInputSchema>;

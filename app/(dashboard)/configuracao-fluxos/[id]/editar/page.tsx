@@ -82,6 +82,7 @@ export default async function Page({ params }: PageProps) {
     campos_formulario: tipoFluxo.campos_formulario as CampoFormularioDefinicao[],
     etapas: tipoFluxo.etapas as PapelAprovador[],
     categoria: tipoFluxo.categoria,
+    habilitado_solicitante: tipoFluxo.habilitado_solicitante,
   };
 
   return (

@@ -55,6 +55,9 @@ export default function TipoFluxoForm({
   const [categoria, setCategoria] = useState<CategoriaTipoFluxo>(
     initialData?.categoria ?? "PADRAO"
   );
+  const [habilitadoSolicitante, setHabilitadoSolicitante] = useState<boolean>(
+    initialData?.habilitado_solicitante ?? true
+  );
   const [etapas, setEtapas] = useState<PapelAprovador[]>(
     initialData?.etapas ?? []
   );
@@ -93,6 +96,7 @@ export default function TipoFluxoForm({
       campos_formulario: camposFormulario,
       etapas,
       categoria,
+      habilitado_solicitante: habilitadoSolicitante,
     };
 
     try {
@@ -153,6 +157,21 @@ export default function TipoFluxoForm({
           <option value="FERIAS">Férias</option>
           <option value="DAYOFF">Day Off</option>
         </select>
+      </div>
+
+      <div className={styles.field}>
+        <label className={styles.fieldCheckbox}>
+          <input
+            type="checkbox"
+            checked={habilitadoSolicitante}
+            onChange={(e) => setHabilitadoSolicitante(e.target.checked)}
+          />
+          Colaborador pode abrir este tipo de fluxo
+        </label>
+        <p className={styles.hint}>
+          Desmarcado: só Gestor e RH_Admin conseguem abrir uma solicitação
+          deste tipo.
+        </p>
       </div>
 
       <div className={styles.sectionDivider}>

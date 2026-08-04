@@ -55,9 +55,21 @@ export type TipoFluxoDetalhe = TipoFluxo;
  * Lista todos os `TipoFluxo` cadastrados (CONF-06), ordenados por `nome`
  * para exibicao estavel na UI. Retorna `id`+`nome`+`etapas` — a listagem nao
  * precisa do registro completo (`campos_formulario` fica de fora).
+ *
+ * `apenasHabilitadosParaSolicitante: true` filtra para `habilitado_solicitante
+ * = true` — usado pela tela Nova Solicitacao quando o usuario logado e
+ * `SOLICITANTE` (tipos com a flag desligada so aparecem pra GESTOR/RH_ADMIN
+ * abrirem). Chamadas sem esse filtro (configuracao-fluxos, dashboards,
+ * filtros de tipo) continuam retornando todos os tipos, sem mudanca de
+ * comportamento.
  */
-export async function listar(): Promise<TipoFluxoResumo[]> {
+export async function listar(options?: {
+  apenasHabilitadosParaSolicitante?: boolean;
+}): Promise<TipoFluxoResumo[]> {
   return prisma.tipoFluxo.findMany({
+    where: options?.apenasHabilitadosParaSolicitante
+      ? { habilitado_solicitante: true }
+      : undefined,
     select: { id: true, nome: true, etapas: true },
     orderBy: { nome: "asc" },
   });
@@ -102,6 +114,7 @@ export async function criar(
         campos_formulario: dados.campos_formulario,
         etapas: dados.etapas,
         categoria: dados.categoria,
+        habilitado_solicitante: dados.habilitado_solicitante,
       },
     });
   } catch (error) {
@@ -163,6 +176,7 @@ export async function editar(
         campos_formulario: dados.campos_formulario,
         etapas: dados.etapas,
         categoria: dados.categoria,
+        habilitado_solicitante: dados.habilitado_solicitante,
       },
     });
   } catch (error) {

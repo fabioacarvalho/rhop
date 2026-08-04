@@ -136,6 +136,35 @@
   color: var(--azul-900);
 }
 
+.callout p {
+  margin: 0 0 8px;
+}
+
+.callout p:last-child {
+  margin-bottom: 0;
+}
+
+.callout ul {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.callout ul:last-child {
+  margin-bottom: 0;
+}
+
+.callout li {
+  margin-bottom: 4px;
+}
+
+.callout li:last-child {
+  margin-bottom: 0;
+}
+
+.callout strong {
+  font-weight: 700;
+}
+
 .calloutTag {
   display: inline-flex;
   align-items: center;

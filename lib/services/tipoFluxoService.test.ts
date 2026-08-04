@@ -59,6 +59,7 @@ const DADOS_VALIDOS: TipoFluxoInput = {
   ],
   etapas: ["GESTOR", "RH_ADMIN"],
   categoria: "PADRAO",
+  habilitado_solicitante: true,
 };
 
 const TIPO_FLUXO_CRIADO: TipoFluxoDetalhe = {
@@ -67,6 +68,7 @@ const TIPO_FLUXO_CRIADO: TipoFluxoDetalhe = {
   campos_formulario: DADOS_VALIDOS.campos_formulario,
   etapas: DADOS_VALIDOS.etapas,
   categoria: DADOS_VALIDOS.categoria,
+  habilitado_solicitante: DADOS_VALIDOS.habilitado_solicitante,
   criado_em: new Date("2026-01-01T00:00:00.000Z"),
   atualizado_em: new Date("2026-01-01T00:00:00.000Z"),
 } as unknown as TipoFluxoDetalhe;
@@ -114,6 +116,7 @@ describe("tipoFluxoService.criar", () => {
         campos_formulario: DADOS_VALIDOS.campos_formulario,
         etapas: DADOS_VALIDOS.etapas,
         categoria: DADOS_VALIDOS.categoria,
+        habilitado_solicitante: DADOS_VALIDOS.habilitado_solicitante,
       },
     });
     expect(mockRegistrar).toHaveBeenCalledTimes(1);
@@ -141,6 +144,7 @@ describe("tipoFluxoService.criar", () => {
         campos_formulario: dadosFerias.campos_formulario,
         etapas: dadosFerias.etapas,
         categoria: "FERIAS",
+        habilitado_solicitante: dadosFerias.habilitado_solicitante,
       },
     });
   });
@@ -199,6 +203,7 @@ describe("tipoFluxoService.editar", () => {
         campos_formulario: DADOS_VALIDOS.campos_formulario,
         etapas: DADOS_VALIDOS.etapas,
         categoria: DADOS_VALIDOS.categoria,
+        habilitado_solicitante: DADOS_VALIDOS.habilitado_solicitante,
       },
     });
     expect(mockRegistrar).toHaveBeenCalledTimes(1);
@@ -228,6 +233,7 @@ describe("tipoFluxoService.editar", () => {
         campos_formulario: dadosFerias.campos_formulario,
         etapas: dadosFerias.etapas,
         categoria: "FERIAS",
+        habilitado_solicitante: dadosFerias.habilitado_solicitante,
       },
     });
   });
