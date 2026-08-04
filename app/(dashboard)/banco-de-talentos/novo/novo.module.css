@@ -140,6 +140,41 @@
   color: var(--ink-soft);
 }
 
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fileHint {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.tagChecklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid var(--linha);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tagChip:has(input:checked) {
+  border-color: var(--azul-500);
+  background: var(--azul-100);
+}
+
 @media (max-width: 640px) {
   .page {
     padding: 20px 16px 48px;
