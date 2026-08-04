@@ -31,9 +31,14 @@ vi.mock("@/lib/services/tipoFluxoService", () => {
   };
 });
 
+vi.mock("@/lib/services/resumoSolicitanteService", () => ({
+  gerarEPersistir: vi.fn(),
+}));
+
 import { prisma } from "@/lib/prisma";
 import { registrar } from "@/lib/services/logService";
 import * as tipoFluxoService from "@/lib/services/tipoFluxoService";
+import { gerarEPersistir } from "@/lib/services/resumoSolicitanteService";
 import { Role } from "@/lib/generated/prisma/client";
 import {
   ErroAcessoNegado,
@@ -52,6 +57,7 @@ const mockFindMany = vi.mocked(prisma.solicitacao.findMany);
 const mockFindUnique = vi.mocked(prisma.solicitacao.findUnique);
 const mockRegistrar = vi.mocked(registrar);
 const mockBuscarPorId = vi.mocked(tipoFluxoService.buscarPorId);
+const mockGerarEPersistir = vi.mocked(gerarEPersistir);
 
 beforeEach(() => {
   mockCreate.mockReset();
@@ -59,6 +65,8 @@ beforeEach(() => {
   mockFindUnique.mockReset();
   mockRegistrar.mockReset();
   mockBuscarPorId.mockReset();
+  mockGerarEPersistir.mockReset();
+  mockGerarEPersistir.mockResolvedValue(undefined);
 });
 
 const TIPO_FLUXO_REEMBOLSO = {
@@ -166,6 +174,35 @@ describe("solicitacaoService.criar", () => {
     mockBuscarPorId.mockResolvedValueOnce(TIPO_FLUXO_REEMBOLSO as never);
     mockCreate.mockResolvedValueOnce(SOLICITACAO_CRIADA as never);
     mockRegistrar.mockRejectedValueOnce(new Error("log indisponivel"));
+
+    await expect(criar(INPUT_VALIDO, "user-1")).resolves.toEqual(
+      SOLICITACAO_CRIADA,
+    );
+  });
+
+  it("dispara gerarEPersistir(solicitacao.id) sem aguardar (fire-and-forget)", async () => {
+    mockBuscarPorId.mockResolvedValueOnce(TIPO_FLUXO_REEMBOLSO as never);
+    mockCreate.mockResolvedValueOnce(SOLICITACAO_CRIADA as never);
+
+    let resolvePendente: () => void = () => {};
+    mockGerarEPersistir.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePendente = resolve;
+      }),
+    );
+
+    await expect(criar(INPUT_VALIDO, "user-1")).resolves.toEqual(
+      SOLICITACAO_CRIADA,
+    );
+    expect(mockGerarEPersistir).toHaveBeenCalledWith(SOLICITACAO_CRIADA.id);
+
+    resolvePendente();
+  });
+
+  it("criar resolve mesmo se gerarEPersistir rejeitar (nao propaga, nao trava)", async () => {
+    mockBuscarPorId.mockResolvedValueOnce(TIPO_FLUXO_REEMBOLSO as never);
+    mockCreate.mockResolvedValueOnce(SOLICITACAO_CRIADA as never);
+    mockGerarEPersistir.mockRejectedValueOnce(new Error("falha inesperada"));
 
     await expect(criar(INPUT_VALIDO, "user-1")).resolves.toEqual(
       SOLICITACAO_CRIADA,

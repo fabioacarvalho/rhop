@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma, Role, type Solicitacao } from "@/lib/generated/prisma/client";
 import { registrar } from "@/lib/services/logService";
 import * as tipoFluxoService from "@/lib/services/tipoFluxoService";
+import { gerarEPersistir } from "@/lib/services/resumoSolicitanteService";
 import {
   validarDados,
   type ErroValidacaoCampo,
@@ -135,6 +136,10 @@ export async function criar(
   } catch {
     // ver docstring: nunca deixa a criacao ser reportada como falha por causa do log.
   }
+
+  // Fire-and-forget: gerarEPersistir nunca lanca (mesmo contrato de iaService),
+  // mas nao bloqueia o retorno de criar (RIA-01).
+  void gerarEPersistir(solicitacao.id);
 
   return solicitacao;
 }
