@@ -5,7 +5,7 @@ import { z } from "zod";
  * `design.md` (seção "Data Models"). Cada valor tem uma renderização/validação
  * própria em `solicitacoes` — não é um único tipo genérico.
  */
-export const TIPOS_CAMPO = ["texto", "numero", "data", "selecao"] as const;
+export const TIPOS_CAMPO = ["texto", "numero", "data", "selecao", "anexo"] as const;
 export type TipoCampo = (typeof TIPOS_CAMPO)[number];
 
 /**

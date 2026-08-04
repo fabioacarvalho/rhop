@@ -37,6 +37,13 @@ const campoSelecao: CampoFormularioDefinicao = {
   opcoes: ["Viagem", "Saúde"],
 };
 
+const campoAnexo: CampoFormularioDefinicao = {
+  chave: "comprovante",
+  rotulo: "Comprovante",
+  tipo: "anexo",
+  obrigatorio: false,
+};
+
 function tipoFluxoValido(
   overrides: Partial<TipoFluxoInput> = {}
 ): TipoFluxoInput {
@@ -51,6 +58,10 @@ function tipoFluxoValido(
 describe("campoFormularioSchema", () => {
   it("aceita um campo válido do tipo 'texto'", () => {
     expect(campoFormularioSchema.safeParse(campoTexto).success).toBe(true);
+  });
+
+  it("aceita um campo válido do tipo 'anexo'", () => {
+    expect(campoFormularioSchema.safeParse(campoAnexo).success).toBe(true);
   });
 
   it("aceita um campo válido do tipo 'numero'", () => {
@@ -152,7 +163,7 @@ describe("tipoFluxoInputSchema", () => {
   it("aceita 'campos_formulario' com um campo válido de cada tipo semântico", () => {
     const resultado = tipoFluxoInputSchema.safeParse(
       tipoFluxoValido({
-        campos_formulario: [campoTexto, campoNumero, campoData, campoSelecao],
+        campos_formulario: [campoTexto, campoNumero, campoData, campoSelecao, campoAnexo],
       })
     );
     expect(resultado.success).toBe(true);

@@ -1,6 +1,7 @@
 .shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .main {
@@ -8,6 +9,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .content {

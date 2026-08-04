@@ -17,6 +17,7 @@ const RATULO_TIPO: Record<TipoCampo, string> = {
   numero: "Número",
   data: "Data",
   selecao: "Seleção",
+  anexo: "Anexo (Link)",
 };
 
 function campoVazio(): CampoFormularioDefinicao {

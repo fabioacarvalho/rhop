@@ -62,6 +62,15 @@ export default function CampoDinamico({
           required={campo.obrigatorio}
           onChange={(e) => onChange(e.target.value)}
         />
+      ) : campo.tipo === "anexo" ? (
+        <input
+          type="url"
+          placeholder="https://..."
+          className={styles.input}
+          value={value}
+          required={campo.obrigatorio}
+          onChange={(e) => onChange(e.target.value)}
+        />
       ) : (
         <input
           type="text"

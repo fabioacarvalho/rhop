@@ -183,7 +183,13 @@ export default async function Page({ params }: PageProps) {
                 <div key={campo.chave} className={styles.detailField}>
                   <span className={styles.detailLabel}>{campo.rotulo}</span>
                   <span className={styles.detailValue}>
-                    {formatarValor(dados[campo.chave])}
+                    {campo.tipo === "anexo" && dados[campo.chave] ? (
+                      <a href={String(dados[campo.chave])} target="_blank" rel="noopener noreferrer">
+                        {String(dados[campo.chave])}
+                      </a>
+                    ) : (
+                      formatarValor(dados[campo.chave])
+                    )}
                   </span>
                 </div>
               ))
