@@ -98,21 +98,22 @@ Cada requisito recebe um ID único para rastreamento em design, tasks e validaç
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| GAUTH-01 | P1: Login Google restrito ao domínio (troca de código e sessão) | - | Pending |
-| GAUTH-02 | P1: Login Google restrito ao domínio (bloqueio server-side fora do domínio) | - | Pending |
-| GAUTH-03 | P1: Login Google restrito ao domínio (erro recuperável na troca de código) | - | Pending |
-| GAUTH-04 | P1: Login Google restrito ao domínio (login por senha sem regressão) | - | Pending |
-| GAUTH-05 | P1: Vínculo com `User` existente (vincula sem duplicar) | - | Pending |
-| GAUTH-06 | P1: Vínculo com `User` existente (`ativo = false` bloqueia mesmo via Google) | - | Pending |
-| GAUTH-07 | P2: Auto-provisionamento (`User` criado como `SOLICITANTE`, `gestor_id` nulo) | - | Pending |
-| GAUTH-08 | P2: Auto-provisionamento (`Log` `AUDITORIA` da criação automática) | - | Pending |
-| GAUTH-09 | P2: Auto-provisionamento (comportamento de "sem gestor" delegado a `solicitacoes`) | - | Pending |
+| GAUTH-01 | P1: Login Google restrito ao domínio (troca de código e sessão) | T6, T10 | In Tasks |
+| GAUTH-02 | P1: Login Google restrito ao domínio (bloqueio server-side fora do domínio) | T1, T6 | In Tasks |
+| GAUTH-03 | P1: Login Google restrito ao domínio (erro recuperável na troca de código) | T6 | In Tasks |
+| GAUTH-04 | P1: Login Google restrito ao domínio (login por senha sem regressão) | T10 | In Tasks |
+| GAUTH-05 | P1: Vínculo com `User` existente (vincula sem duplicar) | T1 | In Tasks — resolvido via automatic identity linking do Supabase, sem código de correlação (ver `design.md`) |
+| GAUTH-06 | P1: Vínculo com `User` existente (`ativo = false` bloqueia mesmo via Google) | — | In Tasks — já coberto por `authService.getSessionUser()` existente, sem código novo |
+| GAUTH-07 | P2: Auto-provisionamento (`User` criado como `SOLICITANTE`, `gestor_id` nulo) | T3, T7, T8, T9 | In Tasks — **reinterpretado em `design.md`**: `equipe_id` é escolhido pelo usuário no onboarding obrigatório (GAUTH-10), não fica `null` (ver SPEC_DEVIATION) |
+| GAUTH-08 | P2: Auto-provisionamento (`Log` `AUDITORIA` da criação automática) | T3 | In Tasks |
+| GAUTH-09 | P2: Auto-provisionamento (comportamento de "sem gestor" delegado a `solicitacoes`) | — | Superseded — sem efeito prático, não existe mais `SOLICITANTE` auto-provisionado sem `Equipe` (ver `design.md`) |
+| GAUTH-10 | Onboarding obrigatório de `Equipe` no primeiro login Google sem `User` prévio (novo, decisão de `design.md`) | T2, T5, T7, T8, T9 | In Tasks |
 
 **ID format:** `GAUTH-[NUMBER]`
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 9 total, 0 mapeados para tasks, 9 não mapeados ⚠️ (Design/Tasks ainda não executados para esta feature)
+**Coverage:** 10 total (GAUTH-10 adicionado em `design.md`), 9 mapeados para tasks, 1 superseded (GAUTH-09) — ver `.specs/features/integrar-login-google/design.md` para o racional completo do desvio.
 
 ---
 
@@ -130,5 +131,5 @@ Como saberemos que a feature está bem-sucedida:
 
 ## Questões em Aberto
 
-1. **Estratégia técnica de vínculo de `id`** (upsert por e-mail atualizando `User.id` para o novo id do Supabase Auth vs. outra abordagem de correlação) — decisão de implementação, fica para a fase de Design.
+1. ~~**Estratégia técnica de vínculo de `id`**~~ — **Resolvido em `design.md`**: Supabase Auth faz automatic identity linking por e-mail confirmado; nenhum código de correlação/upsert é necessário, `User.id` nunca muda.
 2. **Configuração externa** (habilitar provider Google no painel do Supabase, criar OAuth client no Google Cloud Console, configurar redirect URLs) é pré-requisito de infraestrutura fora do repositório — não é um requisito de código, mas bloqueia o teste end-to-end até ser feita.
