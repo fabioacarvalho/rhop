@@ -82,6 +82,7 @@ export type SolicitacaoResumo = Solicitacao & {
 /** Registro completo, retornado por `buscarDetalhePorId`. */
 export type SolicitacaoDetalhe = Solicitacao & {
   tipoFluxo: { id: string; nome: string; campos_formulario: unknown; etapas: unknown };
+  solicitante: { id: string; nome: string; email: string };
 };
 
 function lerEtapas(etapasJson: unknown): Role[] {
@@ -187,16 +188,23 @@ export async function listarMinhas(
  * Busca o detalhe de uma `Solicitacao` (SOL-10 a SOL-12).
  *
  * - `id` inexistente -> `ErroNaoEncontrado`.
- * - `solicitante_id !== solicitanteId` -> `ErroAcessoNegado` (403, nao 404 —
- *   ver `design.md`, "Tech Decisions").
+ * - Sem visibilidade (nem solicitante dono, nem gestor da equipe, nem RH_Admin) -> `ErroAcessoNegado`.
  */
 export async function buscarDetalhePorId(
   id: string,
-  solicitanteId: string,
+  usuario: AuthenticatedUser | string,
 ): Promise<SolicitacaoDetalhe> {
   const solicitacao = await prisma.solicitacao.findUnique({
     where: { id },
     include: {
+      solicitante: {
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          equipe: { select: { gestor_id: true } },
+        },
+      },
       tipoFluxo: {
         select: { id: true, nome: true, campos_formulario: true, etapas: true },
       },
@@ -207,7 +215,30 @@ export async function buscarDetalhePorId(
     throw new ErroNaoEncontrado();
   }
 
-  if (solicitacao.solicitante_id !== solicitanteId) {
+  const usuarioId = typeof usuario === "string" ? usuario : usuario.id;
+  const userRole = typeof usuario === "string" ? null : usuario.role;
+
+  let visivel = false;
+
+  if (solicitacao.solicitante_id === usuarioId) {
+    visivel = true;
+  } else if (userRole === Role.RH_ADMIN) {
+    visivel = true;
+  } else if (userRole === Role.GESTOR) {
+    visivel = solicitacao.solicitante.equipe?.gestor_id === usuarioId;
+  } else if (typeof usuario === "string") {
+    const userDb = await prisma.user.findUnique({
+      where: { id: usuarioId },
+      select: { role: true },
+    });
+    if (userDb?.role === Role.RH_ADMIN) {
+      visivel = true;
+    } else if (userDb?.role === Role.GESTOR) {
+      visivel = solicitacao.solicitante.equipe?.gestor_id === usuarioId;
+    }
+  }
+
+  if (!visivel) {
     throw new ErroAcessoNegado();
   }
 

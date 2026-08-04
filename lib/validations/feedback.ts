@@ -10,6 +10,7 @@ export const feedbackInputSchema = z.object({
   titulo: z.string().max(200).optional().default(""),
   descricao: z.string().max(5000).optional().default(""),
   tela_contexto: z.string().min(1).max(200),
+  screenshotBase64: z.string().optional(),
 });
 
 export type FeedbackInput = z.infer<typeof feedbackInputSchema>;

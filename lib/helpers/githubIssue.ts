@@ -8,6 +8,7 @@ export interface MontarIssuePayloadInput {
   papel: Role;
   titulo: string;
   descricao: string;
+  screenshotUrl?: string;
 }
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -33,15 +34,22 @@ export function montarIssuePayload({
   papel,
   titulo,
   descricao,
+  screenshotUrl,
 }: MontarIssuePayloadInput): { title: string; body: string; labels: string[] } {
   const tituloFinal = titulo.trim() || "(sem título)";
-  const body = [
+  const bodyItems = [
     `**Tipo:** ${tipo}`,
     `**Tela:** ${tela}`,
     `**Papel:** ${ROLE_LABELS[papel]}`,
     "",
     descricao.trim(),
-  ].join("\n");
+  ];
+
+  if (screenshotUrl) {
+    bodyItems.push("", "---", `**Contexto visual:**`, `![Screenshot da tela](${screenshotUrl})`);
+  }
+
+  const body = bodyItems.join("\n");
 
   return {
     title: `[${tipo}] ${tituloFinal}`,

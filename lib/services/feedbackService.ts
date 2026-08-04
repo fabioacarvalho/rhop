@@ -2,9 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { registrar } from "@/lib/services/logService";
 import { criarIssue } from "@/lib/services/githubService";
 import { montarIssuePayload, type TipoRelato } from "@/lib/helpers/githubIssue";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Role, TipoRelato as TipoRelatoPrisma } from "@/lib/generated/prisma/enums";
 
-const LIMITE_DIARIO = 5;
+const LIMITE_DIARIO = 10;
 
 const TIPO_PRISMA: Record<TipoRelato, TipoRelatoPrisma> = {
   Bug: TipoRelatoPrisma.BUG,
@@ -19,6 +20,7 @@ export interface EnviarFeedbackInput {
   titulo: string;
   descricao: string;
   telaContexto: string;
+  screenshotBase64?: string;
 }
 
 export type EnviarFeedbackResultado =
@@ -53,12 +55,47 @@ export async function enviarFeedback(
     };
   }
 
+  let screenshotUrl: string | undefined = undefined;
+  
+  if (input.screenshotBase64) {
+    try {
+      const supabase = createAdminClient();
+      const base64Data = input.screenshotBase64.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, "base64");
+      const caminho = `screenshots/feedback-${Date.now()}-${input.usuarioId}.png`;
+      
+      // Try to create bucket if it doesn't exist (ignores error if already exists)
+      await supabase.storage.createBucket('issues', {
+        public: true,
+        allowedMimeTypes: ['image/png', 'image/jpeg'],
+        fileSizeLimit: 10485760,
+      });
+
+      const { error } = await supabase.storage
+        .from("issues")
+        .upload(caminho, buffer, {
+          contentType: "image/png",
+          upsert: true,
+        });
+        
+      if (!error) {
+        const { data } = supabase.storage.from("issues").getPublicUrl(caminho);
+        screenshotUrl = data.publicUrl;
+      } else {
+        console.error("Erro no upload para o Supabase:", error);
+      }
+    } catch (e) {
+      console.error("Erro ao fazer upload do screenshot:", e);
+    }
+  }
+
   const payload = montarIssuePayload({
     tipo: input.tipo,
     tela: input.telaContexto,
     papel: input.papel,
     titulo: input.titulo,
     descricao: input.descricao,
+    screenshotUrl,
   });
 
   const dadosBase = {

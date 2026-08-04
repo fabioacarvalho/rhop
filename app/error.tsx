@@ -13,6 +13,8 @@ interface ErrorPageProps {
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
   const pathname = usePathname();
   const [reportar, setReportar] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [screenshotBase64, setScreenshotBase64] = useState<string | undefined>();
 
   useEffect(() => {
     fetch("/api/erros/log", {
@@ -25,6 +27,20 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
       }),
     }).catch(() => {});
   }, [error, pathname]);
+
+  const handleReportar = async () => {
+    setCapturing(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(document.body, { useCORS: true });
+      setScreenshotBase64(canvas.toDataURL("image/png"));
+    } catch (e) {
+      console.error("Erro ao capturar tela:", e);
+    } finally {
+      setCapturing(false);
+      setReportar(true);
+    }
+  };
 
   const titulo = error.message.trim().slice(0, 80) || "Erro inesperado no sistema";
   const descricao = [
@@ -53,9 +69,10 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
           <button
             type="button"
             className={`${styles.btn} ${styles.btnPrimary}`}
-            onClick={() => setReportar(true)}
+            onClick={handleReportar}
+            disabled={capturing}
           >
-            Reportar este erro no GitHub
+            {capturing ? "Capturando tela..." : "Reportar este erro no GitHub"}
           </button>
         </div>
       </div>
@@ -64,6 +81,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         <HelpModal
           onClose={() => setReportar(false)}
           valoresIniciais={{ tipo: "Bug", titulo, descricao }}
+          screenshotBase64={screenshotBase64}
         />
       )}
     </div>

@@ -17,6 +17,7 @@ interface ValoresIniciais {
 interface HelpModalProps {
   onClose: () => void;
   valoresIniciais?: ValoresIniciais;
+  screenshotBase64?: string;
 }
 
 interface SucessoEnvio {
@@ -24,7 +25,7 @@ interface SucessoEnvio {
   numero: number;
 }
 
-export function HelpModal({ onClose, valoresIniciais }: HelpModalProps) {
+export function HelpModal({ onClose, valoresIniciais, screenshotBase64 }: HelpModalProps) {
   const pathname = usePathname();
   const tela = resolveScreenTitle(pathname).titulo;
 
@@ -52,6 +53,7 @@ export function HelpModal({ onClose, valoresIniciais }: HelpModalProps) {
           titulo,
           descricao,
           tela_contexto: tela,
+          screenshotBase64,
         }),
       });
 
@@ -172,6 +174,8 @@ export function HelpModal({ onClose, valoresIniciais }: HelpModalProps) {
               <div className={styles.cellSub}>
                 Tela atual: <strong>{tela}</strong>
               </div>
+              
+
 
               {erro && <div className={styles.erro}>{erro}</div>}
 

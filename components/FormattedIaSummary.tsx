@@ -15,16 +15,23 @@ export function normalizeMarkdownText(text: string): string {
   let cleaned = text.trim();
   cleaned = cleaned.replace(/^Resumo por IA\s*/i, "");
 
-  // Substitui separadores inline " - **", " * **", " • **" por quebra de linha "\n- " (apenas se não estiver no início da linha)
-  cleaned = cleaned.replace(/(?<!\n)[ \t]+[-•*][ \t]+(?=\*\*)/g, "\n- ");
+  const lines = cleaned.split("\n");
+  const processedLines: string[] = [];
 
-  // Insere quebra de linha antes de pares de chave em negrito " **Chave:**" quando inline (e não após traço/marcador)
-  cleaned = cleaned.replace(
-    /(?<![-•*\n])[ \t]+(?=\*\*[\wÀ-ÿ\s\-_]+:\*\*)/gi,
-    "\n",
-  );
+  for (let line of lines) {
+    line = line.trim();
+    if (!line) continue;
 
-  return cleaned;
+    // Substitui separadores inline " - **", " * **", " • **" por quebra de linha "\n- **"
+    line = line.replace(/([^\s])\s+[-•*]\s+\*\*/g, "$1\n- **");
+
+    // Insere quebra de linha antes de pares de chave em negrito " **Chave:**" quando inline
+    line = line.replace(/([^-•*\s])\s+(\*\*[\wÀ-ÿ\s\-_]+:\*\*)/gi, "$1\n$2");
+
+    processedLines.push(line);
+  }
+
+  return processedLines.join("\n");
 }
 
 /**

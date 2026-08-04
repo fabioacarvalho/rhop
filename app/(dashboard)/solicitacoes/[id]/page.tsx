@@ -29,12 +29,14 @@ const ROTULO_STATUS: Record<string, string> = {
   PENDENTE: "Pendente",
   APROVADA: "Aprovado",
   REJEITADA: "Rejeitado",
+  CANCELADA: "Cancelado",
 };
 
 const STAMP_STATUS: Record<string, string> = {
   PENDENTE: "stampPendente",
   APROVADA: "stampAprovada",
   REJEITADA: "stampRejeitada",
+  CANCELADA: "stampCancelada",
 };
 
 function formatarData(data: Date): string {
@@ -81,7 +83,7 @@ export default async function Page({ params }: PageProps) {
 
   let solicitacao;
   try {
-    solicitacao = await buscarDetalhePorId(id, usuario.id);
+    solicitacao = await buscarDetalhePorId(id, usuario);
   } catch (erro) {
     if (erro instanceof ErroNaoEncontrado) {
       notFound();
@@ -102,10 +104,13 @@ export default async function Page({ params }: PageProps) {
     [];
   const dados = (solicitacao.dados ?? {}) as Record<string, unknown>;
 
+  const backHref = usuario.role !== Role.SOLICITANTE ? "/aprovacoes" : "/solicitacoes";
+  const backLabel = usuario.role !== Role.SOLICITANTE ? "← Aprovações Pendentes" : "← Minhas Solicitações";
+
   return (
     <main className={styles.page}>
-      <Link href="/solicitacoes" className={styles.backLink}>
-        ← Minhas Solicitações
+      <Link href={backHref} className={styles.backLink}>
+        {backLabel}
       </Link>
 
       <header className={styles.header}>
@@ -136,6 +141,14 @@ export default async function Page({ params }: PageProps) {
       <div className={styles.card}>
         <div className={styles.cardPad}>
           <div className={styles.detailGrid}>
+            {solicitacao.solicitante ? (
+              <div className={styles.detailField}>
+                <span className={styles.detailLabel}>Solicitante</span>
+                <span className={styles.detailValue}>
+                  {solicitacao.solicitante.nome} ({solicitacao.solicitante.email})
+                </span>
+              </div>
+            ) : null}
             <div className={styles.detailField}>
               <span className={styles.detailLabel}>Etapa atual</span>
               <span className={styles.detailValue}>

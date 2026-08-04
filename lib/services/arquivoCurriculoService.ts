@@ -1,4 +1,4 @@
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse-new";
 import mammoth from "mammoth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -44,16 +44,16 @@ export async function extrairTexto(
 
   try {
     if (ext === ".pdf") {
-      const parser = new PDFParse({ data: arquivo.buffer });
       try {
-        const resultado = await parser.getText();
+        const resultado = await pdfParse(arquivo.buffer);
         const texto = resultado.text.trim();
         if (!texto) {
-          return { erro: "Nao foi possivel extrair texto deste arquivo." };
+          return { erro: "O arquivo PDF foi lido, mas não contém texto extraível." };
         }
         return { texto };
-      } finally {
-        await parser.destroy();
+      } catch (err: any) {
+        console.error("ERRO PARSE PDF:", err);
+        return { erro: "Erro ao processar PDF: " + (err?.message || String(err)) };
       }
     }
 
@@ -79,8 +79,9 @@ export async function extrairTexto(
     return {
       erro: "Formato nao suportado. Envie PDF, Word (.docx) ou Markdown (.md).",
     };
-  } catch {
-    return { erro: "Nao foi possivel extrair texto deste arquivo." };
+  } catch (err: any) {
+    console.error("ERRO EXTRAIR TEXTO:", err);
+    return { erro: "Erro pdf: " + (err?.message || String(err)) };
   }
 }
 
@@ -90,14 +91,17 @@ export async function extrairTexto(
  */
 export async function armazenarArquivo(
   candidatoIdOuTemp: string,
-  arquivo: { buffer: Buffer; nomeOriginal: string },
+  arquivo: { buffer: Buffer; nomeOriginal: string; tipoMime: string },
 ): Promise<string> {
   const supabase = createAdminClient();
   const caminho = `${candidatoIdOuTemp}-${arquivo.nomeOriginal}`;
 
   const { error } = await supabase.storage
     .from("curriculos")
-    .upload(caminho, arquivo.buffer, { upsert: true });
+    .upload(caminho, arquivo.buffer, { 
+      upsert: true,
+      contentType: arquivo.tipoMime 
+    });
 
   if (error) {
     throw error;
