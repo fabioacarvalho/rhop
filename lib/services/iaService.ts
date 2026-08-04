@@ -84,6 +84,91 @@ async function registrarFalhaIa(
 }
 
 /**
+ * Gera `resumo_ia_solicitante` para a visao do proprio solicitante (RIA-01),
+ * opcionalmente mencionando conflito de agenda com outro membro da equipe.
+ *
+ * Mesmo contrato "nunca lanca" de `gerarResumoSolicitacao`: qualquer falha
+ * (chave ausente, erro de API, timeout, conteudo vazio) grava `Log ERRO`
+ * (`entidade: "Solicitacao"`, `acao: "FALHA_IA"`) e retorna `null` (RIA-04).
+ */
+export async function gerarResumoSolicitante(input: {
+  solicitacaoId: string;
+  tipoFluxoNome: string;
+  dados: Record<string, unknown>;
+  conflito: { periodoDescricao: string } | null;
+}): Promise<string | null> {
+  const { solicitacaoId, tipoFluxoNome, dados, conflito } = input;
+
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      await registrarFalhaIaSolicitante(solicitacaoId, {
+        motivo: "OPENAI_API_KEY ausente",
+      });
+      return null;
+    }
+
+    const client = new OpenAI({ apiKey });
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Voce e um assistente de RH. Gere um resumo conciso em portugues " +
+            "para o proprio solicitante, confirmando o que foi solicitado. " +
+            (conflito
+              ? "Mencione, de forma generica e sem citar nomes, que ha " +
+                "sobreposicao de agenda com outro membro da equipe no " +
+                `periodo ${conflito.periodoDescricao}.`
+              : "Nao mencione conflitos de agenda."),
+        },
+        {
+          role: "user",
+          content: [
+            `Tipo de fluxo: ${tipoFluxoNome}`,
+            "Dados da solicitacao:",
+            JSON.stringify(dados),
+            ...(conflito
+              ? [`Conflito de agenda no periodo: ${conflito.periodoDescricao}`]
+              : []),
+          ].join("\n"),
+        },
+      ],
+    });
+
+    const content = completion.choices[0]?.message?.content?.trim() ?? "";
+    if (!content) {
+      await registrarFalhaIaSolicitante(solicitacaoId, {
+        motivo: "conteudo vazio da OpenAI",
+      });
+      return null;
+    }
+
+    return content;
+  } catch (error) {
+    await registrarFalhaIaSolicitante(solicitacaoId, {
+      motivo: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+/** Grava `Log ERRO` de falha de IA do resumo do solicitante, sem propagar. */
+async function registrarFalhaIaSolicitante(
+  solicitacaoId: string,
+  detalhes: { motivo: string },
+): Promise<void> {
+  await registrar({
+    tipo: "ERRO",
+    entidade: "Solicitacao",
+    entidade_id: solicitacaoId,
+    acao: "FALHA_IA",
+    detalhes,
+  });
+}
+
+/**
  * Gera o resumo em linguagem natural do Painel de Insights (INSIGHT-06,
  * INSIGHT-08) via OpenAI `gpt-4o-mini`, a partir **exclusivamente** do
  * payload numérico já agregado em Postgres — nunca recebe linhas brutas de

@@ -26,6 +26,7 @@ import {
   gerarJustificativaRanking,
   gerarResumoInsights,
   gerarResumoSolicitacao,
+  gerarResumoSolicitante,
 } from "./iaService";
 
 const mockRegistrar = vi.mocked(registrar);
@@ -127,6 +128,98 @@ describe("iaService.gerarResumoSolicitacao", () => {
       acao: "FALHA_IA",
       detalhes: { motivo: "OPENAI_API_KEY ausente" },
     });
+  });
+});
+
+const solicitanteInputBase = {
+  solicitacaoId: "sol-1",
+  tipoFluxoNome: "Ferias",
+  dados: { data_inicio: "2026-08-10", data_fim: "2026-08-20" },
+  conflito: null,
+};
+
+describe("iaService.gerarResumoSolicitante", () => {
+  it("sucesso com conteudo nao-vazio -> retorna texto trimado e nao grava ERRO", async () => {
+    mockCreate.mockResolvedValueOnce({
+      choices: [{ message: { content: "  Ferias de 10 a 20 de agosto.  " } }],
+    });
+
+    const result = await gerarResumoSolicitante(solicitanteInputBase);
+
+    expect(result).toBe("Ferias de 10 a 20 de agosto.");
+    expect(mockRegistrar).not.toHaveBeenCalled();
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("falha/throw da OpenAI -> null + registrar ERRO (entidade Solicitacao)", async () => {
+    mockCreate.mockRejectedValueOnce(new Error("timeout"));
+
+    const result = await gerarResumoSolicitante(solicitanteInputBase);
+
+    expect(result).toBeNull();
+    expect(mockRegistrar).toHaveBeenCalledTimes(1);
+    expect(mockRegistrar).toHaveBeenCalledWith({
+      tipo: "ERRO",
+      entidade: "Solicitacao",
+      entidade_id: "sol-1",
+      acao: "FALHA_IA",
+      detalhes: { motivo: "timeout" },
+    });
+  });
+
+  it("conteudo vazio da OpenAI -> null + registrar ERRO", async () => {
+    mockCreate.mockResolvedValueOnce({
+      choices: [{ message: { content: "   " } }],
+    });
+
+    const result = await gerarResumoSolicitante(solicitanteInputBase);
+
+    expect(result).toBeNull();
+    expect(mockRegistrar).toHaveBeenCalledWith({
+      tipo: "ERRO",
+      entidade: "Solicitacao",
+      entidade_id: "sol-1",
+      acao: "FALHA_IA",
+      detalhes: { motivo: "conteudo vazio da OpenAI" },
+    });
+  });
+
+  it("OPENAI_API_KEY ausente -> null + registrar ERRO sem chamar OpenAI", async () => {
+    delete process.env.OPENAI_API_KEY;
+
+    const result = await gerarResumoSolicitante(solicitanteInputBase);
+
+    expect(result).toBeNull();
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockRegistrar).toHaveBeenCalledWith({
+      tipo: "ERRO",
+      entidade: "Solicitacao",
+      entidade_id: "sol-1",
+      acao: "FALHA_IA",
+      detalhes: { motivo: "OPENAI_API_KEY ausente" },
+    });
+  });
+
+  it("com conflito !== null -> prompt inclui a periodoDescricao do conflito", async () => {
+    mockCreate.mockResolvedValueOnce({
+      choices: [{ message: { content: "Ferias marcadas, ha sobreposicao." } }],
+    });
+
+    await gerarResumoSolicitante({
+      ...solicitanteInputBase,
+      conflito: { periodoDescricao: "10/08/2026 a 20/08/2026" },
+    });
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: "user",
+            content: expect.stringContaining("10/08/2026 a 20/08/2026"),
+          }),
+        ]),
+      }),
+    );
   });
 });
 
