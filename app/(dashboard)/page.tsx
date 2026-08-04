@@ -19,8 +19,8 @@ import styles from "./dashboard.module.css";
  *
  * Gate de acesso no backend, mesmo bloco try/catch de
  * `auditoria-logs/page.tsx`: sem sessão -> `redirect('/login')`; papel
- * `SOLICITANTE` (`ErroNaoAutorizado`) -> "Acesso restrito", nenhum dos 4
- * componentes é renderizado.
+ * `SOLICITANTE` (`ErroNaoAutorizado`) -> `redirect('/solicitacoes')`, já que
+ * este papel não tem acesso ao dashboard de visão geral.
  */
 export default async function Page() {
   let usuario;
@@ -31,12 +31,7 @@ export default async function Page() {
       redirect("/login");
     }
     if (erro instanceof ErroNaoAutorizado) {
-      return (
-        <main className={styles.restrito}>
-          <h1>Acesso restrito</h1>
-          <p>Apenas gestores e RH podem acessar o dashboard de visão geral.</p>
-        </main>
-      );
+      redirect("/solicitacoes");
     }
     throw erro;
   }
