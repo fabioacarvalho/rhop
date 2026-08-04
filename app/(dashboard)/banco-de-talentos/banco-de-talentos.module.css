@@ -119,6 +119,21 @@
   border-bottom: none;
 }
 
+.candidatoLink {
+  display: block;
+  border-radius: 6px;
+}
+
+.candidatoLink:hover .nome {
+  color: var(--azul-500);
+  text-decoration: underline;
+}
+
+.candidatoLink:focus-visible {
+  outline: 2px solid var(--azul-500);
+  outline-offset: 2px;
+}
+
 .nome {
   font-weight: 600;
   color: var(--ink);

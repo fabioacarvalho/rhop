@@ -105,17 +105,22 @@ export default async function Page() {
                 return (
                   <tr key={candidato.id}>
                     <td>
-                      <div className={styles.nome}>{candidato.nome}</div>
-                      <div className={styles.email}>{candidato.email}</div>
-                      {candidato.tags.length > 0 ? (
-                        <div className={styles.tagBadges}>
-                          {candidato.tags.map((tag) => (
-                            <span key={tag.id} className={styles.tagBadge}>
-                              {tag.nome}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
+                      <Link
+                        href={`/banco-de-talentos/${candidato.id}`}
+                        className={styles.candidatoLink}
+                      >
+                        <div className={styles.nome}>{candidato.nome}</div>
+                        <div className={styles.email}>{candidato.email}</div>
+                        {candidato.tags.length > 0 ? (
+                          <div className={styles.tagBadges}>
+                            {candidato.tags.map((tag) => (
+                              <span key={tag.id} className={styles.tagBadge}>
+                                {tag.nome}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                      </Link>
                     </td>
                     <td>
                       <span className={`${styles.stamp} ${stamp.classe}`}>
