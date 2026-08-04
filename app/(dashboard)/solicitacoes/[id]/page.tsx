@@ -123,6 +123,12 @@ export default async function Page({ params }: PageProps) {
         </span>
       </header>
 
+      <div className={`${styles.calloutIa} ${styles.calloutIaPage}`}>
+        <div className={styles.calloutIaTag}>✦ Resumo por IA</div>
+        {solicitacao.resumo_ia_solicitante ??
+          "Resumo da IA indisponível no momento."}
+      </div>
+
       <div className={styles.card}>
         <div className={styles.cardPad}>
           <div className={styles.detailGrid}>

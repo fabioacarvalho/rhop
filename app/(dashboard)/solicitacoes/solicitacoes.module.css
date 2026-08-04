@@ -253,6 +253,10 @@
   color: var(--azul-900);
 }
 
+.calloutIaPage {
+  margin-bottom: 20px;
+}
+
 .calloutIaTag {
   display: inline-flex;
   align-items: center;
