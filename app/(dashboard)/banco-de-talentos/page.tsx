@@ -33,8 +33,9 @@ function stampInfo(status: "pendente" | "processado" | "falhou"): {
  * é chamado direto aqui, sem round-trip por `GET /api/candidatos`.
  */
 export default async function Page() {
+  let usuario;
   try {
-    await requireUser([Role.GESTOR, Role.RH_ADMIN]);
+    usuario = await requireUser([Role.GESTOR, Role.RH_ADMIN]);
   } catch (erro) {
     if (erro instanceof ErroNaoAutenticado) {
       redirect("/login");
@@ -62,6 +63,14 @@ export default async function Page() {
           </p>
         </div>
         <div className={styles.headerActions}>
+          {usuario.role === Role.RH_ADMIN ? (
+            <Link
+              href="/banco-de-talentos/tags"
+              className={`${styles.btn} ${styles.btnGhost}`}
+            >
+              Gerenciar tags
+            </Link>
+          ) : null}
           <Link
             href="/banco-de-talentos/busca"
             className={`${styles.btn} ${styles.btnGhost}`}
