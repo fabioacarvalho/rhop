@@ -20,13 +20,14 @@ interface RouteContext {
 /**
  * `GET /api/tipos-fluxo/[id]` (CONF-06).
  *
- * `authService.requireUser([Role.RH_ADMIN])` bloqueia antes de qualquer
- * consulta: sem sessao -> 401, papel diferente de `RH_ADMIN` -> 403.
- * `id` sem registro correspondente (`ErroNaoEncontrado`) -> 404.
+ * Qualquer usuario autenticado pode consultar (SOLICITANTE usa esta rota
+ * para carregar `campos_formulario`/`etapas` ao montar Nova Solicitacao).
+ * Sem sessao -> 401. `id` sem registro correspondente (`ErroNaoEncontrado`)
+ * -> 404.
  */
 export async function GET(_request: Request, { params }: RouteContext) {
   try {
-    await requireUser([Role.RH_ADMIN]);
+    await requireUser();
   } catch (erro) {
     if (erro instanceof ErroNaoAutenticado) {
       return Response.json({ error: erro.message }, { status: 401 });
