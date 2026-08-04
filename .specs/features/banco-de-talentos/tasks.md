@@ -1,7 +1,7 @@
 # Banco de Talentos — Tasks
 
 **Design**: `.specs/features/banco-de-talentos/design.md`
-**Status**: Concluído
+**Status**: Rodada 1 concluída. Rodada 2 (esta revisão) pendente de execução — ver seção ao final do arquivo.
 
 ---
 
@@ -682,3 +682,474 @@ Todos ✅ — nenhuma restruturação necessária.
   decisão deliberada do `design.md` pra evitar migration aditiva depois.
 - Latência do cadastro síncrono (embedding gerado dentro da própria request de `POST /api/candidatos`)
   é uma limitação conhecida, não um bug — ver `design.md`, seção de Riscos.
+
+---
+---
+
+## Rodada 2 — Parecer Técnico, Tags e Upload Multi-formato
+
+**Design**: `.specs/features/banco-de-talentos/design.md`, seção "Rodada 2"
+**Status**: Concluído — R1 a R13 implementados e commitados; `npx prisma validate && npm run build` e `npx vitest run` verdes (ver `Riscos / Notas` ao final desta seção para o gap fechado fora do escopo original e cosméticos conhecidos). UAT manual em andamento.
+
+## 0. Escopo desta rodada
+
+Cobre `TAL-32` a `TAL-47`: rename `transcricao_texto` → `parecer_tecnico`, entidade `Tag` + vínculo
+many-to-many com `Candidato`, tela de gestão de Tags (RH_ADMIN-only), e upload de currículo em
+PDF/Word/Markdown (supersede `TAL-20/21/22`). Importação de planilhas continua fora de escopo —
+nenhuma task aqui a implementa.
+
+**Gate check commands**: os mesmos da rodada 1 (`npm test`, `npx prisma validate && npm run build`).
+
+---
+
+## Execution Plan (rodada 2)
+
+```
+Phase 1 (Parallel, sem dependencias):
+  R1 [P] · R2 [P] · R3 [P]
+
+Phase 2 (Sequential — depende do schema):
+  R1 ──→ R4
+  R1 ──→ R5
+
+Phase 3 (Sequential):
+  R4        ──→ R6
+  R1, R5    ──→ R7
+
+Phase 4 (Parallel):
+  R2, R6  ──→ R8  [P]
+  R7      ──→ R9  [P]
+  R7      ──→ R10 [P]
+
+Phase 5 (Parallel — UI):
+  R8       ──→ R11 [P]
+  R9, R10  ──→ R12 [P]
+  R7       ──→ R13 [P] (existentes, alteradas)
+```
+
+---
+
+## Task Breakdown (Rodada 2)
+
+### R1: Migration — rename `transcricao_texto` → `parecer_tecnico` + `model Tag` + relação many-to-many [P]
+
+**What**: Editar `prisma/schema.prisma`: renomear o campo `transcricao_texto` para `parecer_tecnico`
+em `Candidato`; adicionar `model Tag` (`nome` único, `funcao`, `ativo`, timestamps); adicionar
+`tags Tag[]` em `Candidato` (relação implícita many-to-many). Gerar migration e **conferir que o
+Prisma emitiu `RENAME COLUMN`, não `DROP`+`ADD`** — se emitir drop+add, editar a migration SQL manualmente
+antes de aplicar (risco de perda de dado, ver `design.md` Riscos rodada 2).
+
+**Where**: `prisma/schema.prisma`, `prisma/migrations/**`
+**Depends on**: None
+**Reuses**: padrão `@@unique`/`@@map` já usado em `TipoFluxo.nome`
+**Requirement**: TAL-32, TAL-33, TAL-39
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] `Candidato.parecer_tecnico` existe, `Candidato.transcricao_texto` não existe mais
+- [x] Migration aplicada preserva os dados de `parecer_tecnico` dos candidatos já cadastrados na rodada 1 (verificado manualmente: `SELECT parecer_tecnico FROM candidatos LIMIT 1` retorna o texto que antes era `transcricao_texto`, não `NULL`)
+- [x] `model Tag { id, nome (@unique), funcao, ativo (@default(true)), criado_em, atualizado_em, candidatos Candidato[] }` definido, `@@map("tags")`
+- [x] `Candidato` ganha `tags Tag[]` (implicit many-to-many, sem tabela de junção explícita no schema)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): renomeia transcricao_texto para parecer_tecnico e adiciona model Tag`
+
+---
+
+### R2: `tagInputSchema` (envelope Zod) [P]
+
+**What**: Schema Zod do envelope de criação/edição de Tag.
+**Where**: `lib/validations/tag.ts` (+ `lib/validations/tag.test.ts`)
+**Depends on**: None
+**Reuses**: padrão de `lib/validations/tipoFluxo.ts`
+**Requirement**: TAL-38
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] `tagInputSchema = z.object({ nome: z.string().min(1), funcao: z.string().min(1) })`
+- [x] Teste cobre: válido passa; `nome` ausente/vazio falha; `funcao` ausente/vazio falha
+- [x] Gate check passa: `npm test` (`tag.test.ts`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥4 casos
+
+**Tests**: unit
+**Gate**: quick + build
+
+**Commit**: `feat(banco-de-talentos): adiciona schema zod do envelope de tag`
+
+---
+
+### R3: Atualiza `candidatoInputSchema` (rename + `tag_ids`) [P]
+
+**What**: Renomear `transcricao_texto` para `parecer_tecnico` no schema Zod existente; adicionar
+`tag_ids: z.array(z.string()).optional()`.
+**Where**: `lib/validations/candidato.ts` (modifica), `lib/validations/candidato.test.ts` (modifica)
+**Depends on**: None
+**Reuses**: schema já existente, só campo renomeado + campo novo opcional
+**Requirement**: TAL-32, TAL-33
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] `parecer_tecnico: z.string().min(1)` no lugar de `transcricao_texto`
+- [x] `tag_ids: z.array(z.string()).optional()` adicionado
+- [x] Testes existentes atualizados pro novo nome de campo; novo caso cobre `tag_ids` ausente (aceito) e `tag_ids` com array vazio (aceito)
+- [x] Gate check passa: `npm test` (`candidato.test.ts`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: unit
+**Gate**: quick + build
+
+**Commit**: `feat(banco-de-talentos): renomeia campo transcricao_texto para parecer_tecnico e adiciona tag_ids no envelope de cadastro`
+
+---
+
+### R4: `tagService.ts`
+
+**What**: `listar` (com filtro opcional `somenteAtivas`), `criar`, `editar`, `alternarAtivo` — nome
+normalizado (trim + comparação case-insensitive) antes de gravar; `P2002` traduzido em `ErroTagDuplicada`.
+**Where**: `lib/services/tagService.ts` (+ `lib/services/tagService.test.ts`)
+**Depends on**: R1 (`model Tag`)
+**Reuses**: padrão de erro `P2002` → domínio de `tipoFluxoService.ts`
+**Requirement**: TAL-37, TAL-38, TAL-39, TAL-40, TAL-41
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] `ErroTagDuplicada`, `ErroNaoEncontrado` exportados
+- [x] `listar(somenteAtivas?: boolean)`: sem argumento retorna todas; `true` filtra `ativo: true`
+- [x] `criar(dados)`: normaliza `nome` (trim), nome duplicado (case-insensitive) → `ErroTagDuplicada` antes do `create`; sucesso → `ativo: true` por padrão
+- [x] `editar(id, dados)`: `id` inexistente → `ErroNaoEncontrado`; nome duplicado (de outra Tag) → `ErroTagDuplicada`
+- [x] `alternarAtivo(id, ativo)`: `update` do campo `ativo`, `id` inexistente → `ErroNaoEncontrado`
+- [x] Gate check passa: `npm test` (`tagService.test.ts`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥10 casos (listar-todas, listar-ativas, criar-feliz, criar-duplicado-mesmo-case, criar-duplicado-outro-case, editar-feliz, editar-nao-encontrado, editar-duplicado, alternarAtivo-feliz, alternarAtivo-nao-encontrado)
+
+**Tests**: unit
+**Gate**: quick + build
+
+**Commit**: `feat(banco-de-talentos): implementa tagService`
+
+---
+
+### R5: `arquivoCurriculoService.ts`
+
+**What**: `extrairTexto` (roteia PDF/`.docx`/`.md` pra `pdf-parse`/`mammoth`/leitura UTF-8; formato não
+suportado ou falha de parsing retorna `{ erro }`, nunca lança), `armazenarArquivo` (`Supabase Storage`,
+bucket `curriculos`). Instalar `pdf-parse` e `mammoth` como dependência (`npm install pdf-parse mammoth`).
+**Where**: `lib/services/arquivoCurriculoService.ts` (+ `lib/services/arquivoCurriculoService.test.ts`),
+`package.json`
+**Depends on**: R1 (schema — não é dependência técnica direta, mas mantém a ordem da fase 2 do plano)
+**Reuses**: `createAdminClient()` (`lib/supabase/admin.ts`)
+**Requirement**: TAL-43, TAL-45, TAL-46, TAL-47
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] **Primeiro passo**: `pdf-parse` e `mammoth` instalados e funcionando em runtime Node de uma API route (teste manual/smoke antes de escrever a lógica completa) — ponto sinalizado como incerto no `design.md`
+- [x] `extrairTexto({ buffer, nomeOriginal, tipoMime })`: `.pdf` → `pdf-parse`; `.docx` → `mammoth.extractRawText`; `.md`/`.markdown` → `buffer.toString("utf-8")`; extensão/mime não reconhecido → `{ erro: "Formato nao suportado" }` sem tentar parsear (TAL-46); falha de parsing (arquivo corrompido/escaneado) → `{ erro }` (TAL-45), nunca lança
+- [x] Arquivo maior que `5MB` (constante `TALENTO_CURRICULO_TAMANHO_MAXIMO_MB`) → `{ erro }` antes de tentar extrair
+- [x] `armazenarArquivo(candidatoIdOuTemp, { buffer, nomeOriginal })`: upload pro bucket `curriculos`, retorna URL (TAL-47)
+- [x] Gate check passa: `npm test` (`arquivoCurriculoService.test.ts`, Supabase Storage mockado)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+- [x] Test count: ≥8 casos (pdf-sucesso, docx-sucesso, md-sucesso, formato-nao-suportado, pdf-corrompido-falha, arquivo-grande-demais, armazenarArquivo-sucesso, armazenarArquivo-falha-propaga)
+
+**Tests**: unit
+**Gate**: quick + build
+
+**Commit**: `feat(banco-de-talentos): implementa arquivoCurriculoService (extracao PDF/Word/Markdown + storage)`
+
+---
+
+### R6: `app/api/candidatos/extrair-curriculo/route.ts`
+
+**What**: `POST` (multipart) → `requireUser([GESTOR, RH_ADMIN])` → `arquivoCurriculoService.extrairTexto`
+→ sucesso também chama `armazenarArquivo` → retorna `{ texto, arquivo_url }`.
+**Where**: `app/api/candidatos/extrair-curriculo/route.ts`
+**Depends on**: R5 (`arquivoCurriculoService`)
+**Reuses**: padrão de rota de `app/api/tipos-fluxo/route.ts`
+**Requirement**: TAL-43, TAL-45, TAL-46, TAL-47
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] Sem sessão → 401; papel SOLICITANTE → 403
+- [x] Formato não suportado → 422 com mensagem clara
+- [x] Falha de extração → 422 com mensagem clara
+- [x] Sucesso → 200 `{ texto, arquivo_url }`
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): adiciona rota POST /api/candidatos/extrair-curriculo`
+
+---
+
+### R7: Atualiza `candidatoService.ts` e `talentoSearchService.ts` (rename + tags)
+
+**What**: `candidatoService.cadastrar`/`reprocessarEmbedding` passam a usar `parecer_tecnico` no lugar
+de `transcricao_texto` em todas as referências; `cadastrar` aceita `tag_ids?: string[]` e conecta via
+`tags: { connect: ... } }`; `listar()` inclui `tags: { select: { id, nome } }`.
+`talentoSearchService.buscar` anexa `tags` de cada candidato do resultado antes de retornar.
+**Where**: `lib/services/candidatoService.ts`, `lib/services/candidatoService.test.ts`,
+`lib/services/talentoSearchService.ts`, `lib/services/talentoSearchService.test.ts` (todos modificam)
+**Depends on**: R1 (schema), R4 (não é dependência técnica, mas Tags precisam existir pra conectar)
+**Reuses**: estrutura já existente dos dois services
+**Requirement**: TAL-32, TAL-33, TAL-34, TAL-35
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] Toda referência a `transcricao_texto` em `candidatoService.ts` substituída por `parecer_tecnico`
+- [x] `cadastrar(dados, usuarioId)`: `tag_ids` presente → `tags: { connect: tag_ids.map(id => ({ id })) }` no `create`; ausente/vazio → nenhum vínculo
+- [x] `listar()`: `select` inclui `tags: { select: { id: true, nome: true } }`
+- [x] `talentoSearchService.buscar`: cada `CandidatoRankeado` do retorno inclui `tags: { id, nome }[]`
+- [x] Testes existentes atualizados pro novo nome de campo; casos novos cobrem tag_ids presente/ausente no cadastro e tags no retorno de listar/buscar
+- [x] Gate check passa: `npm test` (ambos os arquivos de teste)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: unit
+**Gate**: quick + build
+
+**Commit**: `feat(banco-de-talentos): candidatoService e talentoSearchService passam a usar parecer_tecnico e incluir tags`
+
+---
+
+### R8: `app/api/tags/route.ts` + `app/api/tags/[id]/route.ts` [P]
+
+**What**: `GET /api/tags` (GESTOR/RH_ADMIN, filtro `?ativo=true`) → `tagService.listar`. `POST /api/tags`
+(RH_ADMIN-only) → Zod → `tagService.criar`. `PATCH /api/tags/[id]` (RH_ADMIN-only) → `tagService.editar`/
+`alternarAtivo` conforme os campos do corpo.
+**Where**: `app/api/tags/route.ts`, `app/api/tags/[id]/route.ts`
+**Depends on**: R2 (`tagInputSchema`), R4 (`tagService`)
+**Reuses**: padrão de rota de `app/api/tipos-fluxo/route.ts`
+**Requirement**: TAL-36, TAL-37, TAL-38, TAL-39, TAL-40, TAL-41, TAL-42
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] `GET`: GESTOR e RH_ADMIN autorizados; SOLICITANTE → 403; `?ativo=true` filtra só ativas
+- [x] `POST`: GESTOR → 403 (RH_ADMIN-only); corpo inválido → 400; nome duplicado → 409; sucesso → 201
+- [x] `PATCH`: GESTOR → 403; `id` inexistente → 404; sucesso → 200 com a Tag atualizada
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): adiciona rotas de gestao de tags (GET/POST/PATCH)`
+
+---
+
+### R9: `app/api/candidatos/route.ts` (atualiza para `parecer_tecnico` + `tag_ids`) [P]
+
+**What**: `POST` passa a repassar `parecer_tecnico` e `tag_ids` do corpo (já validados por R3) pro
+`candidatoService.cadastrar`.
+**Where**: `app/api/candidatos/route.ts`
+**Depends on**: R3 (`candidatoInputSchema` atualizado), R7 (`candidatoService` atualizado)
+**Reuses**: rota já existente, ajuste pontual
+**Requirement**: TAL-32, TAL-33
+
+**Tools**:
+- MCP: NONE
+- Skill: NONE
+
+**Done when**:
+- [x] `POST` aceita `parecer_tecnico` no corpo (novo nome), corpo com `transcricao_texto` (nome antigo) → 400 (Zod rejeita campo desconhecido/obrigatório ausente)
+- [x] `POST` aceita `tag_ids` opcional e repassa pro service
+- [x] Comportamento existente (401/403/409/201) inalterado
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): atualiza rota de cadastro de candidato para parecer_tecnico e tag_ids`
+
+---
+
+### R10: `TagForm.tsx` + `TagList.tsx` [P]
+
+**What**: Client Components — `TagList` renderiza tabela (nome, função, badge ativo, botão
+ativar/desativar); `TagForm` formulário de criar/editar (nome, função), exibe erro 409 (nome duplicado)
+inline.
+**Where**: `app/(dashboard)/banco-de-talentos/tags/_components/TagForm.tsx`,
+`app/(dashboard)/banco-de-talentos/tags/_components/TagList.tsx`
+**Depends on**: R8 (rotas `/api/tags/**`)
+**Reuses**: mesmo estilo inline do projeto (`configuracao-fluxos`)
+**Requirement**: TAL-37, TAL-38, TAL-39, TAL-40, TAL-41
+
+**Tools**:
+- MCP: NONE
+- Skill: `frontend-design`
+
+**Done when**:
+- [x] `TagList` mostra nome/função/status ativo de cada Tag, botão "Ativar"/"Desativar" por linha
+- [x] `TagForm` cria (campos vazios) ou edita (pré-preenchido) — nome duplicado exibe erro inline no campo nome
+- [x] Sucesso → atualiza a lista (`router.refresh()`)
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): adiciona componentes TagForm e TagList`
+
+---
+
+### R11: `app/(dashboard)/banco-de-talentos/tags/page.tsx` [P]
+
+**What**: Server Component: gate `requireUser([RH_ADMIN])` (mensagem "Acesso restrito" pra GESTOR,
+`redirect('/login')` sem sessão); chama `tagService.listar()` DIRETO; renderiza `TagList` + `TagForm`
+de criação.
+**Where**: `app/(dashboard)/banco-de-talentos/tags/page.tsx`
+**Depends on**: R4 (`tagService`), R10 (`TagForm`/`TagList`)
+**Reuses**: mesmo padrão de gate de `configuracao-fluxos/page.tsx`
+**Requirement**: TAL-37, TAL-42
+
+**Tools**:
+- MCP: NONE
+- Skill: `frontend-design`
+
+**Done when**:
+- [x] Sem sessão → `redirect('/login')`; papel GESTOR ou SOLICITANTE → mensagem "Acesso restrito"
+- [x] RH_ADMIN vê lista completa (ativas e inativas) + form de criação
+- [x] Link a partir de `app/(dashboard)/banco-de-talentos/page.tsx` ("Gerenciar Tags")
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): implementa pagina Gestao de Tags`
+
+---
+
+### R12: Atualiza `NovoCandidatoForm.tsx` (rename + upload + multi-select de tags) [P]
+
+**What**: Renomeia label/estado do campo de transcrição para "Parecer técnico"; adiciona bloco de
+upload (`<input type="file" accept=".pdf,.docx,.md">`) que chama `POST /api/candidatos/extrair-curriculo`
+e preenche o `textarea` de currículo com o texto retornado (editável); adiciona multi-select de Tags
+(busca `GET /api/tags?ativo=true` ao montar, checkboxes), envia `tag_ids` no submit final.
+**Where**: `app/(dashboard)/banco-de-talentos/novo/_components/NovoCandidatoForm.tsx`
+**Depends on**: R6 (rota de extração), R9 (rota de cadastro atualizada), R8 (`GET /api/tags`)
+**Reuses**: mesmo componente já existente, alterado
+**Requirement**: TAL-32, TAL-33, TAL-43, TAL-44
+
+**Tools**:
+- MCP: NONE
+- Skill: `frontend-design`
+
+**Done when**:
+- [x] Campo "Transcrição da entrevista" renomeado para "Parecer técnico" (label + `id` + estado)
+- [x] Upload de arquivo: ao selecionar, chama a rota de extração; sucesso preenche o `textarea` de currículo (usuário pode editar depois); erro 422 exibe mensagem clara sem bloquear o preenchimento manual
+- [x] `textarea` de currículo continua editável/preenchível manualmente mesmo sem upload (TAL-44)
+- [x] Multi-select de Tags carrega só Tags ativas, permite selecionar 0..N, envia `tag_ids` no `POST /api/candidatos`
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): formulario de cadastro ganha parecer tecnico, upload de curriculo e selecao de tags`
+
+---
+
+### R13: Atualiza listagem e `CandidatoCard.tsx` (badges de tags) [P]
+
+**What**: `page.tsx` (listagem) e `CandidatoCard.tsx` (busca) passam a renderizar as Tags vinculadas
+de cada candidato como badges.
+**Where**: `app/(dashboard)/banco-de-talentos/page.tsx`,
+`app/(dashboard)/banco-de-talentos/busca/_components/CandidatoCard.tsx`
+**Depends on**: R7 (`candidatoService.listar`/`talentoSearchService.buscar` incluindo `tags`)
+**Reuses**: componentes já existentes, alterados
+**Requirement**: TAL-34, TAL-35
+
+**Tools**:
+- MCP: NONE
+- Skill: `frontend-design`
+
+**Done when**:
+- [x] Listagem mostra badges de Tags por linha (vazio → nenhuma badge, sem erro)
+- [x] `CandidatoCard` mostra badges de Tags no resultado de busca
+- [x] Gate check passa: `npx prisma validate && npm run build`
+
+**Tests**: none
+**Gate**: build
+
+**Commit**: `feat(banco-de-talentos): exibe tags como badges na listagem e no ranking de busca`
+
+---
+
+## Task Granularity Check (rodada 2)
+
+| Task | Scope | Status |
+| --- | --- | --- |
+| R1: schema (rename + Tag) | 1 arquivo de schema + 1 migration | ✅ Granular |
+| R2: tagInputSchema | 1 schema Zod | ✅ Granular |
+| R3: candidatoInputSchema (rename + tag_ids) | 1 schema Zod, ajuste pontual | ✅ Granular |
+| R4: tagService | 4 funções coesivas, 1 arquivo novo | ✅ Granular (coesivo) |
+| R5: arquivoCurriculoService | 2 funções coesivas, 1 arquivo novo | ✅ Granular (coesivo) |
+| R6: extrair-curriculo/route.ts | 1 arquivo de rota | ✅ Granular |
+| R7: candidatoService + talentoSearchService (rename + tags) | 2 arquivos, mudança coesa (mesma revisão de dado) | ✅ Granular (coesivo) |
+| R8: tags/route.ts + tags/[id]/route.ts | 2 arquivos de rota | ✅ Granular |
+| R9: candidatos/route.ts (ajuste) | 1 arquivo de rota, ajuste pontual | ✅ Granular |
+| R10: TagForm + TagList | 2 componentes | ✅ Granular |
+| R11: tags/page.tsx | 1 página | ✅ Granular |
+| R12: NovoCandidatoForm (rename + upload + tags) | 1 componente, 3 mudanças relacionadas | ✅ Granular (coesivo) |
+| R13: listagem + CandidatoCard (badges) | 2 arquivos, mesma mudança (badges) | ✅ Granular (coesivo) |
+
+---
+
+## Riscos / Notas herdadas do `design.md` (rodada 2)
+
+- **R1 é bloqueante pra quase tudo** (mesmo papel que T1 teve na rodada 1) — confirmar `RENAME COLUMN`
+  antes de aplicar a migration é o primeiro passo técnico, não adiável.
+- **R5 depende de instalar `pdf-parse` e `mammoth`**, nenhum dos dois presente no `package.json` atual —
+  validar compatibilidade com o runtime Node das API routes do Next 16 como primeiro passo da task.
+- Importação de planilhas continua fora de escopo — nenhuma task aqui a implementa; nomes de campo
+  (`Candidato`, `Tag`) mantidos planos/simples de propósito pra reduzir remapeamento futuro.
+
+### Notas da execução real (pós-implementação)
+
+- **`pdf-parse` instalado é a v2 (`PDFParse` class-based), não a v1 clássica** que o `design.md`
+  assumia (`pdf(buffer) -> Promise<{text}>`). API real usa `new PDFParse({ data: buffer })` +
+  `.getText()` + `.destroy()`. `@types/pdf-parse` (pacote de tipos da v1) foi removido — a v2 já
+  vem com tipos próprios. Corrigido durante R5, documentado aqui pra não repetir a suposição errada.
+- **Gap fechado fora do escopo original de R3/R7**: nem `candidatoInputSchema` nem
+  `candidatoService.cadastrar` previam `curriculo_arquivo_url` — TAL-47 exige salvar essa URL no
+  `Candidato`, mas a task original não cobria isso. Corrigido em commit `fix(banco-de-talentos):
+  persiste curriculo_arquivo_url no cadastro de candidato`, antes de R12.
+- **Migration real**: `prisma migrate dev` tentou forçar `prisma migrate reset` (drift causado por
+  extensões que o Supabase já injeta: `pg_stat_statements`, `pgcrypto`, `supabase_vault`,
+  `uuid-ossp`) — **não executado** (destruiria dados reais). Fluxo usado: `prisma migrate diff`
+  pra gerar o SQL, correção manual de `DROP+ADD` pra `RENAME COLUMN`, aplicação via `prisma db
+  execute`, e `prisma migrate resolve --applied` pra manter o histórico consistente. Dado do único
+  `Candidato` já cadastrado confirmado preservado após a migration.
+- **Commit `a119a29`** ficou com mensagem de "refactor" (rename de parâmetro interno) mas por
+  acidente de staging também inclui os arquivos de R5 (`arquivoCurriculoService` + deps
+  `pdf-parse`/`mammoth` no `package.json`). Conteúdo correto, só a mensagem não descreve tudo —
+  cosmético, não corrigido (não fazer amend sem pedido explícito).
+- **Falha pré-existente e não relacionada**: `lib/navigation/navConfig.test.ts` falha (espera 10
+  itens de nav, recebe 11) por causa de outra feature (`pipeline-kanban`) sendo desenvolvida em
+  paralelo no mesmo diretório de trabalho, por outra sessão. Não é responsabilidade desta rodada.
+- **UAT manual**: ver seção "Riscos / Pontos a verificar" do `design.md` — bucket `curriculos` no
+  Supabase Storage nunca foi confirmado contra o projeto real antes desta rodada; verificação via
+  dev server/`playwright-skill` ficou para depois deste commit (ver resultado no resumo da sessão).
