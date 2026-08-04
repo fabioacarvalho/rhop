@@ -242,6 +242,12 @@ describe("solicitacaoService.buscarDetalhePorId", () => {
   it("retorna o detalhe completo quando e do proprio solicitante", async () => {
     const detalhe = {
       ...SOLICITACAO_CRIADA,
+      solicitante: {
+        id: "user-1",
+        nome: "User 1",
+        email: "user1@example.com",
+        equipe: null,
+      },
       tipoFluxo: {
         id: "tipo-1",
         nome: "Reembolso",
@@ -256,6 +262,68 @@ describe("solicitacaoService.buscarDetalhePorId", () => {
     );
   });
 
+  it("permite gestor visualizar solicitacao de membro da sua equipe", async () => {
+    const detalhe = {
+      ...SOLICITACAO_CRIADA,
+      solicitante_id: "user-1",
+      solicitante: {
+        id: "user-1",
+        nome: "User 1",
+        email: "user1@example.com",
+        equipe: { gestor_id: "gestor-1" },
+      },
+      tipoFluxo: {
+        id: "tipo-1",
+        nome: "Reembolso",
+        campos_formulario: [],
+        etapas: [],
+      },
+    };
+    mockFindUnique.mockResolvedValueOnce(detalhe as never);
+
+    const gestorUser = {
+      id: "gestor-1",
+      nome: "Gestor",
+      email: "gestor@example.com",
+      role: Role.GESTOR,
+    };
+
+    await expect(
+      buscarDetalhePorId("sol-1", gestorUser),
+    ).resolves.toEqual(detalhe);
+  });
+
+  it("permite RH_Admin visualizar solicitacao de qualquer usuario", async () => {
+    const detalhe = {
+      ...SOLICITACAO_CRIADA,
+      solicitante_id: "user-1",
+      solicitante: {
+        id: "user-1",
+        nome: "User 1",
+        email: "user1@example.com",
+        equipe: { gestor_id: "outro-gestor" },
+      },
+      tipoFluxo: {
+        id: "tipo-1",
+        nome: "Reembolso",
+        campos_formulario: [],
+        etapas: [],
+      },
+    };
+    mockFindUnique.mockResolvedValueOnce(detalhe as never);
+
+    const rhUser = {
+      id: "rh-1",
+      nome: "RH Admin",
+      email: "rh@example.com",
+      role: Role.RH_ADMIN,
+    };
+
+    await expect(buscarDetalhePorId("sol-1", rhUser)).resolves.toEqual(
+      detalhe,
+    );
+  });
+
   it("id inexistente -> lanca ErroNaoEncontrado", async () => {
     mockFindUnique.mockResolvedValueOnce(null);
 
@@ -264,10 +332,16 @@ describe("solicitacaoService.buscarDetalhePorId", () => {
     ).rejects.toBeInstanceOf(ErroNaoEncontrado);
   });
 
-  it("de outro solicitante -> lanca ErroAcessoNegado", async () => {
+  it("de outro solicitante (não membro da equipe) -> lanca ErroAcessoNegado", async () => {
     mockFindUnique.mockResolvedValueOnce({
       ...SOLICITACAO_CRIADA,
       solicitante_id: "outro-user",
+      solicitante: {
+        id: "outro-user",
+        nome: "Outro User",
+        email: "outro@example.com",
+        equipe: { gestor_id: "outro-gestor" },
+      },
       tipoFluxo: {
         id: "tipo-1",
         nome: "Reembolso",
@@ -276,8 +350,15 @@ describe("solicitacaoService.buscarDetalhePorId", () => {
       },
     } as never);
 
+    const gestorUser = {
+      id: "gestor-1",
+      nome: "Gestor",
+      email: "gestor@example.com",
+      role: Role.GESTOR,
+    };
+
     await expect(
-      buscarDetalhePorId("sol-1", "user-1"),
+      buscarDetalhePorId("sol-1", gestorUser),
     ).rejects.toBeInstanceOf(ErroAcessoNegado);
   });
 });

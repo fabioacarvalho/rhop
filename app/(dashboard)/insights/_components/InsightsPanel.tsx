@@ -37,6 +37,7 @@ const DIMENSOES = [
  * compartilhado entre componentes irmãos (`design.md`).
  */
 export function InsightsPanel({ tipos }: Props) {
+  const [isMounted, setIsMounted] = useState(false);
   const [tipoFluxoId, setTipoFluxoId] = useState(tipos[0]?.id ?? "");
   const [periodo, setPeriodo] =
     useState<(typeof PERIODOS)[number]["valor"]>("ULTIMOS_30_DIAS");
@@ -45,6 +46,10 @@ export function InsightsPanel({ tipos }: Props) {
   const [resultado, setResultado] = useState<InsightResultado | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!tipoFluxoId) {
@@ -165,49 +170,53 @@ export function InsightsPanel({ tipos }: Props) {
         <>
           <div className={styles.card}>
             <div className={styles.chartWrap} aria-busy={carregando}>
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart
-                  data={resultado.itens}
-                  margin={{ top: 8, right: 12, left: 0, bottom: 4 }}
-                >
-                  <defs>
-                    <linearGradient id="insightBar" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#5F90BC" />
-                      <stop offset="100%" stopColor="#1B356A" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} stroke="#DCE3F0" />
-                  <XAxis
-                    dataKey="chave"
-                    tick={{ fontSize: 11, fill: "#5B6B87" }}
-                    axisLine={{ stroke: "#DCE3F0" }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    allowDecimals={false}
-                    tick={{ fontSize: 11, fill: "#5B6B87" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={32}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "#E4ECFA" }}
-                    contentStyle={{
-                      background: "#FFFFFF",
-                      border: "1px solid #DCE3F0",
-                      borderRadius: 8,
-                      fontSize: 12.5,
-                    }}
-                    labelStyle={{ color: "#2E5E8C", fontWeight: 600 }}
-                  />
-                  <Bar
-                    dataKey="quantidade"
-                    fill="url(#insightBar)"
-                    radius={[6, 6, 3, 3]}
-                    maxBarSize={56}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {isMounted ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart
+                    data={resultado.itens}
+                    margin={{ top: 8, right: 12, left: 0, bottom: 4 }}
+                  >
+                    <defs>
+                      <linearGradient id="insightBar" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#5F90BC" />
+                        <stop offset="100%" stopColor="#1B356A" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke="#DCE3F0" />
+                    <XAxis
+                      dataKey="chave"
+                      tick={{ fontSize: 11, fill: "#5B6B87" }}
+                      axisLine={{ stroke: "#DCE3F0" }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 11, fill: "#5B6B87" }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={32}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "#E4ECFA" }}
+                      contentStyle={{
+                        background: "#FFFFFF",
+                        border: "1px solid #DCE3F0",
+                        borderRadius: 8,
+                        fontSize: 12.5,
+                      }}
+                      labelStyle={{ color: "#2E5E8C", fontWeight: 600 }}
+                    />
+                    <Bar
+                      dataKey="quantidade"
+                      fill="url(#insightBar)"
+                      radius={[6, 6, 3, 3]}
+                      maxBarSize={56}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ height: 260 }} />
+              )}
             </div>
           </div>
 

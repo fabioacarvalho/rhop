@@ -4,10 +4,12 @@ import {
   ErroNaoAutenticado,
   ErroNaoAutorizado,
 } from "@/lib/services/authService";
-import { listar } from "@/lib/services/tipoFluxoService";
+import { listar, type TipoFluxoResumo } from "@/lib/services/tipoFluxoService";
 import { Role } from "@/lib/generated/prisma/client";
 import { InsightsPanel } from "./_components/InsightsPanel";
 import styles from "./insights.module.css";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Tela Painel de Insights (INSIGHT-01, INSIGHT-10). Server Component —
@@ -35,7 +37,13 @@ export default async function Page() {
     throw erro;
   }
 
-  const tipos = await listar();
+  let tipos: TipoFluxoResumo[] = [];
+  try {
+    const rawTipos = await listar();
+    tipos = JSON.parse(JSON.stringify(rawTipos));
+  } catch (erro) {
+    console.error("Erro ao carregar tipos de fluxo no painel de insights:", erro);
+  }
 
   return (
     <main className={styles.page}>

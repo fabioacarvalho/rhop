@@ -37,7 +37,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
   const { id } = await params;
 
   try {
-    const solicitacao = await buscarDetalhePorId(id, usuario.id);
+    const solicitacao = await buscarDetalhePorId(id, usuario);
     return Response.json({ solicitacao }, { status: 200 });
   } catch (erro) {
     if (erro instanceof ErroNaoEncontrado) {

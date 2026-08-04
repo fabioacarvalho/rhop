@@ -33,6 +33,7 @@ export async function POST(request: Request) {
       titulo: resultado.data.titulo,
       descricao: resultado.data.descricao,
       telaContexto: resultado.data.tela_contexto,
+      screenshotBase64: resultado.data.screenshotBase64,
     });
 
     if (!envio.ok) {

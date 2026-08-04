@@ -8,11 +8,15 @@ import { registrarErroNaoTratado } from "@/lib/services/sistemaErroService";
  * de corpo invalido ou falha de log.
  */
 export async function POST(request: Request) {
-  const corpo = await request.json().catch(() => null);
-  const resultado = erroSistemaInputSchema.safeParse(corpo);
+  try {
+    const corpo = await request.json().catch(() => null);
+    const resultado = erroSistemaInputSchema.safeParse(corpo);
 
-  if (resultado.success) {
-    await registrarErroNaoTratado(resultado.data);
+    if (resultado.success) {
+      await registrarErroNaoTratado(resultado.data).catch(() => null);
+    }
+  } catch {
+    // Fire-and-forget: nunca falha com 500 se ocorrer erro ao processar o log
   }
 
   return new Response(null, { status: 204 });

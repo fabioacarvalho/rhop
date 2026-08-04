@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     const arquivoUrl = await armazenarArquivo(`temp-${Date.now()}`, {
       buffer,
       nomeOriginal: arquivo.name,
+      tipoMime: arquivo.type,
     });
 
     return Response.json(
