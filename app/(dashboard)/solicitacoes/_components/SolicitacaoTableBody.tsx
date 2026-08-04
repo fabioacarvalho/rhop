@@ -4,6 +4,7 @@ import { Fragment, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { Role } from "@/lib/generated/prisma/client";
 import type { SolicitacaoResumo } from "@/lib/services/solicitacaoService";
+import CancelarSolicitacaoButton from "./CancelarSolicitacaoButton";
 import styles from "../solicitacoes.module.css";
 
 const ROTULO_PAPEL: Record<Role, string> = {
@@ -16,12 +17,14 @@ const ROTULO_STATUS: Record<string, string> = {
   PENDENTE: "Pendente",
   APROVADA: "Aprovado",
   REJEITADA: "Rejeitado",
+  CANCELADA: "Cancelada",
 };
 
 const STAMP_STATUS: Record<string, string> = {
   PENDENTE: "stampPendente",
   APROVADA: "stampAprovada",
   REJEITADA: "stampRejeitada",
+  CANCELADA: "stampCancelada",
 };
 
 function formatarData(data: Date): string {
@@ -62,7 +65,10 @@ export default function SolicitacaoTableBody({
     evento: MouseEvent<HTMLTableRowElement>,
     id: string,
   ) {
-    if ((evento.target as HTMLElement).closest("a")) {
+    if (
+      (evento.target as HTMLElement).closest("a") ||
+      (evento.target as HTMLElement).closest("button")
+    ) {
       return;
     }
     setIdExpandido((atual) => (atual === id ? null : id));
@@ -115,10 +121,15 @@ export default function SolicitacaoTableBody({
             <td className={styles.mono}>
               {formatarData(solicitacao.criado_em)}
             </td>
+            <td>
+              {solicitacao.status === "PENDENTE" ? (
+                <CancelarSolicitacaoButton id={solicitacao.id} />
+              ) : null}
+            </td>
           </tr>
           {idExpandido === solicitacao.id && (
             <tr>
-              <td colSpan={6}>
+              <td colSpan={7}>
                 <div className={styles.calloutIa}>
                   <div className={styles.calloutIaTag}>✦ Resumo por IA</div>
                   {solicitacao.resumo_ia_solicitante ??

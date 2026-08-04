@@ -71,6 +71,7 @@ export default async function Page() {
                 <th>Status</th>
                 <th>SLA</th>
                 <th>Aberta em</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <SolicitacaoTableBody solicitacoes={solicitacoes} />
