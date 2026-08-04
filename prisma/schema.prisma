@@ -219,7 +219,7 @@ model Candidato {
   telefone              String
   curriculo_texto       String
   curriculo_arquivo_url String?
-  transcricao_texto     String
+  parecer_tecnico       String
   embedding             Unsupported("vector(1536)")?
   status_embedding      StatusEmbedding              @default(pendente)
   solicitacao_id        String?
@@ -227,8 +227,21 @@ model Candidato {
   criado_por            String                       @db.Uuid
   criador               User                         @relation(fields: [criado_por], references: [id])
   criado_em             DateTime                     @default(now())
+  tags                  Tag[]
 
   @@index([status_embedding])
   @@index([solicitacao_id])
   @@map("candidatos")
+}
+
+model Tag {
+  id            String      @id @default(cuid())
+  nome          String      @unique
+  funcao        String
+  ativo         Boolean     @default(true)
+  criado_em     DateTime    @default(now())
+  atualizado_em DateTime    @updatedAt
+  candidatos    Candidato[]
+
+  @@map("tags")
 }
