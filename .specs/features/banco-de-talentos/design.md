@@ -528,3 +528,144 @@ interface Tag {
 - **Extensão `pgvector`** (TAL-27): primeiro passo técnico antes de qualquer código que toque a coluna `embedding` — confirmar sintaxe Prisma 7.9.1 + `@prisma/adapter-pg` pra habilitar a extensão, e confirmar que o projeto Supabase já a suporta (risco já citado no PRD §12).
 - **Latência do cadastro síncrono**: como o embedding é gerado dentro da mesma request de `POST /api/candidatos` (seção 0), o cadastro fica sujeito à latência da OpenAI. Se isso se mostrar um problema de UX real, é um retrabalho isolado em `candidatoService`/rota (ex.: revisitar fila real), não uma mudança de schema.
 - **`solicitacao_id` modelado desde já** (P0) mesmo com a feature de vínculo (RF7) sendo P2 — decisão deliberada pra evitar uma migration aditiva depois; o campo fica presente e `null` até a P2 ser implementada.
+
+---
+
+## Rodada 3 — Detalhe do Candidato com Resumo de IA
+
+**Contexto**: `spec.md` (Rodada 3, TAL-48 a TAL-57) e `context.md` (seção "Rodada 3") — nova tela de detalhe por clique na listagem, com um `resumo_ia` persistido que hoje não existe (só a `justificativa` efêmera de busca).
+
+### 0.2 Decisões técnicas desta sessão (rodada 3)
+
+1. **Onde a tela de detalhe busca os dados**: o projeto já tem um precedente direto e recente — `app/(dashboard)/solicitacoes/[id]/page.tsx` (Server Component) chama `solicitacaoService.buscarDetalhePorId` DIRETO, sem round-trip por API route, captura `ErroNaoEncontrado` → `notFound()` (`next/navigation`), e já renderiza um callout de `resumo_ia_solicitante` com fallback textual quando `null` — usando exatamente as classes `.calloutIa`/`.calloutIaTag`/`.detailGrid`/`.detailField`/`.detailLabel`/`.detailValue`/`.sectionDivider` do CSS module da feature. **Decisão**: `app/(dashboard)/banco-de-talentos/[id]/page.tsx` segue o mesmo padrão, ponto a ponto — nenhuma rota `GET /api/candidatos/[id]` é criada (a menção a essa rota no design da rodada 1, seção "API Routes", nunca chegou a ser implementada nas rodadas 1/2 e é substituída por este padrão, mais consistente com o resto do projeto).
+2. **Geração do `resumo_ia`**: mesmo racional da seção 0 (sem fila/worker) — gerado de forma síncrona, dentro da mesma chamada que já gera o embedding (`processarEmbedding`, usado tanto por `cadastrar` quanto por `reprocessarEmbedding`). As duas chamadas de IA (embedding + resumo) rodam em paralelo (`Promise.all`) dentro dessa função — são independentes uma da outra: falha de uma não afeta o resultado da outra, cada uma persiste seu próprio campo (`embedding`/`status_embedding` via `$executeRaw`; `resumo_ia` via `prisma.candidato.update` comum, pois não é `Unsupported`). Isso faz `reprocessarEmbedding` (já existente, TAL-29) também regenerar `resumo_ia` de graça, sem nenhuma rota ou botão novo (TAL-51).
+3. **Prompt do `gerarResumoCandidato`**: mesmo padrão estrutural de `gerarResumoSolicitacao`/`gerarJustificativaRanking` (já em `iaService.ts`) — monta um prompt com currículo + parecer técnico do candidato, pede uma síntese objetiva do perfil (não uma comparação contra vaga nenhuma, já que este resumo é gerado no cadastro, antes de qualquer busca existir). Falha (chave ausente, erro de API, conteúdo vazio) → `Log ERRO` (`entidade: "Candidato"`, `acao: FALHA_IA`) + retorna `null`, nunca lança — mesmo contrato dos outros dois.
+4. **Candidatos sem `resumo_ia` (falha ou cadastrados antes desta rodada)**: tratados exatamente como `solicitacoes/[id]/page.tsx` trata `resumo_ia_solicitante == null` hoje — mesmo texto de fallback ("Resumo da IA indisponível no momento."), mesmo `.calloutIa` (sem uma variante visual "fallback" separada, já que o próprio `solicitacoes` não usa uma) — decisão de manter consistência visual com o padrão já em produção, em vez do `.calloutFallback` diferente que existe em `busca.module.css` (dois padrões já coexistem no projeto para o mesmo conceito; escolhido o mais recente/direto — `solicitacoes` — por ser literalmente o mesmo campo `resumo_ia`, mesmo se em modelo diferente).
+5. **Clique na listagem**: a linha da tabela (`page.tsx`) ganha um `<Link>` envolvendo o bloco de nome/e-mail/tags (não a `<tr>` inteira, pra não aninhar `<a>` dentro do `<td>` que já tem o botão "Reprocessar" — aninhar elemento interativo dentro de outro é HTML inválido e quebraria o clique do botão).
+
+### Architecture Overview (incremento)
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4f46e5', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#3730a3', 'lineColor': '#94a3b8', 'secondaryColor': '#10b981', 'tertiaryColor': '#f59e0b', 'background': '#ffffff', 'mainBkg': '#f8fafc', 'nodeBorder': '#cbd5e1', 'clusterBkg': '#f1f5f9', 'clusterBorder': '#e2e8f0', 'titleColor': '#1e293b', 'edgeLabelBackground': '#ffffff', 'textColor': '#334155'}}}%%
+flowchart TD
+    cadastro["candidatoService.cadastrar / reprocessarEmbedding"] --> proc["processarEmbedding(candidatoId, curriculo, parecer)"]
+    proc -->|"Promise.all"| emb["embeddingService.gerar"]
+    proc -->|"Promise.all"| res["iaService.gerarResumoCandidato"]
+    emb -->|sucesso| persisteEmb["$executeRaw: embedding + status=processado"]
+    emb -->|falha| falhaEmb["status=falhou + Log ERRO"]
+    res -->|sucesso| persisteRes["prisma.candidato.update: resumo_ia"]
+    res -->|falha| falhaRes["Log ERRO, resumo_ia continua null"]
+
+    user([GESTOR ou RH_ADMIN]) --> listagem["page.tsx: clique no candidato"]
+    listagem -->|"Link /banco-de-talentos/:id"| detalhe["[id]/page.tsx (Server Component)"]
+    detalhe --> auth{"requireUser([GESTOR, RH_ADMIN])"}
+    auth -->|nao| erroAuth["redirect /login ou Acesso restrito"]
+    auth -->|sim| busca["candidatoService.buscarPorId(id)"]
+    busca -->|"ErroNaoEncontrado"| notFound["notFound() -> 404"]
+    busca -->|encontrado| render["Renderiza dados completos + callout resumo_ia (fallback se null)"]
+```
+
+### Code Reuse Analysis (incremento)
+
+| Component | Location | How to Use |
+| --- | --- | --- |
+| Página de detalhe por `id` (Server Component, `requireUser` + `notFound()`) | `app/(dashboard)/solicitacoes/[id]/page.tsx` | Padrão ponto a ponto para `banco-de-talentos/[id]/page.tsx` — mesma estrutura de try/catch, mesmo uso de `notFound()`. |
+| Callout de resumo de IA com fallback textual | `app/(dashboard)/solicitacoes/[id]/page.tsx` + `solicitacoes.module.css` (`.calloutIa`, `.calloutIaTag`, `.detailGrid`, `.detailField`, `.detailLabel`, `.detailValue`, `.sectionDivider`) | Mesmas classes copiadas para o novo `detalhe.module.css` do candidato — mesmo visual, mesmo texto de fallback. |
+| Padrão "gerar sob demanda, síncrono, falha não propaga" | `lib/services/iaService.ts` (`gerarResumoSolicitacao`, `gerarJustificativaRanking`) | Modelo direto para `gerarResumoCandidato` — mesma assinatura de resiliência. |
+| `ErroNaoEncontrado` (já existe) | `lib/services/candidatoService.ts` | Reusado por `buscarPorId`, mesma classe já usada por `reprocessarEmbedding`. |
+| Padrão de página protegida (Server Component + gate) | `app/(dashboard)/banco-de-talentos/page.tsx` | Mesmo gate `requireUser([GESTOR, RH_ADMIN])` para a nova página de detalhe. |
+
+### Components (incremento)
+
+#### `prisma/schema.prisma` (altera)
+
+```prisma
+model Candidato {
+  // ...campos existentes, sem mudança de tipo...
+  parecer_tecnico       String
+  resumo_ia             String?  // novo, rodada 3 (TAL-48/TAL-49)
+  // ...demais campos inalterados...
+}
+```
+
+> Coluna nova, opcional (`String?`), aditiva — sem risco de perda de dado, ao contrário do rename da rodada 2. Migration simples (`ALTER TABLE candidatos ADD COLUMN resumo_ia TEXT`), mas o mesmo procedimento manual (`prisma migrate diff` + `db execute` + `migrate resolve --applied`) documentado em "Notas da execução real" da rodada 2 deve ser repetido, já que o drift causado pelas extensões do Supabase (`pg_stat_statements`, `pgcrypto`, etc.) não é específico da rodada 2 — é uma característica do ambiente.
+
+#### `lib/services/iaService.ts` (estende)
+
+- **Interface nova**: `gerarResumoCandidato(input: { candidatoId: string; nome: string; curriculoTexto: string; parecerTecnico: string }): Promise<string | null>` — monta prompt com currículo + parecer técnico, pede síntese objetiva do perfil (sem comparação com vaga); falha → `Log ERRO` (`entidade: "Candidato"`, `entidade_id: candidatoId`, `acao: FALHA_IA`) + `null`, nunca lança (TAL-48, TAL-50).
+
+#### `lib/services/candidatoService.ts` (altera)
+
+- `processarEmbedding` passa a rodar `embeddingService.gerar` e `iaService.gerarResumoCandidato` em paralelo (`Promise.all`), cada um persistindo seu próprio resultado de forma independente — falha de um não afeta o outro (TAL-48, TAL-49, TAL-50). Chamado por `cadastrar` e por `reprocessarEmbedding` sem mudança de assinatura — regeneração de `resumo_ia` no reprocessamento vem de graça (TAL-51).
+- Nova função `buscarPorId(id: string): Promise<CandidatoDetalhe>` — `prisma.candidato.findUnique`, seleciona todos os campos exceto `embedding` (`Unsupported`, nunca exposta), inclui `tags: { select: { id, nome } }` e `solicitacao: { select: { id, tipoFluxo: { select: { nome: true } } } }`; `id` sem registro → lança `ErroNaoEncontrado` (classe já existente, reusada) (TAL-53, TAL-57).
+- **Dependencies**: `embeddingService`, `iaService` (função nova), `logService` — todas já dependências existentes do arquivo.
+
+### API Routes
+
+Nenhuma rota nova — `buscarPorId` é chamado direto pelo Server Component (ver decisão técnica #1). As rotas de cadastro/reprocessamento existentes (`POST /api/candidatos`, `POST /api/candidatos/[id]/reprocessar`) não mudam de assinatura — o `resumo_ia` é efeito colateral interno de `processarEmbedding`, invisível ao contrato HTTP.
+
+### UI (novo/altera)
+
+- **`app/(dashboard)/banco-de-talentos/[id]/page.tsx`** (novo) — Server Component: gate `requireUser([GESTOR, RH_ADMIN])` (mesmo formato de `solicitacoes/[id]/page.tsx`); `candidatoService.buscarPorId(id)`; `ErroNaoEncontrado` → `notFound()`; renderiza nome, e-mail, telefone, `status_embedding` (mesmo `stamp` da listagem), Tags (badges), vaga vinculada (se `solicitacao` não for `null`, mostra `tipoFluxo.nome` + id curto), callout de `resumo_ia` (texto ou fallback), e duas seções com `sectionDivider` para currículo completo e parecer técnico completo (TAL-52 a TAL-57).
+- **`app/(dashboard)/banco-de-talentos/[id]/detalhe.module.css`** (novo) — cópia adaptada de `solicitacoes.module.css` (`.calloutIa`, `.calloutIaTag`, `.detailGrid`, `.detailField`, `.detailLabel`, `.detailValue`, `.sectionDivider`, `.backLink`, `.card`, `.cardPad`) + `.stamp*` copiado de `banco-de-talentos.module.css` (badge de status), mesma convenção de um módulo CSS por rota já usada em `busca/`, `novo/`, `tags/`.
+- **`app/(dashboard)/banco-de-talentos/page.tsx`** (altera) — bloco de nome/e-mail/tags de cada linha passa a ser um `<Link href={`/banco-de-talentos/${candidato.id}`}>` (TAL-52); botão "Reprocessar" continua fora do `<Link>`, em `<td>` separado, sem aninhamento de elementos interativos.
+
+### Data Models (incremento)
+
+```typescript
+interface CandidatoDetalhe {
+  id: string
+  nome: string
+  email: string
+  telefone: string
+  curriculo_texto: string
+  curriculo_arquivo_url: string | null
+  parecer_tecnico: string
+  resumo_ia: string | null
+  status_embedding: 'pendente' | 'processado' | 'falhou'
+  criado_em: Date
+  tags: { id: string; nome: string }[]
+  solicitacao: { id: string; tipoFluxo: { nome: string } } | null
+}
+```
+
+**Relationships**: mesmas relações já existentes de `Candidato` — nenhum modelo novo, só um campo (`resumo_ia`) e uma projeção de leitura nova (`CandidatoDetalhe`).
+
+### Error Handling Strategy (incremento)
+
+| Error Scenario | Handling | User Impact |
+| --- | --- | --- |
+| Falha na geração do `resumo_ia` (cadastro ou reprocessamento) | `gerarResumoCandidato` retorna `null`; `Log ERRO`; `resumo_ia` permanece `null` | Candidato salvo e visível normalmente; tela de detalhe mostra fallback no lugar do resumo — nunca bloqueia cadastro, embedding ou reprocessamento |
+| `id` de candidato inexistente na URL de detalhe | `buscarPorId` lança `ErroNaoEncontrado` → `notFound()` | Página 404 padrão do Next.js |
+| Usuário SOLICITANTE acessa a URL de detalhe | `requireUser([GESTOR, RH_ADMIN])` lança `ErroNaoAutorizado` → "Acesso restrito" | Mesma mensagem já usada nas outras telas do módulo |
+| Candidato sem `resumo_ia` (nunca gerado, cadastrado antes desta rodada) | Mesmo tratamento de falha — `resumo_ia == null` | Fallback textual, tela abre normalmente |
+
+### Tech Decisions (only non-obvious ones, incremento)
+
+| Decision | Choice | Rationale |
+| --- | --- | --- |
+| Onde a tela de detalhe busca os dados | Server Component chama `candidatoService.buscarPorId` direto, sem rota `GET /api/candidatos/[id]` | Mesmo padrão já em produção em `solicitacoes/[id]/page.tsx`; a rota mencionada no design da rodada 1 nunca foi implementada |
+| Geração do `resumo_ia` | Síncrona, em paralelo (`Promise.all`) com o embedding, dentro de `processarEmbedding` | Sem fila/worker no projeto (mesmo racional da rodada 1); reaproveita `reprocessarEmbedding` já existente sem criar rota nova (TAL-51) |
+| Estilo do callout de resumo/fallback | Copia `.calloutIa` de `solicitacoes.module.css` (sem a variante `.calloutFallback` de `busca.module.css`) | Mesmo campo conceitual (`resumo_ia`) já tem um padrão visual em produção; prioriza consistência com o mais recente/direto em vez de introduzir um terceiro estilo |
+| Backfill de `resumo_ia` para candidatos antigos | Nenhum mecanismo novo — só regenera via "Reprocessar" (já existe, só decisão de UX pra rodada 2) | `context.md` (Rodada 3) deixou como Questão em Aberto #13 da spec; assumido aceitável nesta rodada, fallback cobre o caso |
+
+### Requirement Traceability (rodada 3)
+
+| Requirement ID | Coberto por |
+| --- | --- |
+| TAL-48 | `processarEmbedding` chama `iaService.gerarResumoCandidato` em paralelo ao embedding |
+| TAL-49 | Sucesso → `prisma.candidato.update({ resumo_ia })` |
+| TAL-50 | Falha → `Log ERRO`, `resumo_ia` permanece `null`, nunca lança |
+| TAL-51 | `reprocessarEmbedding` (já existente) chama o mesmo `processarEmbedding` — regenera `resumo_ia` de graça |
+| TAL-52 | `page.tsx`: `<Link>` no bloco de nome/e-mail de cada linha |
+| TAL-53 | `candidatoService.buscarPorId` + `[id]/page.tsx` renderiza todos os campos |
+| TAL-54 | Callout `.calloutIa` exibido quando `resumo_ia` não é `null` |
+| TAL-55 | Mesmo callout com texto de fallback quando `resumo_ia == null` |
+| TAL-56 | `requireUser([GESTOR, RH_ADMIN])` em `[id]/page.tsx` |
+| TAL-57 | `ErroNaoEncontrado` → `notFound()` |
+
+### Riscos / Pontos a verificar na fase de Tasks (rodada 3)
+
+- **Migration aditiva mais simples que a da rodada 2** (sem rename), mas o mesmo drift de ambiente (extensões que o Supabase já injeta) provavelmente exige o mesmo fluxo manual (`migrate diff` + `db execute` + `migrate resolve --applied`) documentado nas notas de execução real da rodada 2 — não assumir que `prisma migrate dev` direto vai funcionar sem revalidar.
+- **Backfill de candidatos antigos** (Questão em Aberto #13 da spec) não é resolvido nesta rodada — fica documentado como comportamento esperado (fallback), não um bug a corrigir depois sem novo pedido do usuário.
+- **`Promise.all` na `processarEmbedding`**: confirmar que uma falha em uma das duas chamadas (embedding ou resumo) não derruba a outra — `Promise.all` rejeita inteiro se qualquer uma rejeitar; como `embeddingService.gerar` e `gerarResumoCandidato` já nunca lançam (retornam `null` em falha), isso não deveria acontecer, mas vale um teste explícito garantindo que nenhuma das duas funções foi alterada pra lançar em algum caminho de erro não coberto.

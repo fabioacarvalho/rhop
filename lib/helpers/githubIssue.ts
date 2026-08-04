@@ -16,9 +16,15 @@ const ROLE_LABELS: Record<Role, string> = {
   [Role.RH_ADMIN]: "RH_Admin",
 };
 
+const TIPO_GITHUB_LABEL: Record<TipoRelato, string> = {
+  Bug: "bug",
+  Melhoria: "enhancement",
+  "Dúvida": "question",
+};
+
 /**
- * Monta titulo/corpo da issue do GitHub (HELP-04). So recebe tipo/tela/
- * papel/descricao — nunca e-mail ou nome — tornando estruturalmente
+ * Monta titulo/corpo/labels da issue do GitHub (HELP-04). So recebe tipo/
+ * tela/papel/descricao — nunca e-mail ou nome — tornando estruturalmente
  * impossivel vazar dado sensivel por aqui (HELP-08).
  */
 export function montarIssuePayload({
@@ -27,7 +33,7 @@ export function montarIssuePayload({
   papel,
   titulo,
   descricao,
-}: MontarIssuePayloadInput): { title: string; body: string } {
+}: MontarIssuePayloadInput): { title: string; body: string; labels: string[] } {
   const tituloFinal = titulo.trim() || "(sem título)";
   const body = [
     `**Tipo:** ${tipo}`,
@@ -37,5 +43,9 @@ export function montarIssuePayload({
     descricao.trim(),
   ].join("\n");
 
-  return { title: `[${tipo}] ${tituloFinal}`, body };
+  return {
+    title: `[${tipo}] ${tituloFinal}`,
+    body,
+    labels: [TIPO_GITHUB_LABEL[tipo]],
+  };
 }

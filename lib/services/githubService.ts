@@ -9,6 +9,7 @@ export class ErroGithubApi extends Error {
 export interface CriarIssueInput {
   title: string;
   body: string;
+  labels?: string[];
 }
 
 export interface CriarIssueResultado {
@@ -42,7 +43,11 @@ export async function criarIssue(
       "X-GitHub-Api-Version": "2022-11-28",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ title: input.title, body: input.body }),
+    body: JSON.stringify({
+      title: input.title,
+      body: input.body,
+      labels: input.labels,
+    }),
   });
 
   if (!resposta.ok) {

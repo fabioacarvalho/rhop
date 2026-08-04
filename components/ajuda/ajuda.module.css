@@ -159,9 +159,9 @@
 }
 
 .tabToggleActive {
-  background: #fff;
+  background: var(--azul-700);
   box-shadow: var(--shadow);
-  color: var(--azul-900);
+  color: #fff;
 }
 
 .aviso {

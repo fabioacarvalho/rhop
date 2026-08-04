@@ -50,6 +50,34 @@ describe("githubService.criarIssue", () => {
     );
   });
 
+  it("envia labels quando informadas", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        html_url: "https://github.com/fabioacarvalho/rhop/issues/42",
+        number: 42,
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    await criarIssue({
+      title: "[Bug] teste",
+      body: "corpo da issue",
+      labels: ["bug"],
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.github.com/repos/fabioacarvalho/rhop/issues",
+      expect.objectContaining({
+        body: JSON.stringify({
+          title: "[Bug] teste",
+          body: "corpo da issue",
+          labels: ["bug"],
+        }),
+      }),
+    );
+  });
+
   it("GITHUB_TOKEN ausente -> lança ErroGithubApi sem chamar fetch", async () => {
     delete process.env.GITHUB_TOKEN;
     const mockFetch = vi.fn();

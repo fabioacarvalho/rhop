@@ -63,6 +63,23 @@ describe("montarIssuePayload", () => {
     expect(rhAdmin.body).toContain("**Papel:** RH_Admin");
   });
 
+  it("mapeia cada TipoRelato para a label correta do GitHub", () => {
+    const base = {
+      tela: "Dashboard",
+      papel: Role.SOLICITANTE,
+      titulo: "x",
+      descricao: "y",
+    };
+
+    expect(montarIssuePayload({ ...base, tipo: "Bug" }).labels).toEqual(["bug"]);
+    expect(montarIssuePayload({ ...base, tipo: "Melhoria" }).labels).toEqual([
+      "enhancement",
+    ]);
+    expect(montarIssuePayload({ ...base, tipo: "Dúvida" }).labels).toEqual([
+      "question",
+    ]);
+  });
+
   it("nunca inclui e-mail ou nome — a assinatura da funcao nao aceita esses campos", () => {
     const { title, body } = montarIssuePayload({
       tipo: "Bug",
