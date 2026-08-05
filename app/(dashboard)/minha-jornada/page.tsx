@@ -30,7 +30,6 @@ export default async function MinhaJornadaPage() {
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Minha jornada</h1>
           <p className={styles.subtitle}>
             Acompanhe sua trajetória, desenvolvimento e marcos dentro da empresa.
           </p>
@@ -38,7 +37,7 @@ export default async function MinhaJornadaPage() {
       </header>
 
       <div className={`${styles.card} ${styles.emptyState}`}>
-        <div className={styles.seal}>FR</div>
+        <div className={styles.seal}>OP</div>
         <h2 className={styles.emptyTitle}>Em construção</h2>
         <p className={styles.emptyText}>
           Em breve, você poderá visualizar sua linha do tempo corporativa, histórico de feedbacks, 
