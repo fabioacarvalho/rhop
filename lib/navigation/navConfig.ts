@@ -32,8 +32,8 @@ export const NAV_GROUPS: NavGroup[] = [
         roles: [Role.SOLICITANTE, Role.GESTOR, Role.RH_ADMIN],
       },
       {
-        label: "Nova Solicitação",
-        href: "/solicitacoes/nova",
+        label: "Minha jornada",
+        href: "/minha-jornada",
         roles: [Role.SOLICITANTE, Role.GESTOR, Role.RH_ADMIN],
       },
       {
