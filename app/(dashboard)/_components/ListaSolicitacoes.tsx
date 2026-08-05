@@ -13,7 +13,7 @@ interface SolicitacaoRegistro {
   id: string;
   tipo_fluxo_nome: string;
   solicitante_nome: string;
-  status: "PENDENTE" | "APROVADA" | "REJEITADA";
+  status: "PENDENTE" | "APROVADA" | "REJEITADA" | "CANCELADA";
   atrasada: boolean;
   criado_em: string;
 }
@@ -43,6 +43,9 @@ function stampInfo(registro: SolicitacaoRegistro): {
   }
   if (registro.status === "REJEITADA") {
     return { texto: "Rejeitado", classe: styles.stampRejeitado };
+  }
+  if (registro.status === "CANCELADA") {
+    return { texto: "Cancelado", classe: styles.stampCancelado };
   }
   return { texto: "Pendente", classe: styles.stampPendente };
 }

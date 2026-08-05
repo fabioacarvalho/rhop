@@ -89,6 +89,7 @@ export default function SolicitacoesFiltros({
           <option value="ATRASADO">Atrasado</option>
           <option value="APROVADA">Aprovada</option>
           <option value="REJEITADA">Rejeitada</option>
+          <option value="CANCELADA">Cancelada</option>
         </select>
 
         <select

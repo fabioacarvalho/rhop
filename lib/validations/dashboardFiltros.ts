@@ -7,7 +7,7 @@ import { z } from "zod";
  */
 export const dashboardListaQuerySchema = z.object({
   tipo_fluxo_id: z.string().min(1).optional(),
-  status: z.enum(["PENDENTE", "ATRASADO", "APROVADA", "REJEITADA"]).optional(),
+  status: z.enum(["PENDENTE", "ATRASADO", "APROVADA", "REJEITADA", "CANCELADA"]).optional(),
   solicitante_id: z.string().min(1).optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().optional(),

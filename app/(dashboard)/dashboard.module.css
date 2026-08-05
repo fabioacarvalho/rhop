@@ -121,7 +121,7 @@
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -277,6 +277,11 @@
 .stampRejeitado {
   color: var(--vermelho);
   background: var(--vermelho-bg);
+}
+
+.stampCancelado {
+  color: var(--ink-soft);
+  background: var(--linha);
 }
 
 .empty {

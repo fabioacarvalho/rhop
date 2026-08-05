@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import styles from "../dashboard.module.css";
 import type { ContadoresDashboard } from "@/lib/services/dashboardService";
 
-type StatusFiltro = "PENDENTE" | "ATRASADO" | "APROVADA" | "REJEITADA";
+type StatusFiltro = "PENDENTE" | "ATRASADO" | "APROVADA" | "REJEITADA" | "CANCELADA";
 
 const TILES: {
   chave: keyof ContadoresDashboard;
@@ -33,6 +33,12 @@ const TILES: {
     label: "Rejeitadas",
     status: "REJEITADA",
     cor: "var(--vermelho)",
+  },
+  {
+    chave: "cancelados",
+    label: "Canceladas",
+    status: "CANCELADA",
+    cor: "var(--ink-soft)",
   },
 ];
 
@@ -109,7 +115,7 @@ export default function ContadoresPainel() {
             className={`${styles.statNum} ${!contadores ? styles.statSkeleton : ""}`}
             style={tile.cor ? { color: tile.cor } : undefined}
           >
-            {contadores ? contadores[tile.chave] : "–"}
+            {contadores ? (contadores[tile.chave] ?? 0) : "–"}
           </div>
           <div className={styles.statLabel}>{tile.label}</div>
         </button>

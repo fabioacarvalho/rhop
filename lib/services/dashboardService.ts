@@ -16,6 +16,7 @@ export interface ContadoresDashboard {
   atrasados: number;
   aprovados: number;
   rejeitados: number;
+  cancelados: number;
 }
 
 /** Item de `listar()` — projeção mínima exigida por DASH-02. */
@@ -75,7 +76,7 @@ export async function contarPorStatus(
 ): Promise<ContadoresDashboard> {
   const visibilidade = await visibilidadeSolicitacaoWhere(usuario);
 
-  const [pendentes, atrasados, aprovados, rejeitados] = await Promise.all([
+  const [pendentes, atrasados, aprovados, rejeitados, cancelados] = await Promise.all([
     prisma.solicitacao.count({
       where: { ...visibilidade, status: StatusSolicitacao.PENDENTE },
     }),
@@ -88,9 +89,12 @@ export async function contarPorStatus(
     prisma.solicitacao.count({
       where: { ...visibilidade, status: StatusSolicitacao.REJEITADA },
     }),
+    prisma.solicitacao.count({
+      where: { ...visibilidade, status: StatusSolicitacao.CANCELADA },
+    }),
   ]);
 
-  return { pendentes, atrasados, aprovados, rejeitados };
+  return { pendentes, atrasados, aprovados, rejeitados, cancelados };
 }
 
 /**
