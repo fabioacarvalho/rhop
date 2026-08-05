@@ -33,7 +33,8 @@ export default async function Page() {
   }
 
   const pendentes = await listarPendentes(usuario);
-  const contagem = pendentes.length;
+  const pendentesSerializados = JSON.parse(JSON.stringify(pendentes));
+  const contagem = pendentesSerializados.length;
   const subtitulo =
     contagem === 0
       ? "Nada aguardando sua decisão no momento."
@@ -49,11 +50,11 @@ export default async function Page() {
         </div>
       </header>
 
-      {pendentes.length === 0 ? (
+      {pendentesSerializados.length === 0 ? (
         <p className={styles.empty}>Nenhuma aprovação pendente</p>
       ) : (
         <div className={styles.stack}>
-          {pendentes.map((card) => (
+          {pendentesSerializados.map((card: any) => (
             <AprovacaoCard key={card.solicitacao_id} card={card} />
           ))}
         </div>
