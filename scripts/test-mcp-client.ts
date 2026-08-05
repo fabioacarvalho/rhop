@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-import EventSource from "eventsource";
+import { EventSource } from "eventsource";
 
 // Polyfill EventSource for the Node.js environment because the SDK might use it internally
 (global as any).EventSource = EventSource;

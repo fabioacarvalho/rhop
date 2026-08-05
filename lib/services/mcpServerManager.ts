@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as dashboardService from "./dashboardService";
 import { prisma } from "../prisma";
@@ -42,7 +42,7 @@ export function getMcpServer(): McpServer {
 
   server.resource(
     "solicitacao-detalhe",
-    "solicitacoes://{id}",
+    new ResourceTemplate("solicitacoes://{id}", { list: undefined }),
     { description: "Detalhes de uma solicitação específica" },
     async (uri, { id }) => {
       try {
@@ -79,11 +79,11 @@ export function getMcpServer(): McpServer {
     },
     async ({ usuario_id, papel }) => {
       const result = await dashboardService.listar(
-        { id: usuario_id, role: papel as Role },
+        { id: usuario_id, role: papel as Role, nome: "Sistema", email: "sistema@rhop.local" },
         {
           status: "PENDENTE",
-          pagina: 1,
-          limite: 10
+          page: 1,
+          pageSize: 10
         }
       );
       return {
