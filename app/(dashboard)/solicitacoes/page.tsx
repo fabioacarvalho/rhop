@@ -43,7 +43,6 @@ export default async function Page() {
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Minhas Solicitações</h1>
           <p className={styles.subtitle}>
             Tudo que você abriu, do pedido até a decisão final.
           </p>
