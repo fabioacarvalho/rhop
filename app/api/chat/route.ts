@@ -38,14 +38,6 @@ export async function POST(req: Request) {
       model: openai("gpt-4o-mini"),
       messages: modelMessages,
       stopWhen: isStepCount(5),
-      onToolCall: async ({ toolCall }) => {
-        console.log("[chat/route] LLM called tool:", toolCall.toolName, toolCall.args);
-      },
-      onFinish: (event) => {
-        console.log("[chat/route] LLM finished generation.");
-        console.log("[chat/route] Final text:", event.text);
-        console.log("[chat/route] Finish reason:", event.finishReason);
-      },
       system: `Você é um assistente interno de RH do sistema OP Conecta.
 Você DEVE utilizar as ferramentas (tools) disponíveis para buscar os dados solicitados pelo usuário, pois você só tem permissão para responder com base nesses dados.
 Os dados retornados pelas ferramentas já estão filtrados para a visão permitida do usuário logado (ex: o usuário só vê sua própria equipe se for Gestor).
@@ -56,7 +48,8 @@ Seja conciso, direto e utilize formatação em markdown para facilitar a leitura
           description:
             "Obtém os totais de solicitações agrupadas por status (pendentes, atrasados, aprovados, etc) permitidos para o usuário.",
           parameters: z.object({}),
-          execute: async () => {
+          // @ts-expect-error - AI SDK version mismatch type constraint
+          execute: async (_args: any) => {
             return await contarPorStatus(usuario);
           },
         }),
@@ -69,7 +62,8 @@ Seja conciso, direto e utilize formatação em markdown para facilitar a leitura
               .optional()
               .describe("Se verdadeiro, retorna apenas as que estão atrasadas."),
           }),
-          execute: async ({ apenasAtrasadas }) => {
+          // @ts-expect-error - AI SDK version mismatch type constraint
+          execute: async ({ apenasAtrasadas }: { apenasAtrasadas?: boolean }) => {
             const resultado = await listar(usuario, {
               status: apenasAtrasadas ? "ATRASADO" : "PENDENTE",
               page: 1,

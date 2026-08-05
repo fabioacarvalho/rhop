@@ -44,13 +44,11 @@ describe("Chat API Route", () => {
       email: "teste@teste.com",
       nome: "Teste",
       role: Role.GESTOR,
-      equipe_id: null,
-      criado_em: new Date(),
     });
 
-    const mockToDataStreamResponse = vi.fn().mockReturnValue(new Response("ok"));
+    const mockToUIMessageStreamResponse = vi.fn().mockReturnValue(new Response("ok"));
     vi.mocked(streamText).mockReturnValueOnce({
-      toDataStreamResponse: mockToDataStreamResponse,
+      toUIMessageStreamResponse: mockToUIMessageStreamResponse,
     } as any);
 
     const req = new Request("http://localhost/api/chat", {
@@ -69,7 +67,7 @@ describe("Chat API Route", () => {
     expect(streamArgs.tools).toHaveProperty("get_indicadores_dashboard");
     expect(streamArgs.tools).toHaveProperty("get_solicitacoes_pendentes");
     
-    expect(mockToDataStreamResponse).toHaveBeenCalled();
+    expect(mockToUIMessageStreamResponse).toHaveBeenCalled();
     expect(response).toBeInstanceOf(Response);
   });
 });

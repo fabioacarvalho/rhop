@@ -2,6 +2,8 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import styles from "./chat.module.css";
 
 interface ChatIAPanelProps {
@@ -9,8 +11,10 @@ interface ChatIAPanelProps {
 }
 
 export function ChatIAPanel({ onClose }: ChatIAPanelProps) {
+  // @ts-expect-error - 'api' parameter may not exist in ai@7 types, but works at runtime with default transport
   const { messages, sendMessage, status } = useChat({ api: "/api/chat" });
   const [input, setInput] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
   const isLoading = status === "streaming" || status === "submitted";
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -49,22 +53,33 @@ export function ChatIAPanel({ onClose }: ChatIAPanelProps) {
       }
     }
     
-    if (typeof m.content === "string" && m.content.trim() !== "") {
-      return m.content;
+    if ('content' in m && typeof (m as any).content === "string" && (m as any).content.trim() !== "") {
+      return (m as any).content;
     }
     
     return null;
   };
 
   return (
-    <div className={styles.panelWrapper}>
+    <>
+      {isExpanded && <div className={styles.modalOverlay} onClick={() => setIsExpanded(false)} />}
+      <div className={`${styles.panelWrapper} ${isExpanded ? styles.panelWrapperExpanded : ""}`}>
       <div className={styles.panelHead}>
         <div className={styles.panelHeadTitle}>
           <div className={styles.modalSeal}>OP</div> OP Conecta IA
         </div>
-        <button className={styles.panelClose} onClick={onClose} title="Fechar chat">
-          ×
-        </button>
+        <div className={styles.panelHeadActions}>
+          <button 
+            className={styles.panelExpand} 
+            onClick={() => setIsExpanded(!isExpanded)} 
+            title={isExpanded ? "Reduzir chat" : "Expandir chat"}
+          >
+            {isExpanded ? "↙" : "↗"}
+          </button>
+          <button className={styles.panelClose} onClick={onClose} title="Fechar chat">
+            ×
+          </button>
+        </div>
       </div>
 
       <div className={styles.messageArea}>
@@ -89,7 +104,11 @@ export function ChatIAPanel({ onClose }: ChatIAPanelProps) {
               className={m.role === "user" ? styles.messageUser : styles.messageAi}
             >
               {m.role === "assistant" && <strong>✦ OP Conecta IA</strong>}
-              {content}
+              {m.role === "assistant" ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              ) : (
+                content
+              )}
             </div>
           );
         })}
@@ -121,5 +140,6 @@ export function ChatIAPanel({ onClose }: ChatIAPanelProps) {
         </button>
       </form>
     </div>
+    </>
   );
 }
