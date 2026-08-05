@@ -30,18 +30,26 @@ export function ChatIAPanel({ onClose }: ChatIAPanelProps) {
 
   // Em ai@7, UIMessage pode ter `parts` ou `content` dependendo da conversão interna.
   const getMessageText = (m: (typeof messages)[number]): string | null => {
-    // console.log para debug
-    console.log("Message:", m);
+    // Log detalhado para entender os parts
+    console.log(`[Message ${m.role}] ID: ${m.id}`, JSON.parse(JSON.stringify(m)));
     
     if (m.parts && m.parts.length > 0) {
-      const joined = m.parts
+      const textParts = m.parts
         .filter((p): p is { type: "text"; text: string } => p.type === "text")
         .map((p) => p.text)
         .join("");
-      return joined || null;
+        
+      // Se tiver texto, retorna o texto
+      if (textParts) return textParts;
+      
+      // Se não tiver texto, mas tiver tool-invocation, retorna uma mensagem de carregamento do tool
+      const toolInvocations = m.parts.filter((p) => p.type === "tool-invocation");
+      if (toolInvocations.length > 0) {
+        return `[Executando ferramenta de busca de dados...]`;
+      }
     }
     
-    if (typeof m.content === "string") {
+    if (typeof m.content === "string" && m.content.trim() !== "") {
       return m.content;
     }
     

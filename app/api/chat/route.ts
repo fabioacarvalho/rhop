@@ -4,6 +4,7 @@ import {
   tool,
   convertToModelMessages,
   type UIMessage,
+  isStepCount,
 } from "ai";
 import { z } from "zod";
 import { requireUser } from "@/lib/services/authService";
@@ -36,7 +37,15 @@ export async function POST(req: Request) {
     const result = streamText({
       model: openai("gpt-4o-mini"),
       messages: modelMessages,
-      maxSteps: 5,
+      stopWhen: isStepCount(5),
+      onToolCall: async ({ toolCall }) => {
+        console.log("[chat/route] LLM called tool:", toolCall.toolName, toolCall.args);
+      },
+      onFinish: (event) => {
+        console.log("[chat/route] LLM finished generation.");
+        console.log("[chat/route] Final text:", event.text);
+        console.log("[chat/route] Finish reason:", event.finishReason);
+      },
       system: `Você é um assistente interno de RH do sistema OP Conecta.
 Você DEVE utilizar as ferramentas (tools) disponíveis para buscar os dados solicitados pelo usuário, pois você só tem permissão para responder com base nesses dados.
 Os dados retornados pelas ferramentas já estão filtrados para a visão permitida do usuário logado (ex: o usuário só vê sua própria equipe se for Gestor).
