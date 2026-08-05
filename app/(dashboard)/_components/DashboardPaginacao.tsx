@@ -32,27 +32,48 @@ export default function DashboardPaginacao() {
     router.push(`${pathname}?${params.toString()}`);
   }
 
+  function mudarPageSize(e: React.ChangeEvent<HTMLSelectElement>) {
+    const newSize = e.target.value;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("pageSize", newSize);
+    params.set("page", "1"); // Voltar para a página 1 ao mudar o tamanho
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
   return (
-    <nav aria-label="Paginação de solicitações" className={styles.paginacao}>
-      <button
-        type="button"
-        className={`${styles.btn} ${styles.btnGhost}`}
-        onClick={() => irParaPagina(paginaAtual - 1)}
-        disabled={!podeVoltar}
-      >
-        Anterior
-      </button>
-      <span>
-        Página {paginaAtual} de {totalPaginas}
-      </span>
-      <button
-        type="button"
-        className={`${styles.btn} ${styles.btnGhost}`}
-        onClick={() => irParaPagina(paginaAtual + 1)}
-        disabled={!podeAvancar}
-      >
-        Próxima
-      </button>
-    </nav>
+    <div className={styles.paginacaoWrapper}>
+      <div className={styles.pageSizeSelector}>
+        <label htmlFor="pageSize">Itens por página:</label>
+        <select id="pageSize" value={pageSize} onChange={mudarPageSize}>
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="30">30</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+
+      <nav aria-label="Paginação de solicitações" className={styles.paginacao}>
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnGhost}`}
+          onClick={() => irParaPagina(paginaAtual - 1)}
+          disabled={!podeVoltar}
+        >
+          Anterior
+        </button>
+        <span>
+          Página {paginaAtual} de {totalPaginas}
+        </span>
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnGhost}`}
+          onClick={() => irParaPagina(paginaAtual + 1)}
+          disabled={!podeAvancar}
+        >
+          Próxima
+        </button>
+      </nav>
+    </div>
   );
 }

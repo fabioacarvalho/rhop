@@ -16,7 +16,7 @@ import { useSyncExternalStore } from "react";
  * usuários diferentes).
  */
 
-export const PAGE_SIZE_PADRAO = 20;
+export const PAGE_SIZE_PADRAO = 5;
 
 export interface PaginacaoInfo {
   total: number;

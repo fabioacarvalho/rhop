@@ -294,12 +294,44 @@
 
 /* ===== Paginação ===== */
 
+.paginacaoWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pageSizeSelector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.pageSizeSelector select {
+  border: 1.5px solid var(--linha);
+  border-radius: 7px;
+  padding: 6px 11px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-inter), sans-serif;
+  cursor: pointer;
+}
+
+.pageSizeSelector select:focus {
+  outline: none;
+  border-color: var(--azul-500);
+  box-shadow: 0 0 0 3px var(--azul-100);
+}
+
 .paginacao {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 14px;
-  margin-top: 18px;
   font-size: 13px;
   color: var(--ink-soft);
 }

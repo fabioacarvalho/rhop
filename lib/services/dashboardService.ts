@@ -8,7 +8,7 @@ import * as equipeService from "@/lib/services/equipeService";
 import type { AuthenticatedUser } from "@/lib/services/authService";
 import type { DashboardListaFiltro } from "@/lib/validations/dashboardFiltros";
 
-const PAGE_SIZE_PADRAO = 20;
+const PAGE_SIZE_PADRAO = 5;
 
 /** Contadores agregados do escopo de visibilidade do usuário (DASH-01). */
 export interface ContadoresDashboard {
