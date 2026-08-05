@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { KanbanColunaChave } from "@/lib/config/kanbanColunas";
 import styles from "../pipeline.module.css";
 import layout from "../../dashboard.module.css";
@@ -267,31 +268,62 @@ export default function KanbanBoard({
         <div className={styles.kanbanProto}>
           {item.id.slice(0, 8).toUpperCase()}
         </div>
-        <div className={styles.kanbanMeta}>
-          {formatarData(item.criado_em)}
-        </div>
-        {papel === "RH_ADMIN" && chave === "pendente" ? (
-          <button
-            type="button"
-            onClick={() => handleCancelar(item)}
-            disabled={cancelandoId === item.id}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "8px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div className={styles.kanbanMeta}>
+              {formatarData(item.criado_em)}
+            </div>
+            {papel === "RH_ADMIN" && chave === "pendente" ? (
+              <button
+                type="button"
+                onClick={() => handleCancelar(item)}
+                disabled={cancelandoId === item.id}
+                style={{
+                  alignSelf: "flex-start",
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  color: "var(--vermelho)",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                {cancelandoId === item.id ? "Cancelando..." : "Cancelar"}
+              </button>
+            ) : null}
+          </div>
+          <Link
+            href={`/solicitacoes/${item.id}`}
             style={{
-              alignSelf: "flex-start",
-              background: "transparent",
-              border: "none",
-              padding: 0,
-              color: "var(--vermelho)",
-              fontSize: "12px",
-              fontWeight: 600,
-              cursor: "pointer",
-              textDecoration: "underline",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--azul-700)",
+              transition: "color 0.2s",
+              padding: "4px"
             }}
+            title="Ver detalhes"
           >
-            {cancelandoId === item.id ? "Cancelando..." : "Cancelar"}
-          </button>
-        ) : null}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </Link>
+        </div>
         {erroPorCard[item.id] ? (
-          <div style={{ color: "var(--vermelho)", fontSize: "11.5px" }}>
+          <div style={{ color: "var(--vermelho)", fontSize: "11.5px", marginTop: "8px" }}>
             {erroPorCard[item.id]}
           </div>
         ) : null}
