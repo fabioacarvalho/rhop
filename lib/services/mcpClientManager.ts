@@ -43,7 +43,8 @@ export async function getGithubMcpTools() {
         description: t.description || "",
         // Converte o JSON Schema nativo do MCP para o Vercel AI SDK (via jsonSchema helper)
         parameters: jsonSchema(t.inputSchema),
-        execute: async (args) => {
+        // @ts-expect-error - AI SDK dynamic tool execution type mismatch
+        execute: async (args: any) => {
           console.log(`[MCP Client] Chamando tool '${t.name}' com:`, args);
           try {
             const result = await githubMcpClient!.callTool({

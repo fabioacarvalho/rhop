@@ -31,7 +31,8 @@ app.get("/sse", (req, res) => {
   const sessionId = crypto.randomUUID();
 
   // Iniciar o processo Stdio do Github MCP Server
-  const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
+  const isWin = process.platform === "win32";
+  const npxCommand = isWin ? "npx.cmd" : "npx";
   const githubProcess = spawn(npxCommand, ["-y", "@modelcontextprotocol/server-github"], {
     env: { ...process.env, GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_PERSONAL_ACCESS_TOKEN },
     stdio: ["pipe", "pipe", "pipe"],
