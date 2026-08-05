@@ -47,15 +47,6 @@ export default async function Page() {
 
   return (
     <main className={layout.page}>
-      <header className={layout.header}>
-        <div>
-          <h1 className={layout.title}>Pipeline de Aprovações</h1>
-          <p className={layout.subtitle}>
-            Todas as solicitações em andamento, organizadas por status.
-          </p>
-        </div>
-      </header>
-
       <KanbanBoard
         boardInicial={boardInicial}
         tiposFluxo={tiposFluxo}

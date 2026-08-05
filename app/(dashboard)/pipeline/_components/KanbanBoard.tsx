@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { KanbanColunaChave } from "@/lib/config/kanbanColunas";
 import styles from "../pipeline.module.css";
+import layout from "../../dashboard.module.css";
 
 /** Mesma projeção de `pipelineService.KanbanItem`, mas com `criado_em` como
  * string ISO — forma que atravessa a fronteira de `fetch`/JSON. */
@@ -299,22 +300,40 @@ export default function KanbanBoard({
   }
 
   return (
-    <div>
-      <label style={{ display: "inline-flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
-        <span>Tipo de fluxo</span>
-        <select
-          value={tipoFluxoId}
-          onChange={(e) => handleFiltroChange(e.target.value)}
-          disabled={carregando}
-        >
-          <option value="">Todos os tipos</option>
-          {tiposFluxo.map((tipo) => (
-            <option key={tipo.id} value={tipo.id}>
-              {tipo.nome}
-            </option>
-          ))}
-        </select>
-      </label>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <header className={layout.header} style={{ alignItems: "flex-end", marginBottom: "16px" }}>
+        <div>
+          <p className={layout.subtitle} style={{ margin: 0 }}>
+            Todas as solicitações em andamento, organizadas por status.
+          </p>
+        </div>
+
+        <label style={{ display: "inline-flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: "12px", color: "var(--ink-soft)", fontWeight: 500 }}>Tipo de fluxo</span>
+          <select
+            value={tipoFluxoId}
+            onChange={(e) => handleFiltroChange(e.target.value)}
+            disabled={carregando}
+            style={{
+              border: "1.5px solid var(--linha)",
+              borderRadius: "7px",
+              padding: "8px 11px",
+              fontSize: "13px",
+              background: "#fff",
+              color: "var(--ink)",
+              fontFamily: "var(--font-inter), sans-serif",
+              minWidth: "160px"
+            }}
+          >
+            <option value="">Todos os tipos</option>
+            {tiposFluxo.map((tipo) => (
+              <option key={tipo.id} value={tipo.id}>
+                {tipo.nome}
+              </option>
+            ))}
+          </select>
+        </label>
+      </header>
 
       {erro ? (
         <p style={{ color: "var(--vermelho)", marginBottom: 12 }}>{erro}</p>

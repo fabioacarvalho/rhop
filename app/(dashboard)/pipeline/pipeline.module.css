@@ -27,8 +27,8 @@
 /* ===== Coluna ===== */
 
 .kanbanColumn {
-  flex: 0 0 280px;
-  width: 280px;
+  flex: 1;
+  min-width: 250px;
   max-width: 280px;
   display: flex;
   flex-direction: column;
@@ -38,6 +38,7 @@
   box-shadow: var(--shadow);
   scroll-snap-align: start;
   overflow: hidden;
+  max-height: calc(100vh - 250px);
 }
 
 .kanbanColumnHead {
@@ -90,7 +91,7 @@
   gap: 10px;
   padding: 12px;
   min-height: 140px;
-  max-height: 620px;
+  flex: 1;
   overflow-y: auto;
 }
 
@@ -237,12 +238,11 @@
 
 @media (max-width: 640px) {
   .kanbanColumn {
-    flex: 0 0 250px;
-    width: 250px;
-    max-width: 250px;
+    flex: 0 0 260px;
+    min-width: 260px;
   }
 
   .kanbanList {
-    max-height: 520px;
+    max-height: none;
   }
 }
