@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as dashboardService from "./dashboardService";
 import { prisma } from "../prisma";
-import { Role } from "../generated/prisma";
+import { Role } from "../generated/prisma/client";
 
 // Singleton for the MCP Server
 let mcpServerInstance: McpServer | null = null;
@@ -26,7 +26,7 @@ export function getMcpServer(): McpServer {
           where: { status: "PENDENTE" },
           include: { solicitante: true, tipoFluxo: true }
         });
-        
+
         return {
           contents: [{
             uri: uri.href,
@@ -50,11 +50,11 @@ export function getMcpServer(): McpServer {
           where: { id: String(id) },
           include: { solicitante: true, tipoFluxo: true, aprovacoes: true }
         });
-        
+
         if (!solicitacao) {
           throw new Error("Solicitação não encontrada");
         }
-        
+
         return {
           contents: [{
             uri: uri.href,
