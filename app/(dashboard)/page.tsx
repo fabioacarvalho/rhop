@@ -7,6 +7,7 @@ import {
 import { listar as listarTiposFluxo } from "@/lib/services/tipoFluxoService";
 import { listarSolicitantesVisiveis } from "@/lib/services/dashboardService";
 import { Role } from "@/lib/generated/prisma/client";
+import { Suspense } from "react";
 import ContadoresPainel from "./_components/ContadoresPainel";
 import SolicitacoesFiltros from "./_components/SolicitacoesFiltros";
 import ListaSolicitacoes from "./_components/ListaSolicitacoes";
@@ -51,16 +52,24 @@ export default async function Page() {
         </div>
       </header>
 
-      <ContadoresPainel />
+      <Suspense fallback={<div className={styles.statsGrid}>Carregando contadores...</div>}>
+        <ContadoresPainel />
+      </Suspense>
 
-      <SolicitacoesFiltros
-        tiposDisponiveis={tiposDisponiveis}
-        solicitantesDisponiveis={solicitantesDisponiveis}
-      />
+      <Suspense fallback={<div className={styles.filterBar}>Carregando filtros...</div>}>
+        <SolicitacoesFiltros
+          tiposDisponiveis={tiposDisponiveis}
+          solicitantesDisponiveis={solicitantesDisponiveis}
+        />
+      </Suspense>
 
-      <ListaSolicitacoes />
+      <Suspense fallback={<div className={styles.card}>Carregando lista...</div>}>
+        <ListaSolicitacoes />
+      </Suspense>
 
-      <DashboardPaginacao />
+      <Suspense fallback={<div>Carregando paginação...</div>}>
+        <DashboardPaginacao />
+      </Suspense>
     </main>
   );
 }
