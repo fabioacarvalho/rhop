@@ -49,7 +49,7 @@ export default async function Page() {
     <main className={layout.page}>
       <KanbanBoard
         boardInicial={boardInicial}
-        tiposFluxo={tiposFluxo}
+        tiposFluxo={tiposFluxo.map((t) => ({ id: t.id, nome: t.nome }))}
         papel={usuario.role as "GESTOR" | "RH_ADMIN"}
       />
     </main>
