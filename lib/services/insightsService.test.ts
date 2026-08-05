@@ -220,7 +220,7 @@ describe("agregar", () => {
 
   it("dimensao MES -> usa $queryRaw e mapeia itens", async () => {
     mockQueryRaw.mockResolvedValueOnce([
-      { mes: new Date("2026-06-01T00:00:00Z"), quantidade: BigInt(4) },
+      { mes: new Date("2026-06-01T00:00:00Z"), quantidade: 4n },
     ] as never);
     mockGerarResumoInsights.mockResolvedValueOnce("Tendência de alta.");
 

@@ -3,7 +3,6 @@ import { Role } from "@/lib/generated/prisma/client";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { HelpButton } from "@/components/ajuda/HelpButton";
-import { ChatIAFab } from "./chat/ChatIAFab";
 import styles from "./AppShell.module.css";
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -28,7 +27,6 @@ export function AppShell({ usuario, children }: AppShellProps) {
         <div className={styles.content}>{children}</div>
       </div>
 
-      <ChatIAFab />
       <HelpButton />
     </div>
   );

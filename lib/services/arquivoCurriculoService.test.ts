@@ -145,7 +145,6 @@ describe("arquivoCurriculoService.armazenarArquivo", () => {
     const url = await armazenarArquivo("cand-1", {
       buffer: Buffer.from("conteudo"),
       nomeOriginal: "curriculo.pdf",
-      tipoMime: "application/pdf",
     });
 
     expect(url).toBe("https://storage.example/curriculos/cand-1-curriculo.pdf");
@@ -162,7 +161,6 @@ describe("arquivoCurriculoService.armazenarArquivo", () => {
       armazenarArquivo("cand-1", {
         buffer: Buffer.from("conteudo"),
         nomeOriginal: "curriculo.pdf",
-        tipoMime: "application/pdf",
       }),
     ).rejects.toThrow("bucket indisponivel");
   });
