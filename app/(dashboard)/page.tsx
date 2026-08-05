@@ -45,7 +45,6 @@ export default async function Page() {
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Dashboard de Visão Geral</h1>
           <p className={styles.subtitle}>
             Contadores e lista das solicitações do seu escopo.
           </p>

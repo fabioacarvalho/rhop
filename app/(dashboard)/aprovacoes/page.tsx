@@ -45,7 +45,6 @@ export default async function Page() {
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Aprovações Pendentes</h1>
           <p className={styles.subtitle}>{subtitulo}</p>
         </div>
       </header>
