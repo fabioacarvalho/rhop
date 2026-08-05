@@ -51,6 +51,7 @@ function tipoFluxoValido(
     nome: "Solicitação de Férias",
     campos_formulario: [campoTexto],
     etapas: ["GESTOR", "RH_ADMIN"],
+    categoria: "PADRAO",
     ...overrides,
   };
 }

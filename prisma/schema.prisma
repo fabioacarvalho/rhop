@@ -246,3 +246,13 @@ model Tag {
 
   @@map("tags")
 }
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  nome      String
+  ativo     Boolean  @default(true)
+  criado_em DateTime @default(now())
+
+  @@map("api_keys")
+}

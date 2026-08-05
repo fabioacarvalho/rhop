@@ -1,0 +1,247 @@
+.fab {
+  position: fixed;
+  right: 26px;
+  bottom: 26px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--amarelo-100);
+  color: var(--amarelo-700);
+  border: 2px solid var(--amarelo-600);
+  font-family: var(--font-fraunces), serif;
+  font-size: 20px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+  z-index: 50;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fab:hover {
+  background: var(--amarelo-400);
+  color: var(--azul-900);
+}
+
+.panelWrapper {
+  position: fixed;
+  right: 26px;
+  bottom: 90px;
+  width: 360px;
+  height: 60vh;
+  max-height: 500px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--linha);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 90;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.panelWrapperExpanded {
+  width: 800px;
+  max-width: 90vw;
+  height: 80vh;
+  max-height: 800px;
+  
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+}
+
+.panelHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--linha);
+  background: var(--azul-900);
+  color: #fff;
+}
+
+.panelHeadTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.modalSeal {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--amarelo-400);
+  outline: 1.5px dashed rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--amarelo-400);
+  flex-shrink: 0;
+}
+
+.panelHeadActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panelClose, .panelExpand {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 20px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.panelClose:hover, .panelExpand:hover {
+  color: #fff;
+}
+
+.messageArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fff;
+}
+
+.message {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.messageUser {
+  align-self: flex-end;
+  background: var(--azul-100);
+  color: var(--azul-900);
+  border: 1.5px solid var(--azul-300, #93c5fd);
+  border-bottom-right-radius: 2px;
+  padding: 10px 14px;
+}
+
+.messageAi {
+  align-self: flex-start;
+  background: #fff;
+  color: var(--ink);
+  border: 1.5px solid var(--linha);
+  border-left: 3px solid var(--amarelo-600);
+  border-bottom-left-radius: 2px;
+  padding: 10px 14px;
+}
+
+.messageAi strong {
+  color: var(--azul-700);
+}
+
+.messageAi > strong:first-child {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.messageAi p {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+.messageAi p:last-child {
+  margin-bottom: 0;
+}
+
+.messageAi ul, .messageAi ol {
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding-left: 20px;
+}
+.messageAi li {
+  margin-bottom: 4px;
+}
+
+.inputArea {
+  padding: 14px;
+  border-top: 1px solid var(--linha);
+  background: #fff;
+  display: flex;
+  gap: 8px;
+}
+
+.inputField {
+  flex: 1;
+  border: 1.5px solid var(--linha);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: var(--font-inter), sans-serif;
+  color: var(--ink);
+}
+
+.inputField:focus {
+  outline: none;
+  border-color: var(--azul-500);
+  box-shadow: 0 0 0 3px var(--azul-100);
+}
+
+.sendBtn {
+  background: var(--amarelo-600);
+  color: var(--azul-900);
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.sendBtn:hover {
+  background: var(--amarelo-400);
+}
+
+.sendBtn:disabled {
+  background: var(--linha);
+  color: var(--ink-soft);
+  cursor: not-allowed;
+}
+
+.toolCall {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  align-self: flex-start;
+  background: #fff;
+  border: 1px dashed var(--linha);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
