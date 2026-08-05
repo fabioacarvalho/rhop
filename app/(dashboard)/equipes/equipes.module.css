@@ -231,13 +231,7 @@
 /* ===== Formulário (novo / editar) ===== */
 
 .ruled {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent 30px,
-    var(--linha) 31px
-  );
-  background-position: 0 4px;
+  background-color: var(--branco);
 }
 
 .field {
