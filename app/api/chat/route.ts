@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 import { requireUser } from "@/lib/services/authService";
 import { contarPorStatus, listar } from "@/lib/services/dashboardService";
+import { getGithubMcpTools } from "@/lib/services/mcpClientManager";
 
 export const maxDuration = 30;
 
@@ -31,6 +32,9 @@ export async function POST(req: Request) {
   const rawMessages = body.messages ?? (body.message ? [body.message] : []);
 
   try {
+    // Busca ferramentas dinâmicas de MCP Client (Github)
+    const mcpTools = await getGithubMcpTools();
+
     // convertToModelMessages é assíncrona no ai@7
     const modelMessages = await convertToModelMessages(rawMessages);
 
@@ -40,10 +44,11 @@ export async function POST(req: Request) {
       stopWhen: isStepCount(5),
       system: `Você é um assistente interno de RH do sistema OP Conecta.
 Você DEVE utilizar as ferramentas (tools) disponíveis para buscar os dados solicitados pelo usuário, pois você só tem permissão para responder com base nesses dados.
-Os dados retornados pelas ferramentas já estão filtrados para a visão permitida do usuário logado (ex: o usuário só vê sua própria equipe se for Gestor).
-Se o usuário perguntar sobre assuntos externos ao sistema (ex: conhecimentos gerais, quem ganhou um jogo, receitas), recuse a resposta educadamente informando que você é restrito ao contexto de RH do OP Conecta.
+Os dados internos retornados pelas ferramentas já estão filtrados para a visão permitida do usuário logado.
+Se o usuário perguntar sobre o Github ou ferramentas externas mapeadas via MCP, utilize as ferramentas disponíveis. Para outros assuntos não relacionados, recuse educadamente.
 Seja conciso, direto e utilize formatação em markdown para facilitar a leitura.`,
       tools: {
+        ...mcpTools,
         get_indicadores_dashboard: tool({
           description:
             "Obtém os totais de solicitações agrupadas por status (pendentes, atrasados, aprovados, etc) permitidos para o usuário.",
