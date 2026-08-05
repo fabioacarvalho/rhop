@@ -24,7 +24,7 @@ async function run() {
         headers: {
           Authorization: `Bearer ${apiKey}`
         }
-      },
+      } as any,
       requestInit: {
         headers: {
           Authorization: `Bearer ${apiKey}`
