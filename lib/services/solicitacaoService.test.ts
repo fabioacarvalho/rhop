@@ -11,6 +11,9 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 
@@ -60,6 +63,7 @@ const mockCreate = vi.mocked(prisma.solicitacao.create);
 const mockFindMany = vi.mocked(prisma.solicitacao.findMany);
 const mockFindUnique = vi.mocked(prisma.solicitacao.findUnique);
 const mockUpdate = vi.mocked(prisma.solicitacao.update);
+const mockUserFindUnique = vi.mocked(prisma.user.findUnique);
 const mockRegistrar = vi.mocked(registrar);
 const mockBuscarPorId = vi.mocked(tipoFluxoService.buscarPorId);
 const mockGerarEPersistir = vi.mocked(gerarEPersistir);
@@ -69,10 +73,14 @@ beforeEach(() => {
   mockFindMany.mockReset();
   mockFindUnique.mockReset();
   mockUpdate.mockReset();
+  mockUserFindUnique.mockReset();
   mockRegistrar.mockReset();
   mockBuscarPorId.mockReset();
   mockGerarEPersistir.mockReset();
   mockGerarEPersistir.mockResolvedValue(undefined);
+  // Por padrao o solicitante tem Equipe (caso comum) — testes de
+  // substituicao GESTOR->RH_ADMIN sobrescrevem isso explicitamente.
+  mockUserFindUnique.mockResolvedValue({ equipe_id: "equipe-1" } as never);
 });
 
 const TIPO_FLUXO_REEMBOLSO = {
@@ -134,6 +142,21 @@ describe("solicitacaoService.criar", () => {
         usuario_id: "user-1",
       }),
     );
+  });
+
+  it("solicitante sem Equipe (ex: GESTOR/RH_ADMIN criando a propria solicitacao) -> etapa inicial GESTOR sobe para RH_ADMIN", async () => {
+    mockBuscarPorId.mockResolvedValueOnce(TIPO_FLUXO_REEMBOLSO as never);
+    mockUserFindUnique.mockResolvedValueOnce({ equipe_id: null } as never);
+    mockCreate.mockResolvedValueOnce({
+      ...SOLICITACAO_CRIADA,
+      etapa_atual: Role.RH_ADMIN,
+    } as never);
+
+    await criar(INPUT_VALIDO, "gestor-sem-equipe");
+
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ etapa_atual: Role.RH_ADMIN }),
+    });
   });
 
   it("define prazo_sla como now + SLA_HORAS horas", async () => {
