@@ -15,6 +15,7 @@ import {
 } from "@/lib/validations/solicitacaoDados";
 import type { CampoFormularioDefinicao } from "@/lib/validations/tipoFluxo";
 import type { SolicitacaoInput } from "@/lib/validations/solicitacao";
+import { lerEtapas, papelEfetivo } from "@/lib/services/fluxoEtapas";
 
 /** Prazo de SLA fixo (48h), aplicado a toda `Solicitacao` (ver `design.md`, seção 0). */
 export const SLA_HORAS = 48;
@@ -85,15 +86,6 @@ export type SolicitacaoDetalhe = Solicitacao & {
   solicitante: { id: string; nome: string; email: string };
 };
 
-function lerEtapas(etapasJson: unknown): Role[] {
-  if (!Array.isArray(etapasJson)) {
-    return [];
-  }
-  return etapasJson.filter(
-    (e): e is Role => e === Role.GESTOR || e === Role.RH_ADMIN,
-  );
-}
-
 /**
  * Cria uma `Solicitacao` (SOL-01, SOL-06 a SOL-13).
  *
@@ -131,13 +123,19 @@ export async function criar(
   }
 
   const etapas = lerEtapas(tipoFluxo.etapas);
-  const etapaInicial = etapas[0];
+  const etapaPlanejada = etapas[0];
 
-  if (!etapaInicial) {
+  if (!etapaPlanejada) {
     // SOL-12: TipoFluxo sem etapas — garantido nao acontecer por CONF-04
     // (configuracao-fluxos exige >=1 etapa na criacao/edicao).
     throw new Error("Tipo de fluxo sem etapas de aprovacao configuradas.");
   }
+
+  const solicitante = await prisma.user.findUnique({
+    where: { id: solicitanteId },
+    select: { equipe_id: true },
+  });
+  const etapaInicial = papelEfetivo(etapaPlanejada, solicitante?.equipe_id != null);
 
   const agora = new Date();
   const prazoSla = new Date(agora.getTime() + SLA_HORAS * 60 * 60 * 1000);

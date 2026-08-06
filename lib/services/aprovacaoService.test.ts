@@ -11,6 +11,7 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
 
@@ -50,6 +51,7 @@ const mockFindUnique = vi.mocked(prisma.solicitacao.findUnique);
 const mockSolicitacaoUpdate = vi.mocked(prisma.solicitacao.update);
 const mockAprovacaoCreate = vi.mocked(prisma.aprovacao.create);
 const mockAprovacaoUpdate = vi.mocked(prisma.aprovacao.update);
+const mockTransaction = vi.mocked(prisma.$transaction);
 const mockRegistrar = vi.mocked(registrar);
 const mockGerarResumo = vi.mocked(gerarResumoSolicitacao);
 const mockEmitirAvanco = vi.mocked(emitirAvancoEtapa);
@@ -107,9 +109,11 @@ beforeEach(() => {
   mockSolicitacaoUpdate.mockReset();
   mockAprovacaoCreate.mockReset();
   mockAprovacaoUpdate.mockReset();
+  mockTransaction.mockReset();
   mockRegistrar.mockReset();
   mockGerarResumo.mockReset();
   mockEmitirAvanco.mockReset();
+  mockTransaction.mockImplementation((ops: Promise<unknown>[]) => Promise.all(ops));
   mockRegistrar.mockResolvedValue(undefined);
   mockGerarResumo.mockResolvedValue(null);
   mockEmitirAvanco.mockResolvedValue(undefined);
@@ -227,27 +231,75 @@ describe("decidir", () => {
     ).rejects.toBeInstanceOf(ErroDecisaoInvalida);
   });
 
-  it("bloqueia etapa ja decidida (idempotencia)", async () => {
-    mockFindUnique.mockResolvedValue(
-      baseSolicitacao({
-        aprovacoes: [
-          {
-            id: "apr-1",
-            solicitacao_id: "sol-1",
-            etapa: 1,
-            aprovador_role: Role.GESTOR,
-            aprovador_id: "gestor-1",
-            decisao: DecisaoAprovacao.APROVADA,
-            comentario: null,
-            resumo_ia: "x",
-            decidido_em: new Date(),
-          },
-        ],
-      }) as never,
+  // Nao ha mais um teste de "etapa ja decidida" com `etapa_atual` estagnado
+  // (ex: etapa_atual=GESTOR com a Aprovacao da etapa 1 ja APROVADA): esse
+  // estado exigia as duas escritas de `decidir` (Aprovacao.decisao e
+  // Solicitacao.status/etapa_atual) fora de uma transacao — agora que
+  // `decidir` grava as duas atomicamente (`prisma.$transaction`), essa
+  // inconsistencia nao pode mais ser produzida por `decidir()`.
+
+  it("numera a proxima etapa pela ultima Aprovacao, nao pelo papel — evita colisao quando GESTOR e substituido por RH_ADMIN", async () => {
+    // Fluxo GESTOR -> RH_ADMIN cujo solicitante nao tem Equipe: a etapa 1
+    // (planejada GESTOR) foi substituida para RH_ADMIN (`papelEfetivo`), e a
+    // etapa 2 (planejada RH_ADMIN) tambem e RH_ADMIN — duas etapas seguidas
+    // com o mesmo papel efetivo.
+    const sol = baseSolicitacao({
+      etapa_atual: Role.RH_ADMIN,
+      solicitante: {
+        id: "user-1",
+        nome: "Rafael Lima",
+        email: "rafael@ex.com",
+        equipe: null,
+      },
+      aprovacoes: [
+        {
+          id: "apr-1",
+          solicitacao_id: "sol-1",
+          etapa: 1,
+          aprovador_role: Role.RH_ADMIN,
+          aprovador_id: "rh-1",
+          decisao: DecisaoAprovacao.APROVADA,
+          comentario: null,
+          resumo_ia: "x",
+          decidido_em: new Date(),
+        },
+      ],
+    });
+    mockFindUnique.mockResolvedValue(sol as never);
+    mockAprovacaoUpdate.mockResolvedValue({} as never);
+    mockAprovacaoCreate.mockResolvedValue({
+      id: "apr-2",
+      solicitacao_id: "sol-1",
+      etapa: 2,
+      aprovador_role: Role.RH_ADMIN,
+      aprovador_id: null,
+      decisao: null,
+      comentario: null,
+      resumo_ia: null,
+      decidido_em: null,
+    } as never);
+    mockSolicitacaoUpdate.mockResolvedValue({
+      ...sol,
+      status: StatusSolicitacao.APROVADA,
+    } as never);
+
+    await decidir("sol-1", RH, { decisao: "APROVADA" });
+
+    // A etapa 1 (ja decidida) nunca deveria ser reaberta: a decisao desta
+    // chamada precisa ter sido gravada contra uma linha NOVA (etapa 2), nao
+    // contra "apr-1".
+    expect(mockAprovacaoUpdate).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "apr-1" } }),
     );
-    await expect(
-      decidir("sol-1", GESTOR, { decisao: "APROVADA" }),
-    ).rejects.toBeInstanceOf(ErroDecisaoInvalida);
+    expect(mockAprovacaoCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ etapa: 2, aprovador_role: Role.RH_ADMIN }),
+      }),
+    );
+    // Etapa 2 e a ultima planejada (etapas=[GESTOR,RH_ADMIN]) -> encerra.
+    expect(mockSolicitacaoUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { status: StatusSolicitacao.APROVADA } }),
+    );
   });
 
   it("aprovar com proxima etapa avanca e emite evento", async () => {

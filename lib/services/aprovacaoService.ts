@@ -11,6 +11,7 @@ import { registrar } from "@/lib/services/logService";
 import { gerarResumoSolicitacao } from "@/lib/services/iaService";
 import { emitirAvancoEtapa } from "@/lib/events/solicitacaoEvents";
 import type { DecisaoInput } from "@/lib/validations/aprovacao";
+import { lerEtapas, papelEfetivo } from "@/lib/services/fluxoEtapas";
 
 /** Solicitacao inexistente — rota mapeia para 404. */
 export class ErroNaoEncontrado extends Error {
@@ -180,35 +181,39 @@ export async function decidir(
       ? DecisaoAprovacao.APROVADA
       : DecisaoAprovacao.REJEITADA;
 
-  await prisma.aprovacao.update({
-    where: { id: stub.id },
-    data: {
-      aprovador_id: usuario.id,
-      decisao,
-      comentario: input.comentario ?? null,
-      decidido_em: agora,
-    },
-  });
+  const dadosAprovacao = {
+    aprovador_id: usuario.id,
+    decisao,
+    comentario: input.comentario ?? null,
+    decidido_em: agora,
+  };
 
-  await registrar({
-    tipo: "AUDITORIA",
-    entidade: "Aprovacao",
-    entidade_id: stub.id,
-    acao: input.decisao === "APROVADA" ? "APROVACAO" : "REJEICAO",
-    usuario_id: usuario.id,
-    detalhes: {
-      solicitacao_id: sol.id,
-      etapa: stub.etapa,
-      comentario: input.comentario ?? null,
-    },
-  });
-
+  // `Aprovacao.decisao` e `Solicitacao.status/etapa_atual` avancam juntos
+  // numa unica transacao: se as duas escritas fossem separadas e uma delas
+  // falhasse no meio (timeout, erro transiente), a solicitacao ficaria com
+  // decisao gravada mas sem avancar de etapa — travada pra sempre, pois o
+  // guard de idempotencia acima bloquearia qualquer nova tentativa.
   if (input.decisao === "REJEITADA") {
-    const atualizada = await prisma.solicitacao.update({
-      where: { id: sol.id },
-      data: { status: StatusSolicitacao.REJEITADA },
-    });
+    const [, atualizada] = await prisma.$transaction([
+      prisma.aprovacao.update({ where: { id: stub.id }, data: dadosAprovacao }),
+      prisma.solicitacao.update({
+        where: { id: sol.id },
+        data: { status: StatusSolicitacao.REJEITADA },
+      }),
+    ]);
 
+    await registrar({
+      tipo: "AUDITORIA",
+      entidade: "Aprovacao",
+      entidade_id: stub.id,
+      acao: "REJEICAO",
+      usuario_id: usuario.id,
+      detalhes: {
+        solicitacao_id: sol.id,
+        etapa: stub.etapa,
+        comentario: input.comentario ?? null,
+      },
+    });
     await registrar({
       tipo: "AUDITORIA",
       entidade: "Solicitacao",
@@ -220,16 +225,52 @@ export async function decidir(
     return atualizada;
   }
 
+  // Indice da etapa corrente vem de `stub.etapa` (numeracao pela ultima
+  // `Aprovacao` existente, ver `garantirStubEtapaAtual`) — nao de
+  // `etapas.indexOf(etapa_atual)`: quando uma etapa GESTOR e substituida por
+  // RH_ADMIN (`papelEfetivo`, solicitante sem `Equipe`), o papel efetivo pode
+  // repetir em duas posicoes seguidas do array, e `indexOf` sempre acharia a
+  // primeira ocorrencia.
   const etapas = lerEtapas(sol.tipoFluxo.etapas);
-  const indiceAtual = indiceEtapaAtual(etapas, sol.etapa_atual);
-  const proxima = indiceAtual >= 0 ? etapas[indiceAtual + 1] : undefined;
+  const indiceAtual = stub.etapa - 1;
+  const proximaPlanejada = etapas[indiceAtual + 1];
+  const proxima =
+    proximaPlanejada === undefined
+      ? undefined
+      : papelEfetivo(proximaPlanejada, sol.solicitante.equipe != null);
+
+  const dadosSolicitacao =
+    proxima === undefined
+      ? { status: StatusSolicitacao.APROVADA }
+      : { etapa_atual: proxima, status: StatusSolicitacao.PENDENTE };
+
+  const [, atualizada] = await prisma.$transaction([
+    prisma.aprovacao.update({ where: { id: stub.id }, data: dadosAprovacao }),
+    prisma.solicitacao.update({ where: { id: sol.id }, data: dadosSolicitacao }),
+  ]);
+
+  // Mantem `stub` (dentro de `sol.aprovacoes`) coerente com o que acabou de
+  // ser commitado — a proxima chamada a `garantirStubEtapaAtual` (mais
+  // abaixo, via `solAvancada`) depende de ver esta etapa como decidida.
+  stub.decisao = decisao;
+  stub.aprovador_id = usuario.id;
+  stub.comentario = dadosAprovacao.comentario;
+  stub.decidido_em = agora;
+
+  await registrar({
+    tipo: "AUDITORIA",
+    entidade: "Aprovacao",
+    entidade_id: stub.id,
+    acao: "APROVACAO",
+    usuario_id: usuario.id,
+    detalhes: {
+      solicitacao_id: sol.id,
+      etapa: stub.etapa,
+      comentario: input.comentario ?? null,
+    },
+  });
 
   if (proxima === undefined) {
-    const atualizada = await prisma.solicitacao.update({
-      where: { id: sol.id },
-      data: { status: StatusSolicitacao.APROVADA },
-    });
-
     await registrar({
       tipo: "AUDITORIA",
       entidade: "Solicitacao",
@@ -240,14 +281,6 @@ export async function decidir(
 
     return atualizada;
   }
-
-  const atualizada = await prisma.solicitacao.update({
-    where: { id: sol.id },
-    data: {
-      etapa_atual: proxima,
-      status: StatusSolicitacao.PENDENTE,
-    },
-  });
 
   await registrar({
     tipo: "AUDITORIA",
@@ -342,37 +375,45 @@ function assertPodeDecidir(
   }
 }
 
-function lerEtapas(etapasJson: unknown): Role[] {
-  if (!Array.isArray(etapasJson)) {
-    return [];
-  }
-  return etapasJson.filter(
-    (e): e is Role => e === Role.GESTOR || e === Role.RH_ADMIN,
+/** Linha de `Aprovacao` com o maior `etapa` — a mais avancada ja tocada. */
+function ultimaAprovacao(aprovacoes: Aprovacao[]): Aprovacao | undefined {
+  return aprovacoes.reduce<Aprovacao | undefined>(
+    (max, a) => (!max || a.etapa > max.etapa ? a : max),
+    undefined,
   );
 }
 
-/** Indice 0-based da etapa atual em `etapas`. */
-function indiceEtapaAtual(etapas: Role[], etapaAtual: Role): number {
-  return etapas.indexOf(etapaAtual);
-}
-
 /**
- * Garante linha de `Aprovacao` para a etapa corrente (1-based).
- * Cria stub sem decisao se ainda nao existir.
+ * Garante linha de `Aprovacao` para a etapa corrente (1-based). Numera pela
+ * ultima linha existente (`ultimaAprovacao`), nao por
+ * `etapas.indexOf(etapa_atual)`: quando uma etapa GESTOR e substituida por
+ * RH_ADMIN (`papelEfetivo`, solicitante sem `Equipe`), o papel efetivo pode
+ * repetir em duas posicoes seguidas do array, o que confundiria uma busca
+ * por papel. Uma vez decidida, a ultima linha e sempre a etapa anterior —
+ * `decidir()` grava `Aprovacao.decisao` e `Solicitacao.etapa_atual` na mesma
+ * transacao, entao "ultima decidida" nunca fica dessincronizado de
+ * `etapa_atual` a ponto de parecer a mesma etapa ainda em aberto.
+ *
+ * Corrige `aprovador_role` de um stub existente ainda nao decidido se a
+ * etapa foi substituida (ver `papelEfetivo`) apos o stub ter sido criado.
  */
 async function garantirStubEtapaAtual(
   solicitacao: SolicitacaoComRelacoes,
 ): Promise<Aprovacao> {
-  const etapas = lerEtapas(solicitacao.tipoFluxo.etapas);
-  const idx = indiceEtapaAtual(etapas, solicitacao.etapa_atual);
-  const etapaNumero = idx >= 0 ? idx + 1 : 1;
   const role = solicitacao.etapa_atual;
+  const ultima = ultimaAprovacao(solicitacao.aprovacoes);
 
-  const existente = solicitacao.aprovacoes.find((a) => a.etapa === etapaNumero);
-  if (existente) {
-    return existente;
+  if (ultima && ultima.decisao == null) {
+    if (ultima.aprovador_role !== role) {
+      return prisma.aprovacao.update({
+        where: { id: ultima.id },
+        data: { aprovador_role: role },
+      });
+    }
+    return ultima;
   }
 
+  const etapaNumero = (ultima?.etapa ?? 0) + 1;
   const criado = await prisma.aprovacao.create({
     data: {
       solicitacao_id: solicitacao.id,
