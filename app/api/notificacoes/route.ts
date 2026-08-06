@@ -16,7 +16,10 @@ export async function GET(req: NextRequest) {
     const notificacoes = await notificacaoService.listarNotificacoes(user.id);
     return NextResponse.json({ notificacoes });
   } catch (error: any) {
-    // requireUser lança erro se não autorizado (que o middleware normalmente já pegaria)
-    return NextResponse.json({ error: error.message }, { status: 401 });
+    if (error.name === "ErroNaoAutenticado" || error.name === "ErroNaoAutorizado") {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error("Erro interno em /api/notificacoes:", error);
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
 }

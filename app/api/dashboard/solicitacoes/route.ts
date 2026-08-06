@@ -19,10 +19,10 @@ export async function GET(request: Request) {
   try {
     usuario = await requireUser([Role.GESTOR, Role.RH_ADMIN]);
   } catch (erro) {
-    if (erro instanceof ErroNaoAutenticado) {
+    if (erro instanceof Error && erro.name === "ErroNaoAutenticado") {
       return Response.json({ error: erro.message }, { status: 401 });
     }
-    if (erro instanceof ErroNaoAutorizado) {
+    if (erro instanceof Error && erro.name === "ErroNaoAutorizado") {
       return Response.json({ error: erro.message }, { status: 403 });
     }
     throw erro;

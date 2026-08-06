@@ -28,10 +28,10 @@ export default async function Page() {
   try {
     usuario = await requireUser([Role.GESTOR, Role.RH_ADMIN]);
   } catch (erro) {
-    if (erro instanceof ErroNaoAutenticado) {
+    if (erro instanceof Error && erro.name === "ErroNaoAutenticado") {
       redirect("/login");
     }
-    if (erro instanceof ErroNaoAutorizado) {
+    if (erro instanceof Error && erro.name === "ErroNaoAutorizado") {
       redirect("/solicitacoes");
     }
     throw erro;
