@@ -4,8 +4,14 @@ import {
   ErroNaoAutenticado,
   ErroNaoAutorizado,
 } from "@/lib/services/authService";
-import { listar as listarTiposFluxo } from "@/lib/services/tipoFluxoService";
-import { listarSolicitantesVisiveis } from "@/lib/services/dashboardService";
+import {
+  listar as listarTiposFluxo,
+  TipoFluxoResumo,
+} from "@/lib/services/tipoFluxoService";
+import {
+  listarSolicitantesVisiveis,
+  SolicitanteOpcao,
+} from "@/lib/services/dashboardService";
 import { Role } from "@/lib/generated/prisma/client";
 import { Suspense } from "react";
 import ContadoresPainel from "./_components/ContadoresPainel";
@@ -37,8 +43,8 @@ export default async function Page() {
     throw erro;
   }
 
-  let tiposDisponiveis = [];
-  let solicitantesDisponiveis = [];
+  let tiposDisponiveis: TipoFluxoResumo[] = [];
+  let solicitantesDisponiveis: SolicitanteOpcao[] = [];
 
   try {
     const [tipos, solicitantes] = await Promise.all([
