@@ -9,7 +9,10 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Migrations usam conexão direta/session (DIRECT_URL) — o pooler em
+    // transaction mode (DATABASE_URL, porta 6543) não suporta os prepared
+    // statements/advisory locks que `prisma migrate` precisa.
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
     shadowDatabaseUrl: process.env["SHADOW_DATABASE_URL"],
   },
 });
