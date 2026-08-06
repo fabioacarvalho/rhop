@@ -37,10 +37,19 @@ export default async function Page() {
     throw erro;
   }
 
-  const [tiposDisponiveis, solicitantesDisponiveis] = await Promise.all([
-    listarTiposFluxo(),
-    listarSolicitantesVisiveis(usuario),
-  ]);
+  let tiposDisponiveis = [];
+  let solicitantesDisponiveis = [];
+
+  try {
+    const [tipos, solicitantes] = await Promise.all([
+      listarTiposFluxo(),
+      listarSolicitantesVisiveis(usuario),
+    ]);
+    tiposDisponiveis = tipos;
+    solicitantesDisponiveis = solicitantes;
+  } catch (erro) {
+    console.error("Falha ao carregar filtros do dashboard:", erro);
+  }
 
   return (
     <main className={styles.page}>
